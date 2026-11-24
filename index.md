@@ -1,0 +1,91 @@
+# ggsmartext
+
+[![R-CMD-check](https://github.com/junjunlab/ggsmartext/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/junjunlab/ggsmartext/actions/workflows/R-CMD-check.yaml)
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License:
+MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![R \>=
+4.1](https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg)](https://cran.r-project.org/)
+[![ggplot2 \>=
+4.0](https://img.shields.io/badge/ggplot2-%3E%3D%204.0-blueviolet.svg)](https://ggplot2.tidyverse.org/)
+[![Docs](https://img.shields.io/badge/docs-pkgdown-2E7D6B.svg)](https://junjunlab.github.io/ggsmartext/)
+[![Last
+commit](https://img.shields.io/github/last-commit/junjunlab/ggsmartext.svg)](https://github.com/junjunlab/ggsmartext/commits/main)
+
+> Smart axis labels for ggplot2: show only the categories you care
+> about, connect each label to its tick with a leader line, and stagger
+> the labels over several rows so that the space outside the axis is
+> actually used.
+
+When a discrete axis carries many categories (50 samples, 200 features,
+…) the stock `ggplot2` axis draws every label on a single line. The
+labels overlap, or you rotate them all by 90°, or you hide them and lose
+the information. `ggsmartext` adds
+[`guide_axis_smart()`](https://junjunlab.github.io/ggsmartext/reference/guide_axis_smart.md),
+a `GuideAxis` subclass that takes over label drawing:
+
+- **Choose the labels**: `which =` (integer index / label text / logical
+  vector / function) or `n =` (auto-pick at most `n` labels, evenly
+  spaced).
+- **Use the page**: labels are packed without overlap
+  (`smartAlign`-style one-dimensional compaction) and distributed over
+  `nrow` rows (x axis) or columns (y axis). Rows are only added when
+  they are needed: labels stretch along the axis when a single row fits,
+  clustered labels are stacked automatically.
+- **Never overlaps**: if there is no room left, labels are dropped
+  instead of being printed on top of each other.
+- **Leader lines**: every displayed label is tied back to its tick, by
+  default with the `circlize` /
+  [`ComplexHeatmap::anno_mark()`](https://rdrr.io/pkg/ComplexHeatmap/man/anno_mark.html)
+  “diagonal” geometry (short perpendicular stub, diagonal, short stub).
+
+## Installation
+
+Requires R \>= 4.1 and **ggplot2 \>= 4.0.0** (the guide API used here
+was rewritten in ggplot2 4.0).
+
+``` r
+
+# install.packages("remotes")
+remotes::install_github("junjunlab/ggsmartext")
+```
+
+Or, from a local clone of the repository:
+
+``` r
+
+# install.packages("remotes")
+remotes::install_local(".")
+# or, from a shell:
+# R CMD INSTALL .
+```
+
+## Documentation
+
+The complete reference manual — every function, argument and example —
+is published on the package documentation site:
+
+- **Reference manual**:
+  <https://junjunlab.github.io/ggsmartext/reference/>
+- **中文 vignette（入门与全部用法）**:
+  <https://junjunlab.github.io/ggsmartext/articles/ggsmartext.html>
+- **English vignette**:
+  <https://junjunlab.github.io/ggsmartext/articles/ggsmartext-en.html>
+
+The vignettes walk through label selection (`which`), automatic
+selection (`n`), staggered rows (`nrow`), the three leader-line styles,
+vertical axes, facets and heatmap annotation; the reference manual
+documents every argument and default. The layout algorithms
+[`smart_align()`](https://junjunlab.github.io/ggsmartext/reference/smart_align.md),
+[`box_arrange()`](https://junjunlab.github.io/ggsmartext/reference/box_arrange.md)
+and
+[`smart_stack()`](https://junjunlab.github.io/ggsmartext/reference/smart_stack.md)
+are exported and can also be used on their own.
+
+## Credits
+
+The one-dimensional, overlap-free compaction is a port of the
+`smartAlign` algorithm from the **circlize** package; the box
+arrangement is a port of the **ComplexHeatmap** package. `ggsmartext`
+only re-uses the algorithms — the ggplot2 guide integration is new.
