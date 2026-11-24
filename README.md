@@ -3,6 +3,19 @@
 
 # ggsmartext
 
+[![R-CMD-check](https://github.com/junjunlab/ggsmartext/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/junjunlab/ggsmartext/actions/workflows/R-CMD-check.yaml)
+[![Lifecycle:
+experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
+[![License:
+MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![R \>=
+4.1](https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg)](https://cran.r-project.org/)
+[![ggplot2 \>=
+4.0](https://img.shields.io/badge/ggplot2-%3E%3D%204.0-blueviolet.svg)](https://ggplot2.tidyverse.org/)
+[![Docs](https://img.shields.io/badge/docs-pkgdown-2E7D6B.svg)](https://junjunlab.github.io/ggsmartext/)
+[![Last
+commit](https://img.shields.io/github/last-commit/junjunlab/ggsmartext.svg)](https://github.com/junjunlab/ggsmartext/commits/main)
+
 > Smart axis labels for ggplot2: show only the categories you care
 > about, connect each label to its tick with a leader line, and stagger
 > the labels over several rows so that the space outside the axis is
