@@ -357,18 +357,21 @@ ggplot(df60, aes(x = sample, y = value)) +
 
 ## Heatmap labels: `sec.axis` + `dup_axis()`
 
-"Label only a few rows and hide the rest" is the typical `anno_mark()` use case. Switch the main axis off, duplicate it with `dup_axis()`, and attach the smart guide to the copy:
+"Label only a few rows and hide the rest" is the typical `anno_mark()` use case. Switch the main axis off, duplicate it with `dup_axis()`, and attach the smart guide to the copy.
 
-```{r anno-heatmap, eval = requireNamespace("airway", quietly = TRUE), fig.cap = "real data: airway RNA-seq (GEO GSE52778) heatmap, only the 8 glucocorticoid-responsive genes are labelled"}
-## Real data: airway RNA-seq (GEO GSE52778)
-## human airway smooth muscle cells, 4 cell lines x dexamethasone/control
+This section uses **real RNA-seq data from GEO**: the `airway` package
+(GEO series [GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778);
+human airway smooth muscle cells, four cell lines with and without
+dexamethasone).
+
+```{r anno-heatmap-data, eval = requireNamespace("airway", quietly = TRUE)}
+## real data: airway RNA-seq (GEO GSE52778)
 library(airway)
 data(airway, package = "airway")
 
 counts <- SummarizedExperiment::assay(airway, "counts")
 cpm <- t(t(counts) / colSums(counts)) * 1e6
-keep <- rowSums(cpm > 1) >= 4          # expressed in at least 4 samples
-logcpm <- log2(cpm[keep, ] + 1)
+logcpm <- log2(cpm[rowSums(cpm > 1) >= 4, ] + 1) # expressed in >= 4 samples
 
 ## 60 most variable genes, row z-scores, hierarchical clustering
 vars <- apply(logcpm, 1, var)
@@ -376,56 +379,97 @@ z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[1:60], ])))
 ord <- hclust(dist(z), method = "ward.D2")$order
 
 sym <- SummarizedExperiment::rowData(airway)$symbol[match(rownames(z), rownames(airway))]
-gene_labels <- ifelse(is.na(sym[ord]) | sym[ord] == "", rownames(z)[ord], sym[ord])
+gene_name <- ifelse(is.na(sym) | sym == "", rownames(z), sym)
+names(gene_name) <- rownames(z)
 
+## split the genes into "up" and "down" after dexamethasone, used for the facets
 cd <- as.data.frame(SummarizedExperiment::colData(airway))
+delta <- rowMeans(z[, cd$dex == "trt"]) - rowMeans(z[, cd$dex == "untrt"])
+gene_set <- ifelse(delta > 0, "up in dexamethasone", "down in dexamethasone")
+
 sample_lab <- factor(paste(cd$cell, cd$dex, sep = "_"),
                      levels = paste(cd$cell, cd$dex, sep = "_"))
 
 df_gene <- data.frame(
-  gene = factor(rep(rev(gene_labels), times = nrow(cd)), levels = rev(gene_labels)),
+  gene = factor(rep(gene_name[ord], times = nrow(cd)), levels = rev(gene_name[ord])),
   sample = factor(rep(sample_lab, each = nrow(z)), levels = levels(sample_lab)),
+  gene_set = factor(rep(gene_set[ord], times = nrow(cd)),
+                    levels = c("up in dexamethasone", "down in dexamethasone")),
   z = as.vector(z[ord, ])
 )
+```
 
-## label only the 8 glucocorticoid-responsive genes, which sit close together
+The heatmap is drawn tall and narrow; the eight glucocorticoid-responsive genes
+that cluster at the top (`TSC22D3`, `KLF15`, `FKBP5`, `PER1`, `ZBTB16`,
+`SPARCL1`, ...) are the only ones labelled:
+
+```{r anno-heatmap, eval = requireNamespace("airway", quietly = TRUE), fig.width = 6.5, fig.height = 9, fig.cap = "real data (GEO GSE52778), tall heatmap: only the 8 glucocorticoid-responsive genes are labelled"}
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
   scale_y_discrete(
     guide = guide_none(),
     sec.axis = dup_axis(
-      guide = guide_axis_smart(which = gene_labels[1:8])
+      guide = guide_axis_smart(which = gene_name[ord][1:8])
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
   labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778)") +
-  theme_minimal(base_size = 12) +
+  theme_minimal(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-This uses **real RNA-seq data from GEO**: the `airway` package (GEO series
-[GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778); human
-airway smooth muscle cells, four cell lines with and without dexamethasone).
-`gene_labels[1:8]` are the classic glucocorticoid-responsive genes that cluster
-at the top of the heatmap (`TSC22D3`, `KLF15`, `FKBP5`, `PER1`, `ZBTB16`,
-`SPARCL1`, ...); they crowd into a narrow strip, so `guide_axis_smart()`
-stagger them and ties each one back to its row with a leader line.
+When the heatmap is faceted, every panel holds different data and lays out its
+own labels. Here the genes are split into an "up" and a "down" panel, and each
+panel labels only its four strongest responders (panel heights follow the number
+of genes):
 
-`airway` is a `Suggests` dependency; when it is not installed the chunk above is
-skipped:
+```{r anno-heatmap-facet, eval = requireNamespace("airway", quietly = TRUE), fig.width = 7, fig.height = 9.5, fig.cap = "faceted heatmap: each panel has different data and lays out its own labels"}
+## per panel (gene set), label the 4 genes with the largest |delta|
+mark_by_set <- lapply(
+  split(names(delta), gene_set),
+  function(ids) ids[order(abs(delta[ids]), decreasing = TRUE)][1:4]
+)
+mark <- unlist(mark_by_set, use.names = FALSE)
+
+ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
+  geom_tile() +
+  facet_grid(gene_set ~ ., scales = "free_y", space = "free_y", switch = "y") +
+  scale_y_discrete(
+    position = "right",
+    guide = guide_axis_smart(
+      which = function(labels, positions) labels %in% gene_name[mark]
+    )
+  ) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score") +
+  labs(x = NULL, y = NULL, title = "facet by gene set") +
+  theme_minimal(base_size = 9) +
+  theme(panel.grid = element_blank(),
+        strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 0),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Key points:
+
+- single panel: hide all labels on the main axis with `guide = guide_none()` and
+  put `guide_axis_smart()` on the axis created by `dup_axis()`;
+- the selected rows are connected with a stub + diagonal + stub line, and adjacent
+  selected rows are staggered automatically so they never overlap;
+- **facets**: each panel selects and lays out its own labels independently; use a
+  function for `which` (`function(labels, positions)`) so that every panel only
+  matches the labels that exist in it;
+- `dup_axis()` is not drawn per panel in a faceted plot; attach the smart guide
+  directly with `scale_y_discrete(position = "right", guide = ...)` instead;
+- `airway` is a `Suggests` dependency; when it is not installed the three chunks
+  above are skipped:
 
 ```r
 if (!requireNamespace("airway", quietly = TRUE)) {
   BiocManager::install("airway")   # from Bioconductor
 }
 ```
-
-Key points:
-
-- hide all labels on the main axis with `guide = guide_none()`, and put `guide_axis_smart()` on the axis created by `dup_axis()`;
-- the selected rows are connected with a stub + diagonal + stub line, and adjacent selected rows are staggered automatically so they never overlap;
-- the same pattern works for a y axis on `sec.axis` (for example when only a few samples need names).
 
 # Long labels and angles: `angle`, `hjust`, `vjust`
 

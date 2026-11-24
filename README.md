@@ -205,15 +205,20 @@ vars <- apply(logcpm, 1, var)
 z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[1:60], ])))
 ord <- hclust(dist(z), method = "ward.D2")$order
 sym <- SummarizedExperiment::rowData(airway)$symbol[match(rownames(z), rownames(airway))]
-gene_labels <- ifelse(is.na(sym[ord]) | sym[ord] == "", rownames(z)[ord], sym[ord])
+gene_name <- ifelse(is.na(sym) | sym == "", rownames(z), sym)
+names(gene_name) <- rownames(z)
 
 cd <- as.data.frame(SummarizedExperiment::colData(airway))
+delta <- rowMeans(z[, cd$dex == "trt"]) - rowMeans(z[, cd$dex == "untrt"])
+gene_set <- ifelse(delta > 0, "up in dexamethasone", "down in dexamethasone")
 sample_lab <- factor(paste(cd$cell, cd$dex, sep = "_"),
                      levels = paste(cd$cell, cd$dex, sep = "_"))
 
 df_gene <- data.frame(
-  gene = factor(rep(rev(gene_labels), times = nrow(cd)), levels = rev(gene_labels)),
+  gene = factor(rep(gene_name[ord], times = nrow(cd)), levels = rev(gene_name[ord])),
   sample = factor(rep(sample_lab, each = nrow(z)), levels = levels(sample_lab)),
+  gene_set = factor(rep(gene_set[ord], times = nrow(cd)),
+                    levels = c("up in dexamethasone", "down in dexamethasone")),
   z = as.vector(z[ord, ])
 )
 
@@ -222,23 +227,23 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_y_discrete(
     guide = guide_none(),
     sec.axis = dup_axis(
-      guide = guide_axis_smart(which = gene_labels[1:8])
+      guide = guide_axis_smart(which = gene_name[ord][1:8])
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
   labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778)") +
-  theme_minimal(base_size = 12) +
+  theme_minimal(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 <div class="figure">
 
-<img src="man/figures/README-anno-mark-1.png" alt="Real RNA-seq data (GEO GSE52778): only the 8 glucocorticoid-responsive genes are labelled on a duplicated right axis" width="100%" />
+<img src="man/figures/README-anno-mark-1.png" alt="Real RNA-seq data (GEO GSE52778): tall heatmap, only the 8 glucocorticoid-responsive genes are labelled on a duplicated right axis" width="100%" />
 <p class="caption">
 
-Real RNA-seq data (GEO GSE52778): only the 8 glucocorticoid-responsive
-genes are labelled on a duplicated right axis
+Real RNA-seq data (GEO GSE52778): tall heatmap, only the 8
+glucocorticoid-responsive genes are labelled on a duplicated right axis
 </p>
 
 </div>
@@ -249,8 +254,51 @@ RNA-seq experiment on human airway smooth muscle cells (GEO
 [GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778)),
 four cell lines with and without dexamethasone. The eight genes labelled
 here are the glucocorticoid-responsive genes that cluster together at
-the top of the heatmap. `airway` is a `Suggests` dependency; install it
-with `BiocManager::install("airway")` when you re-render this README.
+the top of the heatmap.
+
+Facets work as well, and every panel lays out its own labels: split the
+genes into an “up” and a “down” panel and label the four strongest
+responders in each.
+
+``` r
+mark_by_set <- lapply(
+  split(names(delta), gene_set),
+  function(ids) ids[order(abs(delta[ids]), decreasing = TRUE)][1:4]
+)
+mark <- unlist(mark_by_set, use.names = FALSE)
+
+ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
+  geom_tile() +
+  facet_grid(gene_set ~ ., scales = "free_y", space = "free_y", switch = "y") +
+  scale_y_discrete(
+    position = "right",
+    guide = guide_axis_smart(
+      which = function(labels, positions) labels %in% gene_name[mark]
+    )
+  ) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score") +
+  labs(x = NULL, y = NULL, title = "facet by gene set") +
+  theme_minimal(base_size = 9) +
+  theme(panel.grid = element_blank(),
+        strip.placement = "outside",
+        strip.text.y.left = element_text(angle = 0),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+<div class="figure">
+
+<img src="man/figures/README-anno-mark-facet-1.png" alt="Faceted heatmap (GEO GSE52778): each panel has different data and lays out its own labels" width="100%" />
+<p class="caption">
+
+Faceted heatmap (GEO GSE52778): each panel has different data and lays
+out its own labels
+</p>
+
+</div>
+
+`airway` is a `Suggests` dependency; install it with
+`BiocManager::install("airway")` when you re-render this README.
 
 The same works for a cluster of neighbouring categories: select it with
 `which = 24:35` and the guide stacks the labels over several rows
