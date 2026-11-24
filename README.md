@@ -48,40 +48,22 @@ remotes::install_local(".")
 # R CMD INSTALL .
 ```
 
-## Quick start
+## Documentation
 
-``` r
-library(ggplot2)
-library(ggsmartext)
+The complete reference manual — every function, argument and example —
+is published on the package documentation site:
 
-set.seed(2024)
-df <- data.frame(
-  sample = factor(paste0("样本", 1:50), levels = paste0("样本", 1:50)),
-  value = round(runif(50, 10, 100), 1)
-)
+- **Reference manual**:
+  <https://junjunlab.github.io/ggsmartext/reference/>
+- **中文 vignette（入门与全部用法）**:
+  <https://junjunlab.github.io/ggsmartext/articles/ggsmartext.html>
+- **English vignette**:
+  <https://junjunlab.github.io/ggsmartext/articles/ggsmartext-en.html>
 
-ggplot(df, aes(x = sample, y = value)) +
-  geom_col(fill = "#5B8FF9", width = 0.8) +
-  guides(x = guide_axis_smart(n = 10, nrow = 2)) +
-  labs(x = NULL, y = "response",
-       title = "guide_axis_smart(n = 10, nrow = 2)") +
-  theme_minimal(base_size = 12)
-```
-
-<div class="figure">
-
-<img src="man/figures/README-quickstart-1.png" alt="guide_axis_smart(n = 10, nrow = 2): 10 labels, two staggered rows, leader lines back to the ticks" width="100%" />
-<p class="caption">
-
-guide_axis_smart(n = 10, nrow = 2): 10 labels, two staggered rows,
-leader lines back to the ticks
-</p>
-
-</div>
-
-No `theme(axis.text.x = element_blank())` needed: the guide draws the
-labels itself. The function can also be attached to a scale:
-`scale_x_discrete(guide = guide_axis_smart(...))`.
+The vignettes walk through label selection (`which`), automatic
+selection (`n`), staggered rows (`nrow`), the three leader-line styles,
+vertical axes, facets and heatmap annotation; the reference manual
+documents every argument and default.
 
 ## Pick the labels you need
 

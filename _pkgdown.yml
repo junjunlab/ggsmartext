@@ -1,5 +1,8 @@
 url: https://junjunlab.github.io/ggsmartext/
 
+template:
+  bootstrap: 5
+
 reference:
   - title: 智能轴标签 (Smart axis guides)
     desc: >
