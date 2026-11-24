@@ -1,0 +1,609 @@
+---
+title: "ggsmartext: Smart Axis Labels for ggplot2"
+subtitle: "让拥挤的分类轴标签变清爽"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+    number_sections: false
+vignette: >
+  %\VignetteIndexEntry{ggsmartext: Smart Axis Labels for ggplot2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+> English version: `vignette("ggsmartext-en")`
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  dev = "ragg_png",
+  fig.width = 10.67,
+  fig.height = 6,
+  dpi = 150,
+  out.width = "100%",
+  fig.align = "center"
+)
+library(ggplot2)
+library(ggsmartext)
+```
+
+# 动机：分类轴一挤，图就没法看了
+
+`ggplot2` 默认会把分类轴的**每一个**水平都画上一个刻度和一个标签。类别一多（比如 50 个样本、200 个特征），标签在轴下方挤成一团：轻则互相压住、一个字都读不出来，重则你只能把标签整体删掉，于是图上的信息也没了。旋转 90° 能救一部分，但标签一长、类别一多照样越界。
+
+```{r data}
+set.seed(2024)
+df50 <- data.frame(
+  sample = factor(paste0("样本", 1:50), levels = paste0("样本", 1:50)),
+  value = round(runif(50, 10, 100), 1)
+)
+```
+
+```{r motivation, fig.cap = "50 个分类水平时 ggplot2 的默认 x 轴：标签互相重叠，完全无法阅读"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  labs(x = NULL, y = "响应值", title = "默认轴：50 个标签挤成一团") +
+  theme_minimal(base_size = 12)
+```
+
+`ggsmartext` 提供 `guide_axis_smart()`：它接管分类轴标签的绘制，做三件事——
+
+1. **只显示你关心的那部分标签**（`which =` / `n =`），其余的用**引导线（leader line）**连回各自的刻度，位置关系一目了然；
+2. **把标签在轴外侧分成多行（x 轴）或多列（y 轴）错开**，把页面上原本浪费的空白用起来；
+3. **保证任何情况下标签都不互相重叠**：实在放不下时宁可少显示几个，也不会画成一团。
+
+# 快速开始
+
+在原来的图上加一行 `guides()` 就行：
+
+```{r quickstart, fig.cap = "guide_axis_smart(n = 10, nrow = 2)：只显示 10 个标签，分两行错开，引导线连回各自刻度"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 10, nrow = 2)) +
+  labs(x = NULL, y = "响应值", title = "guide_axis_smart(n = 10, nrow = 2)") +
+  theme_minimal(base_size = 12)
+```
+
+只改了三处：加载包、`guides(x = guide_axis_smart(...))`、其他照旧。注意**不需要**再写 `theme(axis.text.x = element_blank())`，标签的绘制已经完全交给 guide 了。
+
+## 两种挂载方式
+
+`guide_axis_smart()` 既可以放在 `guides()` 里，也可以作为 scale 的 `guide` 参数（在 `coord_flip()` 下二者不等价，见后文）：
+
+```{r two-ways, fig.cap = "两种写法效果相同：guides(x = ...)（上图）与 scale_x_discrete(guide = ...)（下图）"}
+p_guides <- ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 8, nrow = 2)) +
+  labs(x = NULL, y = "响应值", title = "写法一：guides(x = guide_axis_smart(...))") +
+  theme_minimal(base_size = 12)
+
+p_scale <- ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  scale_x_discrete(guide = guide_axis_smart(n = 8, nrow = 2)) +
+  labs(x = NULL, y = "响应值", title = "写法二：scale_x_discrete(guide = ...)") +
+  theme_minimal(base_size = 12)
+
+p_guides
+p_scale
+```
+
+# 只显示指定标签：`which` 的四种写法
+
+`which` 决定"显示哪些标签"，可以接受四种形式：
+
+| 写法 | 含义 | 示例 |
+|---|---|---|
+| 整数向量 | 在 scale 的 breaks 顺序里的下标 | `which = seq(1, 50, by = 10)` |
+| 字符向量 | 按标签文本精确匹配 | `which = c("样本1", "样本25", "样本50")` |
+| 逻辑向量 | 与标签一一对应，`TRUE` 的显示 | `which = grepl("0$", levels(sample))` |
+| 函数 | `function(labels, positions)` 返回逻辑向量 | `which = function(labels, positions) positions > 0.45 & positions < 0.55` |
+
+其中 `positions` 是该标签在面板内的**相对坐标**（0 到 1，沿轴方向），和具体的数据值无关，写位置规则时很好用。
+
+## 整数下标
+
+```{r which-integer, fig.cap = "which = seq(1, 50, by = 10)：每 10 个显示一个"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(which = seq(1, 50, by = 10), nrow = 2)) +
+  labs(x = NULL, y = "响应值", title = "which = seq(1, 50, by = 10)") +
+  theme_minimal(base_size = 12)
+```
+
+## 字符向量
+
+```{r which-character, fig.cap = "按标签文本挑：显示 样本1、样本2、样本25、样本50 这四个标签"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(
+    which = c("样本1", "样本2", "样本25", "样本50"),
+    nrow = 1
+  )) +
+  labs(x = NULL, y = "响应值", title = "按标签文本挑：which = c(\"样本1\", \"样本2\", \"样本25\", \"样本50\")") +
+  theme_minimal(base_size = 12)
+```
+
+## 逻辑向量
+
+```{r which-logical, fig.cap = "逻辑向量挑选：只显示编号以 0 结尾的样本"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(
+    which = grepl("0$", levels(df50$sample)),
+    nrow = 1
+  )) +
+  labs(x = NULL, y = "响应值", title = "逻辑向量：which = grepl(\"0$\", levels(sample))") +
+  theme_minimal(base_size = 12)
+```
+
+## 函数
+
+`which` 用函数时，会在拿到标签文本和相对位置后调用它，返回逻辑向量（也可以返回下标向量）。下面只显示每 10 个中的第一个：
+
+```{r which-function, fig.cap = "which = function(labels, positions) seq_along(labels) %% 10 == 1：每 10 个显示一个"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(
+    which = function(labels, positions) seq_along(labels) %% 10 == 1,
+    nrow = 2
+  )) +
+  labs(x = NULL, y = "响应值", title = "函数：每 10 个标签显示一个") +
+  theme_minimal(base_size = 12)
+```
+
+函数形式的典型用途是按**位置**挑：`positions` 是 0 到 1 的相对坐标，比如 `positions > 0.9` 只保留轴末端的标签。
+
+# 自动挑选：`n`
+
+不想自己算下标时，直接告诉 guide "最多显示几个"：
+
+```{r n-5, fig.cap = "n = 5：自动等距挑 5 个标签，一行就放得下"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 5)) +
+  labs(x = NULL, y = "响应值", title = "n = 5（自动等距挑选）") +
+  theme_minimal(base_size = 12)
+```
+
+```{r n-20, fig.cap = "n = 20：挑 20 个标签，一行放不下时自动分成两行"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 20)) +
+  labs(x = NULL, y = "响应值", title = "n = 20（自动分行）") +
+  theme_minimal(base_size = 12)
+```
+
+`n` 与 `which` 同时给出时，先由 `which` 选出集合，`n` 再把**结果**等距截断为最多 `n` 个（`n` 是硬上限）；`which = NULL` 时 `n` 直接从全部标签里等距挑。
+
+## 自动行为：什么都不填会怎样
+
+**轨道数（行数/列数）的自动策略**：能一行放下就一行——标签沿轴摊开，引导线短、最接近 `anno_mark()` 的观感；只有全部标签总宽度超过一行可用宽度时才会分行。若标签集中挤在轴的一小段里，即使总宽度不大，也会按这一簇的跨度自动分成多行，避免长斜线交叉。轨道数最多 `max_nrow` 条（默认 `8`）。
+
+`which = NULL` 且 `n = NULL` 时，guide 默认显示**全部**标签。如果全部标签总宽度超过了 `max_nrow` 条轨道能容纳的范围，guide 会自动等距抽稀，并通过 `cli` 给出**一次**提示，例如：
+
+```{r auto-thin, fig.cap = "200 个分类、不指定 which/n：自动抽稀后仍然清晰，但会少显示标签"}
+set.seed(1)
+df200 <- data.frame(
+  feature = factor(paste0("特征", 1:200), levels = paste0("特征", 1:200)),
+  value = runif(200)
+)
+
+ggplot(df200, aes(x = feature, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.9) +
+  guides(x = guide_axis_smart()) +
+  labs(x = NULL, y = "重要度", title = "200 个分类：自动抽稀") +
+  theme_minimal(base_size = 12)
+```
+
+如果不想看到提示（比如在循环里批量出图），设置 `options(ggsmartext.quiet = TRUE)` 即可静音；但**永远建议显式写 `n =` 或 `which =`**，让显示哪些标签由你决定，而不是由屏幕尺寸决定。
+
+# 多行错开：`nrow`、`gap`、`padding`
+
+x 轴标签在轴下方占几行，由 `nrow` 控制；`NULL`（默认）表示自动——**能一行放下就一行**，挤在一段里或总宽超了才分行。`gap` 是行间距（默认 `0.30`），`padding` 是同一行里相邻标签盒之间的最小间距（默认 `0.25`），两者都是**相对标签高度**的比例。
+
+```{r nrow-1, fig.cap = "nrow = 1：一行展示，标签必须挤得下"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 8, nrow = 1)) +
+  labs(x = NULL, y = "响应值", title = "n = 8, nrow = 1") +
+  theme_minimal(base_size = 12)
+```
+
+```{r nrow-3, fig.cap = "nrow = 3：三行错开，纵向空间用得越充分，能显示的标签就越多"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 24, nrow = 3)) +
+  labs(x = NULL, y = "响应值", title = "n = 24, nrow = 3") +
+  theme_minimal(base_size = 12)
+```
+
+```{r nrow-auto, fig.cap = "nrow = NULL：能一行放下就一行，放不下才自动分行"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 30)) +
+  labs(x = NULL, y = "响应值", title = "n = 30, nrow = NULL（自动分行）") +
+  theme_minimal(base_size = 12)
+```
+
+调参口诀：
+
+- **想多显示标签**：加 `nrow`（纵轴是 y 轴时是加列数，见下一节）；
+- **标签行看着太挤**：调大 `gap`、`padding`（比如 `gap = 0.4`）；
+- **标签在画布边缘被裁掉**：默认 `extend = 0` 已经保证标签盒不越出面板，通常不会发生；只有在你显式把 `extend` 调大（换取更宽松的排布）时，才需要同时给 `theme(plot.margin = ...)` 留出边距。
+
+```{r tuned, fig.cap = "gap = 0.5, padding = 0.6：行距和盒间距都放宽"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 16, nrow = 2, gap = 0.5, padding = 0.6)) +
+  labs(x = NULL, y = "响应值", title = "gap = 0.5, padding = 0.6") +
+  theme_minimal(base_size = 12)
+```
+
+# 引导线：`connection_style` 与 `link_length`
+
+只要标签被"挪动"过（位置和刻度不一致），guide 默认就会画引导线（`connection = TRUE`）。`connection_style` 有三种：
+
+- `"diagonal"`（默认）：轴外先画一小段垂直于轴的短线，再一条斜线连到标签所在行，最后再一小段垂直短线收尾。这是 `circlize` 和 `ComplexHeatmap::anno_mark()` 的经典几何，多行错开时最清楚；
+- `"straight"`：从刻度一条斜直线直接连到标签盒；
+- `"elbow"`：垂直段 + 一段平行于轴的台阶，横平竖直。
+
+```{r conn-diagonal, fig.cap = "connection_style 取 diagonal（默认）：短垂线 + 斜线 + 短垂线"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 2)) +
+  labs(x = NULL, y = "响应值", title = "connection_style = \"diagonal\"（默认）") +
+  theme_minimal(base_size = 12)
+```
+
+```{r conn-straight, fig.cap = "connection_style 取 straight：一条斜直线"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 2, connection_style = "straight")) +
+  labs(x = NULL, y = "响应值", title = "connection_style = \"straight\"") +
+  theme_minimal(base_size = 12)
+```
+
+```{r conn-elbow, fig.cap = "connection_style 取 elbow：垂直段 + 平行于轴的台阶"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 2, connection_style = "elbow")) +
+  labs(x = NULL, y = "响应值", title = "connection_style = \"elbow\"") +
+  theme_minimal(base_size = 12)
+```
+
+`link_length`（默认 `3`，单位毫米）控制"轴线到第一行（列）标签之间那段连线"的长度：行数多、线密的时候调小一点更紧凑，想让引导线更舒展就调大。
+
+线的颜色、粗细、线型分别由 `connection_col`、`connection_lwd`（默认 `0.5`）、`connection_lty` 控制；`connection_col = NULL`（默认）时使用刻度线的颜色。不需要引导线时设 `connection = FALSE`。
+
+## 刻度线：`tick`
+
+`tick` 控制贴着轴线的刻度短线：
+
+- `"all"`（默认）：所有刻度都画，保留"这里还有别的类别"的信息；
+- `"shown"`：只给显示出来的标签画刻度，画面更干净；
+- `"none"`：完全不画刻度。
+
+```{r tick-shown, fig.cap = "tick 取 shown：只给显示出来的标签画刻度"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 10, nrow = 2, tick = "shown")) +
+  labs(x = NULL, y = "响应值", title = "tick = \"shown\"") +
+  theme_minimal(base_size = 12)
+```
+
+# y 轴（水平分类轴）
+
+把分类变量映射到 y 轴即可。注意 **`nrow` 在 y 轴上表示"列数"**：标签会在轴外侧分成若干列错开，越靠外的列装的是"被推出去"的标签。
+
+```{r y-axis, fig.cap = "y 轴：nrow = 2 表示标签分成 2 列错开"}
+labs40 <- paste0("样本", 1:40)
+df40 <- data.frame(
+  sample = factor(labs40, levels = rev(labs40)),
+  value = round(runif(40, 10, 100), 1)
+)
+
+ggplot(df40, aes(x = value, y = sample)) +
+  geom_col(fill = "#F6903D", width = 0.8) +
+  guides(y = guide_axis_smart(n = 10, nrow = 2)) +
+  labs(x = "响应值", y = NULL, title = "y 轴：n = 10, nrow = 2（2 列）") +
+  theme_minimal(base_size = 12)
+```
+
+```{r y-axis-3, fig.cap = "y 轴：nrow = 3，三列错开可以显示更多标签"}
+ggplot(df40, aes(x = value, y = sample)) +
+  geom_col(fill = "#F6903D", width = 0.8) +
+  guides(y = guide_axis_smart(which = seq(1, 40, by = 4), nrow = 3)) +
+  labs(x = "响应值", y = NULL, title = "y 轴：which = seq(1, 40, by = 4), nrow = 3") +
+  theme_minimal(base_size = 12)
+```
+
+# 集中标注与热图标注（anno_mark 风格）
+
+`connection_style = "diagonal"` 的几何直接对齐 `circlize` 与 `ComplexHeatmap::anno_mark()`：短垂线 → 斜线 → 短垂线 → 文字。配合"能一行放下一行、集中区域自动分层"的轨道策略，特别适合**只标注少数感兴趣的类别**。
+
+## 集中在一段里的标签：自动分层
+
+`which` 挑出来的标签如果只落在轴的一小段里，一行摊不开时 guide 会自动把它们分成多行、上下错开，每个标签仍然连回自己的刻度：
+
+```{r anno-cluster, fig.cap = "60 个类别里只标注 24~35：自动分成多行错开"}
+set.seed(5)
+labs60 <- paste0("样本", 1:60)
+df60 <- data.frame(
+  sample = factor(labs60, levels = labs60),
+  value = round(runif(60, 10, 100), 1)
+)
+
+ggplot(df60, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(which = 24:35)) +
+  labs(x = NULL, y = "响应值", title = "which = 24:35（自动分多行）") +
+  theme_minimal(base_size = 12)
+```
+
+想强制单行（纯 `anno_mark` 风格，标签沿轴摊开、引导线更长）就写 `nrow = 1`：
+
+```{r anno-cluster-nrow1, fig.cap = "同样的标签用 nrow = 1 强制单行：沿轴摊开，引线更长"}
+ggplot(df60, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(which = 24:35, nrow = 1)) +
+  labs(x = NULL, y = "响应值", title = "which = 24:35, nrow = 1（anno_mark 风格）") +
+  theme_minimal(base_size = 12)
+```
+
+## 热图基因标注：`sec.axis` + `dup_axis()`
+
+"只标注少数几行、其余不显示"是 `anno_mark()` 的典型场景。做法是：主轴关掉全部标签，再用 `dup_axis()` 复制一根副轴、把 smart guide 挂在副轴上。
+
+```{r anno-heatmap, fig.cap = "热图右侧只标注 3 个基因：短横线 + 斜线 + 短横线连到对应行"}
+set.seed(11)
+genes <- paste0("GENE", sprintf("%03d", 1:60))
+df_gene <- data.frame(
+  gene = factor(genes, levels = rev(genes)),
+  sample = rep(paste0("S", 1:4), each = 60),
+  z = round(rnorm(240), 2)
+)
+
+ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
+  geom_tile() +
+  scale_y_discrete(
+    guide = guide_none(),
+    sec.axis = dup_axis(
+      guide = guide_axis_smart(which = c("GENE005", "GENE018", "GENE047"))
+    )
+  ) +
+  scale_fill_gradient2(low = "#2E5EAA", mid = "white", high = "#C0392B") +
+  labs(x = NULL, y = NULL, title = "热图基因注释：只标 3 个基因") +
+  theme_minimal(base_size = 12)
+```
+
+要点：
+
+- 主轴用 `guide = guide_none()` 隐藏全部标签，`dup_axis()` 复制出来的副轴挂 `guide_axis_smart()`；
+- 选中的行用"短横线 + 斜线 + 短横线"连回，相邻的选中行会自动上下错开，不会叠在一起；
+- 同样的写法也适用于 `sec.axis` 上的 y 轴（例如只有少数样本需要标名）。
+
+# 长标签与角度：`angle`、`hjust`、`vjust`
+
+标签文字很长时（比如"样本12（处理组A）"），靠多行错开仍然可能放不下，这时可以旋转标签。`angle` 支持 `0`、`45`、`90`，`NULL`（默认）表示继承主题里的 `axis.text.x` 角度。
+
+```{r long-rows, fig.cap = "长标签 + 多行错开（不旋转）：n = 12, nrow = 2"}
+trt <- rep(c("对照组", "处理组A", "处理组B"), 8)
+labs24 <- paste0("样本", 1:24, "（", trt, "）")
+df24 <- data.frame(
+  sample = factor(labs24, levels = labs24),
+  value = round(runif(24, 10, 100), 1)
+)
+
+ggplot(df24, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 2)) +
+  labs(x = NULL, y = "响应值", title = "长标签多行错开：n = 12, nrow = 2") +
+  theme_minimal(base_size = 12)
+```
+
+```{r angle-45, fig.cap = "angle = 45：建议 nrow = 1，并配 hjust = 1、vjust = 1"}
+ggplot(df24, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 1, angle = 45, hjust = 1, vjust = 1)) +
+  labs(x = NULL, y = "响应值", title = "angle = 45, hjust = 1, vjust = 1") +
+  theme_minimal(base_size = 12)
+```
+
+```{r angle-90, fig.cap = "angle = 90：hjust = 1、vjust = 0.5 让标签贴着刻度排"}
+ggplot(df24, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 1, angle = 90, hjust = 1, vjust = 0.5)) +
+  labs(x = NULL, y = "响应值", title = "angle = 90, hjust = 1, vjust = 0.5") +
+  theme_minimal(base_size = 12)
+```
+
+`hjust` / `vjust` 直接传给标签文本的 grob；`NULL` 时按角度自动选一个合理值。实践上：
+
+- `angle = 0`：保持默认即可；
+- `angle = 45`：`hjust = 1, vjust = 1`（右对齐、贴着刻度）；
+- `angle = 90`：`hjust = 1, vjust = 0.5`。
+
+# 连续轴也能用
+
+`guide_axis_smart()` 不要求轴是离散的。连续轴通过 `scale_*_continuous(breaks = ...)` 把刻度设密以后，同样可以只显示其中一部分、并分多行：
+
+```{r continuous, fig.cap = "连续轴：51 个刻度标签，只显示 10 个"}
+set.seed(2024)
+df_curve <- data.frame(
+  x = seq(0, 100, length.out = 200),
+  y = sin(seq(0, 100, length.out = 200) / 12) + rnorm(200, sd = 0.15)
+)
+
+ggplot(df_curve, aes(x, y)) +
+  geom_line(colour = "#5B8FF9", linewidth = 0.8) +
+  scale_x_continuous(breaks = seq(0, 100, by = 2), minor_breaks = NULL) +
+  guides(x = guide_axis_smart(n = 10)) +
+  labs(x = NULL, y = "响应值", title = "连续轴：51 个刻度，只显示 10 个") +
+  theme_minimal(base_size = 12)
+```
+
+连续轴上 `which` 的"字符匹配"针对的是**格式化之后**的刻度文本（例如 `"20"`），按位置写规则时用函数形式更稳。
+
+# 与 facet、coord_flip、theme 配合
+
+## facet：每个面板各自排布
+
+分面以后每个面板都有自己的轴；guide 在每个面板里独立计算（面板宽度会变小，必要时会自动多分几行）：
+
+```{r facet, fig.cap = "facet_wrap 的两个面板各自排布标签"}
+set.seed(7)
+df_facet <- data.frame(
+  sample = factor(paste0("样本", 1:30), levels = paste0("样本", 1:30)),
+  value = round(runif(60, 10, 100), 1),
+  group = rep(c("组 A", "组 B"), each = 30)
+)
+
+ggplot(df_facet, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  facet_wrap(~ group, scales = "free_x") +
+  guides(x = guide_axis_smart(n = 6, nrow = 2)) +
+  labs(x = NULL, y = "响应值", title = "facet_wrap：每个面板独立排布") +
+  theme_minimal(base_size = 12)
+```
+
+## coord_flip：兼容，但推荐直接映射到 y 轴
+
+`ggplot2` 4.0 起 `coord_flip()` 已经 superseded，推荐直接把分类变量映射到 y 轴（见上一节）。
+
+旧代码如果还在用 `coord_flip()`，注意**要把 guide 挂到 scale 上**：在翻转后的坐标系里，`guides(x = ...)` 是按位置找 guide 的，会被套到底部的数值轴上，而不是左边的分类轴。下面这样写是正常的：
+
+```{r coord-flip, fig.cap = "coord_flip() 之后：x 轴标签变成竖直轴，guide 挂在 scale 上"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  scale_x_discrete(guide = guide_axis_smart(n = 10, nrow = 2)) +
+  coord_flip() +
+  labs(x = NULL, y = "响应值", title = "coord_flip：guide 挂在 scale 上") +
+  theme_minimal(base_size = 12)
+```
+
+等价写法是 `guides(y = guide_axis_smart(...))`——翻转后分类轴的 guide 槽位换到了 `y`。
+
+## theme：文字样式会继承
+
+标签的颜色、字号、字体、粗细都从主题的 `axis.text.x` / `axis.text.y` 继承，所以 `theme()` 的写法不用改：
+
+```{r theme, fig.cap = "标签样式从 axis.text.x 继承：灰色、9 pt"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 2)) +
+  labs(x = NULL, y = "响应值", title = "标签样式继承主题") +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(colour = "grey30", size = 9))
+```
+
+**不要**再写 `theme(axis.text.x = element_blank())`——guide 会原样继承这个"空白"元素，标签就全没了。
+
+# 算法原理
+
+这一节的图是手工画的示意图，用来解释 guide 内部发生了什么。
+
+```{r schematic, fig.cap = "guide_axis_smart() 的一次排布：选出标签 → 同一行内压紧 → 多行错开 → 引导线连回刻度", fig.height = 5.2}
+tick_x <- seq(0.08, 0.92, length.out = 10)
+lab <- data.frame(
+  tick_x = tick_x[c(2, 4, 6, 8, 10)],
+  center = c(0.13, 0.32, 0.50, 0.69, 0.90),
+  row = c(1, 2, 1, 2, 1),
+  text = paste0("样本", c(2, 4, 6, 8, 10))
+)
+lab$y <- ifelse(lab$row == 1, 0.50, 0.26)
+lab$ymin <- lab$y - 0.07
+lab$ymax <- lab$y + 0.07
+lab$xmin <- lab$center - 0.085
+lab$xmax <- lab$center + 0.085
+
+ggplot() +
+  # 轴线与全部刻度
+  geom_segment(aes(x = 0.04, xend = 0.96, y = 0.88, yend = 0.88),
+               linewidth = 1, colour = "grey25") +
+  geom_segment(data = data.frame(x = tick_x),
+               aes(x = x, xend = x, y = 0.88, yend = 0.84),
+               linewidth = 0.5, colour = "grey25") +
+  # 引导线：短垂线 + 斜线 + 短垂线（anno_mark 几何）
+  geom_segment(data = lab, aes(x = tick_x, xend = tick_x, y = 0.84, yend = 0.80),
+               linewidth = 0.45, colour = "#5B8FF9") +
+  geom_segment(data = lab, aes(x = tick_x, xend = center, y = 0.80, yend = y + 0.10),
+               linewidth = 0.45, colour = "#5B8FF9") +
+  geom_segment(data = lab, aes(x = center, xend = center, y = y + 0.10, yend = y + 0.07),
+               linewidth = 0.45, colour = "#5B8FF9") +
+  # 标签盒
+  geom_rect(data = lab, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+            fill = "#EAF2FF", colour = "#5B8FF9", linewidth = 0.35) +
+  geom_text(data = lab, aes(x = center, y = y, label = text),
+            size = 3.4, colour = "grey15") +
+  # 注释
+  annotate("text", x = 0.5, y = 0.995, vjust = 1, size = 3.5, colour = "grey30",
+           label = "① 刻度全部画出（tick = \"all\"）；只给 which / n 选中的 5 个标签画文字") +
+  annotate("text", x = 0.5, y = 0.945, vjust = 1, size = 3.5, colour = "grey30",
+           label = "② 同一行内用 smartAlign 压紧：顺序不变、互不重叠，并尽量靠近原刻度") +
+  annotate("text", x = 0.5, y = 0.07, vjust = 1, size = 3.5, colour = "grey30",
+           label = "③ 行与行之间按 gap 错开（nrow = 2）　④ 引导线把每个刻度连回标签盒（默认 diagonal：短垂线 + 斜线 + 短垂线）") +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
+  theme_void()
+```
+
+一次绘制大致经过下面几步：
+
+1. **量宽度**：对每个要显示的标签，用 `grid` 的文本度量算出标签盒的宽度（含 `padding`），再换算成面板内的相对宽度。
+2. **一维压紧（`smart_align()`）**：同一行里，标签盒按原顺序排列；如果相邻盒子重叠，就把它们向两侧"推"开，直到满足最小间距。算法保证顺序不变、互不重叠，并且推开的距离尽量小。这正是 `circlize::smartAlign` 的一维防重叠算法（本包做了精确移植）。
+3. **轨道分配（`smart_stack()`）**：先决定用几行（y 轴就是几列）——**能一行放下就一行**；总宽超过一行、或标签集中挤在轴的一小段里（按这一簇的跨度估算）时才分成多行，上限 `max_nrow`。然后逐行把标签盒分配进去并做压紧，行间距由 `gap` 控制；更复杂的盒式落位借助 `box_arrange()`（`ComplexHeatmap::BoxArrange` 的移植）。实在放不下时按优先级丢弃标签，**绝不**画出重叠的标签。
+4. **两阶段尺寸**：`ggplot2` 构建 guide 时还拿不到面板的真实宽度，所以先按设备尺寸估计行数并**预留**这么多行的高度；真正绘制时再用面板的真实宽度重算精确布局。这就是为什么行数会随图形尺寸/设备改变，也是 `panel_width` 参数存在的理由。
+5. **画引导线**：默认的 `"diagonal"` 样式是"短垂线 → 斜线 → 短垂线"：从刻度先垂直于轴走一小段（`link_length`），再用斜线跨到标签所在行，最后垂直落到标签盒；旋转或平移的幅度由标签被推开的距离决定。
+
+底层三个函数 `smart_align()`、`box_arrange()`、`smart_stack()` 都是导出函数，可以单独调用（参数见 `?smart_align` 等），guide 只是它们的一层封装。
+
+# 参数速查
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `title` | `waiver()` | 轴标题，同 `guide_axis()` |
+| `which` | `NULL` | 显示哪些标签：整数下标 / 字符标签 / 逻辑向量 / 函数 |
+| `n` | `NULL` | 最多显示多少个；`which` 选完后再等距截断；`which = NULL` 时直接等距挑 |
+| `nrow` | `NULL` | x 轴行数 / y 轴列数；`NULL` = 自动 |
+| `padding` | `0.25` | 同一行内标签盒之间的最小间距（相对标签高度） |
+| `gap` | `0.30` | 行间距（相对标签高度） |
+| `extend` | `0` | 允许标签越出面板范围的比例（0 到 0.5）。默认 `0` 保证标签绝不越界；调大后需要足够的 `plot.margin` |
+| `connection` | `TRUE` | 是否画引导线 |
+| `connection_style` | `"diagonal"` | `"diagonal"`（短垂线 + 斜线 + 短垂线）/ `"straight"`（一条斜线）/ `"elbow"`（垂直段 + 台阶） |
+| `link_length` | `3` | 轴线到第一行（列）标签的连线长度，单位 mm |
+| `connection_col` | `NULL` | 引导线颜色，`NULL` 时用刻度线的颜色 |
+| `connection_lwd` | `0.5` | 引导线粗细 |
+| `connection_lty` | `1` | 引导线线型 |
+| `tick` | `"all"` | 刻度线：`"all"` / `"shown"` / `"none"` |
+| `angle` | `NULL` | 标签角度（0/45/90），`NULL` 继承主题 |
+| `hjust`, `vjust` | `NULL` | 标签在标签盒内的对齐，`NULL` 居中 |
+| `panel_width` | `NULL` | 自动估计行数时假设的面板宽度（cm），默认约为设备宽度的 0.7 倍 |
+| `max_nrow` | `8L` | 自动分行时轨道数（行数/列数）的上限 |
+| `minor.ticks` | `FALSE` | 是否画次刻度（沿用 `guide_axis()` 的语义） |
+| `cap` | `"none"` | 轴线末端样式（沿用 `guide_axis()`） |
+| `order` | `0` | guide 绘制顺序（沿用 `guide_axis()`） |
+| `position` | `waiver()` | 轴位置（top/bottom/left/right），一般不用改 |
+| `theme` | `NULL` | 传给 guide 的主题元素（沿用 `guide_axis()`） |
+
+# 已知限制与调参建议
+
+- **它只能挑选已有的刻度，不会新增刻度。** 如果某个类别不在 scale 的 breaks 里，`which` 就选不到它——先用 `scale_x_discrete(breaks = ...)` 把它放进去。
+- **自动分行是"按需"的。** 能一行放下就一行（贴轴摊开，最接近 `anno_mark()` 的观感）；总宽超了、或标签集中在一段里才分行，上限 `max_nrow` 条轨道。想要纯单行 anno_mark 风格就显式写 `nrow = 1`。
+- **显示数量可能少于请求数量。** 面板太窄、行数不够时，guide 会按优先级丢弃标签，宁可少画也不画重叠。想多显示就加 `nrow`、放大图形，或调小 `padding`/`gap`。
+- **`which = NULL` 且 `n = NULL` 时会自动抽稀。** 全部标签的总宽度超过 `max_nrow` 条轨道能容纳的范围时，guide 会自动等距抽稀并通过 `cli` 提示一次；`options(ggsmartext.quiet = TRUE)` 可静音。建议始终显式写 `n =` 或 `which =`，让"显示哪些标签"由你决定，而不是由屏幕尺寸决定。
+- **自动行数依赖设备尺寸。** 同一个图在 RStudio 窗口和 1600×900 的 PNG 里可能行数不同。需要结果稳定时，显式写 `nrow`，或用 `panel_width` 告诉 guide 面板大概多宽（单位 cm）。
+- **`angle` 一般配 `nrow = 1`。** 旋转后的标签会占用更多纵向空间（guide 按旋转后的包围盒预留高度），多行再叠加旋转通常不划算。
+- **不要用 `axis.text.*` 把标签设为空白**，guide 会继承成"没有文字"；要隐藏标签请直接不用 guide 或改画别的。
+- **`coord_flip()` 已 superseded**：新代码建议直接把分类变量映射到 y 轴。旧代码里请把 guide 挂在 scale 上（`scale_x_discrete(guide = ...)`）或改用 `guides(y = ...)`，`guides(x = ...)` 在翻转后会挂到数值轴上。
+- **`extend > 0` 时才需要 `plot.margin`**：默认 `extend = 0` 时标签不会越出面板，不会被画布裁切；一旦调大 `extend`，就要给 `theme(plot.margin = ...)` 留出相应边距。
+- **自定义副轴**：`sec.axis = dup_axis(guide = guide_axis_smart(...))` 已经验证可用（见"集中标注与热图标注"一节）；更复杂的副轴请先小图验证。
+- 性能上无需担心：标签度量在构建期一次完成，200 个类别也是交互级速度。
+
+# 会话信息
+
+```{r session}
+cat("ggplot2:", as.character(packageVersion("ggplot2")), "\n")
+cat("ggsmartext:", as.character(packageVersion("ggsmartext")), "\n")
+cat("R:", R.version.string, "\n")
+```

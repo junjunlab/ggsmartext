@@ -1,0 +1,612 @@
+---
+title: "ggsmartext: Smart Axis Labels for ggplot2"
+subtitle: "Clean labels for crowded discrete axes"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 3
+    number_sections: false
+vignette: >
+  %\VignetteIndexEntry{ggsmartext (English): Smart Axis Labels for ggplot2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+> 中文版 (Chinese version): `vignette("ggsmartext")`
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  dev = "ragg_png",
+  fig.width = 10.67,
+  fig.height = 6,
+  dpi = 150,
+  out.width = "100%",
+  fig.align = "center"
+)
+# The vignette title and the index entry differ on purpose (the index entry
+# identifies the English version); skip rmarkdown's consistency check.
+options(rmarkdown.html_vignette.check_title = FALSE)
+library(ggplot2)
+library(ggsmartext)
+```
+
+# Motivation: when a discrete axis gets crowded
+
+`ggplot2` draws a tick and a label for **every** level of a discrete axis. With many categories (50 samples, 200 features) the labels pile up under the axis: at best they overlap and become unreadable, at worst you delete them and lose the information. Rotating them by 90 degrees helps a little, but long labels and many categories still run off the panel.
+
+```{r data}
+set.seed(2024)
+df50 <- data.frame(
+  sample = factor(paste0("Sample", 1:50), levels = paste0("Sample", 1:50)),
+  value = round(runif(50, 10, 100), 1)
+)
+```
+
+```{r motivation, fig.cap = "The default x axis with 50 discrete levels: the labels overlap and cannot be read"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  labs(x = NULL, y = "response", title = "Default axis: 50 labels in a pile") +
+  theme_minimal(base_size = 12)
+```
+
+`ggsmartext` provides `guide_axis_smart()`. It takes over label drawing on a discrete axis and does three things:
+
+1. **Show only the labels you care about** (`which =` / `n =`). Every other tick is still connected to its meaning by a **leader line**, so the correspondence stays obvious.
+2. **Spread the labels over several rows (x axis) or columns (y axis)** outside the axis, using the page space that a default axis wastes.
+3. **Never overlap labels**: when there is not enough room it displays fewer labels instead of drawing a pile.
+
+# Quick start
+
+Add one `guides()` line to an existing plot:
+
+```{r quickstart, fig.cap = "guide_axis_smart(n = 10, nrow = 2): only 10 labels, two staggered rows, each tied back to its tick"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 10, nrow = 2)) +
+  labs(x = NULL, y = "response", title = "guide_axis_smart(n = 10, nrow = 2)") +
+  theme_minimal(base_size = 12)
+```
+
+Only three things change: load the package, add `guides(x = guide_axis_smart(...))`, keep the rest. Note that you do **not** need `theme(axis.text.x = element_blank())` — the guide draws the labels itself.
+
+## Two ways to attach the guide
+
+`guide_axis_smart()` can go into `guides()` or into the `guide` argument of a scale (under `coord_flip()` the two are not equivalent, see below):
+
+```{r two-ways, fig.cap = "Both spellings give the same plot: guides(x = ...) on top, scale_x_discrete(guide = ...) below"}
+p_guides <- ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 8, nrow = 2)) +
+  labs(x = NULL, y = "response", title = "Style 1: guides(x = guide_axis_smart(...))") +
+  theme_minimal(base_size = 12)
+
+p_scale <- ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  scale_x_discrete(guide = guide_axis_smart(n = 8, nrow = 2)) +
+  labs(x = NULL, y = "response", title = "Style 2: scale_x_discrete(guide = ...)") +
+  theme_minimal(base_size = 12)
+
+p_guides
+p_scale
+```
+
+# Show only the labels you want: four forms of `which`
+
+`which` decides which labels are displayed. It accepts four forms:
+
+| Form | Meaning | Example |
+|---|---|---|
+| Integer vector | indices into the breaks of the scale | `which = seq(1, 50, by = 10)` |
+| Character vector | exact match on the label text | `which = c("Sample1", "Sample25", "Sample50")` |
+| Logical vector | one entry per label, `TRUE` keeps it | `which = grepl("0$", levels(sample))` |
+| Function | `function(labels, positions)` returning a logical vector | `which = function(labels, positions) positions > 0.45 & positions < 0.55` |
+
+`positions` is the **relative position** of a label inside the panel (0 to 1 along the axis). It does not depend on the data values and is handy for position-based rules.
+
+## Integer indices
+
+```{r which-integer, fig.cap = "which = seq(1, 50, by = 10): every tenth label"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(which = seq(1, 50, by = 10), nrow = 2)) +
+  labs(x = NULL, y = "response", title = "which = seq(1, 50, by = 10)") +
+  theme_minimal(base_size = 12)
+```
+
+## Character vector
+
+```{r which-character, fig.cap = "Matching label text: the four labels Sample1, Sample2, Sample25 and Sample50"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(
+    which = c("Sample1", "Sample2", "Sample25", "Sample50"),
+    nrow = 1
+  )) +
+  labs(x = NULL, y = "response", title = "Match label text: which = c(\"Sample1\", \"Sample2\", \"Sample25\", \"Sample50\")") +
+  theme_minimal(base_size = 12)
+```
+
+## Logical vector
+
+```{r which-logical, fig.cap = "A logical vector: only samples whose number ends in 0"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(
+    which = grepl("0$", levels(df50$sample)),
+    nrow = 1
+  )) +
+  labs(x = NULL, y = "response", title = "Logical vector: which = grepl(\"0$\", levels(sample))") +
+  theme_minimal(base_size = 12)
+```
+
+## Function
+
+When `which` is a function, it is called with the label texts and the relative positions and must return a logical vector (index vectors are also accepted). The example keeps every tenth label:
+
+```{r which-function, fig.cap = "which = function(labels, positions) seq_along(labels) %% 10 == 1: every tenth label"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(
+    which = function(labels, positions) seq_along(labels) %% 10 == 1,
+    nrow = 2
+  )) +
+  labs(x = NULL, y = "response", title = "Function: every tenth label") +
+  theme_minimal(base_size = 12)
+```
+
+The function form is most useful for **position-based** selection: `positions` runs from 0 to 1, so `positions > 0.9` keeps only the right-hand end of the axis.
+
+# Automatic selection: `n`
+
+If you do not want to compute indices, just cap the number of labels:
+
+```{r n-5, fig.cap = "n = 5: five evenly spaced labels, one row is enough"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 5)) +
+  labs(x = NULL, y = "response", title = "n = 5 (evenly spaced)") +
+  theme_minimal(base_size = 12)
+```
+
+```{r n-20, fig.cap = "n = 20: 20 labels, split over two rows when one row is not enough"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 20)) +
+  labs(x = NULL, y = "response", title = "n = 20 (rows added automatically)") +
+  theme_minimal(base_size = 12)
+```
+
+When both `which` and `n` are given, `which` selects first and `n` then truncates the **result** to at most `n` labels, evenly spaced (`n` is a hard cap). With `which = NULL`, `n` picks evenly from all labels directly.
+
+## Automatic behaviour: what happens when you pass nothing
+
+**How the number of tracks (rows/columns) is chosen**: one row whenever the labels fit — they stretch along the axis, which gives short leader lines and the closest match to the `anno_mark()` look. More tracks are only added when the total width of the labels exceeds one row. If the labels crowd into a small stretch of the axis, the guide splits them over several rows even when their total width is small, using the span of that cluster, so that long crossing diagonals are avoided. At most `max_nrow` tracks (default `8`) are used.
+
+With `which = NULL` and `n = NULL` the guide displays **all** labels by default. If the total width exceeds what `max_nrow` tracks can hold, the guide thins the labels out evenly and prints a **single** `cli` message, for example:
+
+```{r auto-thin, fig.cap = "200 categories with neither which nor n: thinning keeps the plot readable, but fewer labels are shown"}
+set.seed(1)
+df200 <- data.frame(
+  feature = factor(paste0("Feature", 1:200), levels = paste0("Feature", 1:200)),
+  value = runif(200)
+)
+
+ggplot(df200, aes(x = feature, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.9) +
+  guides(x = guide_axis_smart()) +
+  labs(x = NULL, y = "importance", title = "200 categories: automatic thinning") +
+  theme_minimal(base_size = 12)
+```
+
+To silence that message (for example when plotting in a loop), set `options(ggsmartext.quiet = TRUE)`. Still, **always prefer an explicit `n =` or `which =`** so that you decide which labels are shown, rather than the screen size.
+
+# Staggering over rows: `nrow`, `gap`, `padding`
+
+`nrow` controls how many rows the x axis labels occupy below the axis; `NULL` (the default) means automatic — **one row whenever it fits**, more rows only when the labels crowd or overflow. `gap` is the space between rows (default `0.30`) and `padding` the minimum space between neighbouring label boxes in one row (default `0.25`); both are **relative to the label height**.
+
+```{r nrow-1, fig.cap = "nrow = 1: everything in one row, the labels must fit"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 8, nrow = 1)) +
+  labs(x = NULL, y = "response", title = "n = 8, nrow = 1") +
+  theme_minimal(base_size = 12)
+```
+
+```{r nrow-3, fig.cap = "nrow = 3: three staggered rows; more vertical space means more labels"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 24, nrow = 3)) +
+  labs(x = NULL, y = "response", title = "n = 24, nrow = 3") +
+  theme_minimal(base_size = 12)
+```
+
+```{r nrow-auto, fig.cap = "nrow = NULL: one row when it fits, otherwise rows are added automatically"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 30)) +
+  labs(x = NULL, y = "response", title = "n = 30, nrow = NULL (automatic rows)") +
+  theme_minimal(base_size = 12)
+```
+
+Rules of thumb:
+
+- **Want more labels**: increase `nrow` (columns on a y axis, see below);
+- **Rows look cramped**: increase `gap` and `padding` (e.g. `gap = 0.4`);
+- **Labels clipped at the canvas edge**: `extend = 0` (the default) keeps every label box inside the panel, so this should not happen; only if you increase `extend` (to buy more layout freedom) do you also need a matching `theme(plot.margin = ...)`.
+
+```{r tuned, fig.cap = "gap = 0.5, padding = 0.6: more space between rows and boxes"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 16, nrow = 2, gap = 0.5, padding = 0.6)) +
+  labs(x = NULL, y = "response", title = "gap = 0.5, padding = 0.6") +
+  theme_minimal(base_size = 12)
+```
+
+# Leader lines: `connection_style` and `link_length`
+
+Whenever a label is **moved** (its position differs from its tick) the guide draws a leader line by default (`connection = TRUE`). There are three styles:
+
+- `"diagonal"` (default): a short segment perpendicular to the axis, then a diagonal to the label's row, then another short perpendicular segment. This is the classic geometry of `circlize` and `ComplexHeatmap::anno_mark()` and stays readable with several rows;
+- `"straight"`: one straight diagonal from the tick to the label box;
+- `"elbow"`: a perpendicular segment followed by a shelf parallel to the axis.
+
+```{r conn-diagonal, fig.cap = "connection_style = 'diagonal' (default): short stub + diagonal + short stub"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 2)) +
+  labs(x = NULL, y = "response", title = "connection_style = \"diagonal\" (default)") +
+  theme_minimal(base_size = 12)
+```
+
+```{r conn-straight, fig.cap = "connection_style = 'straight': a single diagonal"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 2, connection_style = "straight")) +
+  labs(x = NULL, y = "response", title = "connection_style = \"straight\"") +
+  theme_minimal(base_size = 12)
+```
+
+```{r conn-elbow, fig.cap = "connection_style = 'elbow': a perpendicular segment plus a shelf"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 2, connection_style = "elbow")) +
+  labs(x = NULL, y = "response", title = "connection_style = \"elbow\"") +
+  theme_minimal(base_size = 12)
+```
+
+`link_length` (default `3`, in millimetres) controls the length of the leader segment between the axis and the first row (column) of labels: decrease it when there are many rows and the lines get dense, increase it for roomier leader lines.
+
+Colour, width and linetype of the lines are controlled by `connection_col`, `connection_lwd` (default `0.5`) and `connection_lty`; with `connection_col = NULL` (the default) the ticks' colour is used. Set `connection = FALSE` to turn leader lines off.
+
+## Ticks: `tick`
+
+`tick` controls the short tick marks next to the axis line:
+
+- `"all"` (default): draw every tick, keeping the information that there are more categories;
+- `"shown"`: only draw ticks for the labels that are displayed, a cleaner look;
+- `"none"`: no ticks at all.
+
+```{r tick-shown, fig.cap = "tick = 'shown': ticks only for the displayed labels"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 10, nrow = 2, tick = "shown")) +
+  labs(x = NULL, y = "response", title = "tick = \"shown\"") +
+  theme_minimal(base_size = 12)
+```
+
+# y axis (vertical discrete axis)
+
+Map the discrete variable to the y axis. Note that **`nrow` means columns on a y axis**: the labels are spread over several columns outside the axis, and the outermost column holds the labels that are pushed furthest out.
+
+```{r y-axis, fig.cap = "y axis: nrow = 2 spreads the labels over 2 columns"}
+labs40 <- paste0("Sample", 1:40)
+df40 <- data.frame(
+  sample = factor(labs40, levels = rev(labs40)),
+  value = round(runif(40, 10, 100), 1)
+)
+
+ggplot(df40, aes(x = value, y = sample)) +
+  geom_col(fill = "#F6903D", width = 0.8) +
+  guides(y = guide_axis_smart(n = 10, nrow = 2)) +
+  labs(x = "response", y = NULL, title = "y axis: n = 10, nrow = 2 (2 columns)") +
+  theme_minimal(base_size = 12)
+```
+
+```{r y-axis-3, fig.cap = "y axis: nrow = 3, three columns make room for more labels"}
+ggplot(df40, aes(x = value, y = sample)) +
+  geom_col(fill = "#F6903D", width = 0.8) +
+  guides(y = guide_axis_smart(which = seq(1, 40, by = 4), nrow = 3)) +
+  labs(x = "response", y = NULL, title = "y axis: which = seq(1, 40, by = 4), nrow = 3") +
+  theme_minimal(base_size = 12)
+```
+
+# Local annotations and heatmap labels (anno_mark style)
+
+The `"diagonal"` geometry matches `circlize` and `ComplexHeatmap::anno_mark()` exactly: short stub, diagonal, short stub, text. Together with the track strategy ("one row when it fits, clustered labels split into tracks") this is ideal for **labelling only a few categories of interest**.
+
+## Labels that sit in one stretch of the axis: automatic tracks
+
+If the labels selected by `which` only occupy a small stretch of the axis, the guide splits them over several rows with vertical staggering, and every label still connects to its own tick:
+
+```{r anno-cluster, fig.cap = "only labels 24-35 of 60 categories: split over several rows automatically"}
+set.seed(5)
+labs60 <- paste0("Sample", 1:60)
+df60 <- data.frame(
+  sample = factor(labs60, levels = labs60),
+  value = round(runif(60, 10, 100), 1)
+)
+
+ggplot(df60, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(which = 24:35)) +
+  labs(x = NULL, y = "response", title = "which = 24:35 (several rows)") +
+  theme_minimal(base_size = 12)
+```
+
+To force the single-row, pure `anno_mark` look (labels stretched along the axis, longer leader lines), write `nrow = 1`:
+
+```{r anno-cluster-nrow1, fig.cap = "the same labels with nrow = 1: stretched along the axis, longer leader lines"}
+ggplot(df60, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(which = 24:35, nrow = 1)) +
+  labs(x = NULL, y = "response", title = "which = 24:35, nrow = 1 (anno_mark style)") +
+  theme_minimal(base_size = 12)
+```
+
+## Heatmap labels: `sec.axis` + `dup_axis()`
+
+"Label only a few rows and hide the rest" is the typical `anno_mark()` use case. Switch the main axis off, duplicate it with `dup_axis()`, and attach the smart guide to the copy:
+
+```{r anno-heatmap, fig.cap = "only three genes are labelled on the right of the heatmap: stub + diagonal + stub to each row"}
+set.seed(11)
+genes <- paste0("GENE", sprintf("%03d", 1:60))
+df_gene <- data.frame(
+  gene = factor(genes, levels = rev(genes)),
+  sample = rep(paste0("S", 1:4), each = 60),
+  z = round(rnorm(240), 2)
+)
+
+ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
+  geom_tile() +
+  scale_y_discrete(
+    guide = guide_none(),
+    sec.axis = dup_axis(
+      guide = guide_axis_smart(which = c("GENE005", "GENE018", "GENE047"))
+    )
+  ) +
+  scale_fill_gradient2(low = "#2E5EAA", mid = "white", high = "#C0392B") +
+  labs(x = NULL, y = NULL, title = "Heatmap labels: only 3 genes") +
+  theme_minimal(base_size = 12)
+```
+
+Key points:
+
+- hide all labels on the main axis with `guide = guide_none()`, and put `guide_axis_smart()` on the axis created by `dup_axis()`;
+- the selected rows are connected with a stub + diagonal + stub line, and adjacent selected rows are staggered automatically so they never overlap;
+- the same pattern works for a y axis on `sec.axis` (for example when only a few samples need names).
+
+# Long labels and angles: `angle`, `hjust`, `vjust`
+
+When the label text is long (for example "Sample12 (Treated A)"), staggering over rows may still not be enough; rotate the labels instead. `angle` accepts `0`, `45` and `90`; `NULL` (the default) inherits the angle from `axis.text.x` in the theme.
+
+```{r long-rows, fig.cap = "long labels with staggered rows (no rotation): n = 12, nrow = 2"}
+trt <- rep(c("Control", "Treated A", "Treated B"), 8)
+labs24 <- paste0("Sample", 1:24, " (", trt, ")")
+df24 <- data.frame(
+  sample = factor(labs24, levels = labs24),
+  value = round(runif(24, 10, 100), 1)
+)
+
+ggplot(df24, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 2)) +
+  labs(x = NULL, y = "response", title = "Long labels, staggered rows: n = 12, nrow = 2") +
+  theme_minimal(base_size = 12)
+```
+
+```{r angle-45, fig.cap = "angle = 45 with nrow = 1, hjust = 1 and vjust = 1"}
+ggplot(df24, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 1, angle = 45, hjust = 1, vjust = 1)) +
+  labs(x = NULL, y = "response", title = "angle = 45, hjust = 1, vjust = 1") +
+  theme_minimal(base_size = 12)
+```
+
+```{r angle-90, fig.cap = "angle = 90 with hjust = 1 and vjust = 0.5"}
+ggplot(df24, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 1, angle = 90, hjust = 1, vjust = 0.5)) +
+  labs(x = NULL, y = "response", title = "angle = 90, hjust = 1, vjust = 0.5") +
+  theme_minimal(base_size = 12)
+```
+
+`hjust` / `vjust` are passed to the label text grob; with `NULL` the guide picks a sensible value for the angle. In practice:
+
+- `angle = 0`: leave the defaults;
+- `angle = 45`: `hjust = 1, vjust = 1` (right-aligned, next to the tick);
+- `angle = 90`: `hjust = 1, vjust = 0.5`.
+
+# Continuous axes work too
+
+`guide_axis_smart()` does not require a discrete axis. With `scale_*_continuous(breaks = ...)` you can request many ticks and then show only a subset, over one or several rows:
+
+```{r continuous, fig.cap = "continuous axis: 51 tick labels, only 10 displayed"}
+set.seed(2024)
+df_curve <- data.frame(
+  x = seq(0, 100, length.out = 200),
+  y = sin(seq(0, 100, length.out = 200) / 12) + rnorm(200, sd = 0.15)
+)
+
+ggplot(df_curve, aes(x, y)) +
+  geom_line(colour = "#5B8FF9", linewidth = 0.8) +
+  scale_x_continuous(breaks = seq(0, 100, by = 2), minor_breaks = NULL) +
+  guides(x = guide_axis_smart(n = 10)) +
+  labs(x = NULL, y = "response", title = "Continuous axis: 51 ticks, only 10 labels") +
+  theme_minimal(base_size = 12)
+```
+
+On a continuous axis the character form of `which` matches the **formatted** tick text (e.g. `"20"`); for position-based rules the function form is more robust.
+
+# Working with facets, coord_flip and themes
+
+## facet: each panel lays out its own labels
+
+Facetting gives every panel its own axis; the guide does its layout independently in each panel (a narrower panel may need more rows):
+
+```{r facet, fig.cap = "facet_wrap: each panel lays out its labels independently"}
+set.seed(7)
+df_facet <- data.frame(
+  sample = factor(paste0("Sample", 1:30), levels = paste0("Sample", 1:30)),
+  value = round(runif(60, 10, 100), 1),
+  group = rep(c("Group A", "Group B"), each = 30)
+)
+
+ggplot(df_facet, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  facet_wrap(~ group, scales = "free_x") +
+  guides(x = guide_axis_smart(n = 6, nrow = 2)) +
+  labs(x = NULL, y = "response", title = "facet_wrap: independent layout per panel") +
+  theme_minimal(base_size = 12)
+```
+
+## coord_flip: supported, but mapping to the y axis is recommended
+
+`coord_flip()` has been superseded since ggplot2 4.0; map the discrete variable to the y axis instead (see above).
+
+If old code still uses `coord_flip()`, **attach the guide to the scale**: in the flipped coordinate system `guides(x = ...)` looks up the guide by position, so it ends up on the numeric axis at the bottom instead of the discrete axis on the left. This spelling works:
+
+```{r coord-flip, fig.cap = "after coord_flip(): the x labels become a vertical axis, the guide is attached to the scale"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  scale_x_discrete(guide = guide_axis_smart(n = 10, nrow = 2)) +
+  coord_flip() +
+  labs(x = NULL, y = "response", title = "coord_flip: guide attached to the scale") +
+  theme_minimal(base_size = 12)
+```
+
+The equivalent spelling is `guides(y = guide_axis_smart(...))` — after flipping, the discrete axis's guide slot moves to `y`.
+
+## theme: text styles are inherited
+
+Colour, size, font family and face of the labels are inherited from `axis.text.x` / `axis.text.y`, so `theme()` code keeps working:
+
+```{r theme, fig.cap = "label style inherited from axis.text.x: grey, 9 pt"}
+ggplot(df50, aes(x = sample, y = value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  guides(x = guide_axis_smart(n = 12, nrow = 2)) +
+  labs(x = NULL, y = "response", title = "Label style inherited from the theme") +
+  theme_minimal(base_size = 13) +
+  theme(axis.text.x = element_text(colour = "grey30", size = 9))
+```
+
+Do **not** use `theme(axis.text.x = element_blank())` — the guide inherits that blank element verbatim and all labels disappear.
+
+# How it works
+
+The figure in this section is hand-drawn; it explains what happens inside the guide.
+
+```{r schematic, fig.cap = "one layout pass of guide_axis_smart(): pick labels, pack each track, stagger tracks, leader lines back to the ticks", fig.height = 5.2}
+tick_x <- seq(0.08, 0.92, length.out = 10)
+lab <- data.frame(
+  tick_x = tick_x[c(2, 4, 6, 8, 10)],
+  center = c(0.13, 0.32, 0.50, 0.69, 0.90),
+  row = c(1, 2, 1, 2, 1),
+  text = paste0("Sample", c(2, 4, 6, 8, 10))
+)
+lab$y <- ifelse(lab$row == 1, 0.50, 0.26)
+lab$ymin <- lab$y - 0.07
+lab$ymax <- lab$y + 0.07
+lab$xmin <- lab$center - 0.085
+lab$xmax <- lab$center + 0.085
+
+ggplot() +
+  # axis line and all ticks
+  geom_segment(aes(x = 0.04, xend = 0.96, y = 0.88, yend = 0.88),
+               linewidth = 1, colour = "grey25") +
+  geom_segment(data = data.frame(x = tick_x),
+               aes(x = x, xend = x, y = 0.88, yend = 0.84),
+               linewidth = 0.5, colour = "grey25") +
+  # leader lines: short stub + diagonal + short stub (anno_mark geometry)
+  geom_segment(data = lab, aes(x = tick_x, xend = tick_x, y = 0.84, yend = 0.80),
+               linewidth = 0.45, colour = "#5B8FF9") +
+  geom_segment(data = lab, aes(x = tick_x, xend = center, y = 0.80, yend = y + 0.10),
+               linewidth = 0.45, colour = "#5B8FF9") +
+  geom_segment(data = lab, aes(x = center, xend = center, y = y + 0.10, yend = y + 0.07),
+               linewidth = 0.45, colour = "#5B8FF9") +
+  # label boxes
+  geom_rect(data = lab, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+            fill = "#EAF2FF", colour = "#5B8FF9", linewidth = 0.35) +
+  geom_text(data = lab, aes(x = center, y = y, label = text),
+            size = 3.4, colour = "grey15") +
+  # annotations
+  annotate("text", x = 0.5, y = 0.995, vjust = 1, size = 3.5, colour = "grey30",
+           label = "1. Every tick is drawn (tick = \"all\"); text only for the 5 labels picked by which / n") +
+  annotate("text", x = 0.5, y = 0.945, vjust = 1, size = 3.5, colour = "grey30",
+           label = "2. smartAlign packs each track: order preserved, no overlap, close to the ticks") +
+  annotate("text", x = 0.5, y = 0.07, vjust = 1, size = 3.5, colour = "grey30",
+           label = "3. Tracks staggered by gap (nrow = 2)      4. Leader lines: short stub + diagonal + short stub") +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
+  theme_void()
+```
+
+One draw goes through roughly these steps:
+
+1. **Measure**: for every displayed label, `grid` text metrics give the width of the label box (including `padding`), converted to a relative width inside the panel.
+2. **One-dimensional packing (`smart_align()`)**: inside a track the boxes keep their axis order; when neighbours overlap they are pushed apart until the minimum spacing is met. The algorithm preserves the order, guarantees no overlap and minimises the shifts. This is the one-dimensional overlap-free algorithm of `circlize::smartAlign` (ported exactly).
+3. **Track assignment (`smart_stack()`)**: first the number of tracks (rows for an x axis, columns for a y axis) is chosen — **one row when it fits**; another track is added when the total width overflows or when the labels crowd into a small stretch (estimated from the cluster span), capped by `max_nrow`. The boxes are then assigned to tracks and packed, with `gap` between tracks; more involved box placement uses `box_arrange()` (a port of `ComplexHeatmap::BoxArrange`). When there is still no room, low-priority labels are dropped — overlapping labels are **never** drawn.
+4. **Two-phase sizing**: when ggplot2 builds the guide the real panel width is not known yet, so the number of rows is estimated from the device and that much height is **reserved**; at draw time the exact layout is recomputed with the real panel width. That is why the number of rows can depend on the figure size or device, and why the `panel_width` argument exists.
+5. **Draw the leader lines**: the default `"diagonal"` style is short stub, diagonal, short stub: it leaves the tick perpendicular to the axis (for `link_length`), crosses to the label's row with a diagonal, and drops perpendicular onto the label box.
+
+All three helpers `smart_align()`, `box_arrange()` and `smart_stack()` are exported and can be called directly (see `?smart_align`); the guide is a thin layer on top of them.
+
+# Parameter reference
+
+| Parameter | Default | Description |
+|---|---|---|
+| `title` | `waiver()` | axis title, as in `guide_axis()` |
+| `which` | `NULL` | which labels to show: integer indices / label text / logical vector / function |
+| `n` | `NULL` | maximum number of labels; truncates the `which` selection evenly; picks evenly from all labels when `which = NULL` |
+| `nrow` | `NULL` | rows on an x axis / columns on a y axis; `NULL` = automatic |
+| `padding` | `0.25` | minimum space between label boxes in one row (relative to label height) |
+| `gap` | `0.30` | space between rows (relative to label height) |
+| `extend` | `0` | fraction (0 to 0.5) by which labels may leave the panel. `0` guarantees labels stay inside; larger values need a matching `plot.margin` |
+| `connection` | `TRUE` | draw leader lines? |
+| `connection_style` | `"diagonal"` | `"diagonal"` (stub + diagonal + stub) / `"straight"` (one diagonal) / `"elbow"` (perpendicular + shelf) |
+| `link_length` | `3` | length of the leader segment between the axis and the first label track, in mm |
+| `connection_col` | `NULL` | leader line colour; `NULL` uses the tick colour |
+| `connection_lwd` | `0.5` | leader line width |
+| `connection_lty` | `1` | leader line type |
+| `tick` | `"all"` | ticks: `"all"` / `"shown"` / `"none"` |
+| `angle` | `NULL` | label rotation (0/45/90); `NULL` inherits the theme |
+| `hjust`, `vjust` | `NULL` | label justification inside its box; `NULL` centres |
+| `panel_width` | `NULL` | panel width (cm) assumed when estimating rows; defaults to about 0.7 x device width |
+| `max_nrow` | `8L` | upper bound on the automatic number of tracks |
+| `minor.ticks` | `FALSE` | draw minor ticks (passes through to `guide_axis()`) |
+| `cap` | `"none"` | axis line end style (passes through to `guide_axis()`) |
+| `order` | `0` | guide drawing order (passes through to `guide_axis()`) |
+| `position` | `waiver()` | axis position (top/bottom/left/right); rarely needed |
+| `theme` | `NULL` | theme element(s) passed to the guide (as in `guide_axis()`) |
+
+# Known limitations and tuning advice
+
+- **It can only pick existing ticks, never add new ones.** If a category is not in the scale's breaks, `which` cannot select it — add it first with `scale_x_discrete(breaks = ...)`.
+- **Automatic rows are on demand.** One row whenever it fits (stretched along the axis, closest to the `anno_mark()` look); more rows only when the width overflows or the labels cluster, capped at `max_nrow` tracks. Write `nrow = 1` explicitly for the pure single-row `anno_mark` look.
+- **Fewer labels than requested is possible.** On a narrow panel, or with too few rows, the guide drops labels by priority — it never draws overlapping labels. To show more, add `nrow`, make the figure larger, or reduce `padding`/`gap`.
+- **Automatic thinning when `which = NULL` and `n = NULL`.** When the total width exceeds what `max_nrow` tracks can hold, the guide thins evenly and prints one `cli` message; `options(ggsmartext.quiet = TRUE)` silences it. Always prefer explicit `n =` or `which =`.
+- **The automatic number of rows depends on the device.** The same plot may use a different number of rows in the RStudio window and in a 1600x900 PNG. For reproducible output write `nrow` explicitly, or tell the guide the panel width with `panel_width` (in cm).
+- **`angle` is best combined with `nrow = 1`.** Rotated labels need more vertical space (the guide reserves the rotated bounding box), and stacking rotated labels is rarely worth it.
+- **Never blank the labels with `axis.text.*`**: the guide inherits the blank element and draws no text; to hide labels, do not use the guide at all.
+- **`coord_flip()` is superseded**: for new code map the discrete variable to the y axis. In old code attach the guide to the scale (`scale_x_discrete(guide = ...)`) or use `guides(y = ...)`; `guides(x = ...)` lands on the numeric axis after flipping.
+- **`plot.margin` is only needed when `extend > 0`**: with the default `extend = 0` labels never leave the panel and are never clipped; if you increase `extend`, reserve the matching margin with `theme(plot.margin = ...)`.
+- **Custom secondary axes**: `sec.axis = dup_axis(guide = guide_axis_smart(...))` is verified (see the "Local annotations and heatmap labels" section); check more involved secondary axes on a small plot first.
+- Performance is not a concern: label measurement happens once at build time, and 200 categories are interactive-fast.
+
+# Session info
+
+```{r session}
+cat("ggplot2:", as.character(packageVersion("ggplot2")), "\n")
+cat("ggsmartext:", as.character(packageVersion("ggsmartext")), "\n")
+cat("R:", R.version.string, "\n")
+```

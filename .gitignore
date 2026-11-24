@@ -1,0 +1,14 @@
+﻿.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.scratch/
+.docs-scratch/
+.qa-scratch/
+.Rlib/
+/figures/
+/docs/
+/pkgdown/
+Rplots.pdf
+*.tar.gz
+*.Rcheck/

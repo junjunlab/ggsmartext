@@ -1,0 +1,22 @@
+url: https://github.com/junjun/ggsmartext
+
+reference:
+  - title: 智能轴标签 (Smart axis guides)
+    desc: >
+      分类轴上的标签过多时，只显示用户指定的那一部分标签，
+      用引导线把每个标签连回它对应的刻度，并把标签在轴外侧
+      分行（x 轴）或分列（y 轴）错开排布。
+    contents:
+      - guide_axis_smart
+      - GuideAxisSmart
+
+  - title: 排布算法 (Layout algorithms)
+    desc: >
+      guide 内部使用的三个底层排布算法：一维防重叠"压紧"
+      （circlize::smartAlign 的移植）、盒式排布
+      （ComplexHeatmap::BoxArrange 的移植）以及把它们串起来的
+      多行堆叠。它们也可以在包外单独调用。
+    contents:
+      - smart_align
+      - box_arrange
+      - smart_stack
