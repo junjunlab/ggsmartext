@@ -33,9 +33,16 @@ When a discrete axis carries many categories (50 samples, 200 features, ...) the
 ## Installation
 
 Requires R >= 4.1 and **ggplot2 >= 4.0.0** (the guide API used here was
-rewritten in ggplot2 4.0). From the package source directory:
+rewritten in ggplot2 4.0).
 
 ```{r install, eval = FALSE}
+# install.packages("remotes")
+remotes::install_github("junjunlab/ggsmartext")
+```
+
+Or, from a local clone of the repository:
+
+```{r install-local, eval = FALSE}
 # install.packages("remotes")
 remotes::install_local(".")
 # or, from a shell:

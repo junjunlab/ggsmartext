@@ -32,7 +32,14 @@ subclass that takes over label drawing:
 ## Installation
 
 Requires R \>= 4.1 and **ggplot2 \>= 4.0.0** (the guide API used here
-was rewritten in ggplot2 4.0). From the package source directory:
+was rewritten in ggplot2 4.0).
+
+``` r
+# install.packages("remotes")
+remotes::install_github("junjunlab/ggsmartext")
+```
+
+Or, from a local clone of the repository:
 
 ``` r
 # install.packages("remotes")
