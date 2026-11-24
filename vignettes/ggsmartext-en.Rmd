@@ -362,7 +362,9 @@ ggplot(df60, aes(x = sample, y = value)) +
 This section uses **real RNA-seq data from GEO**: the `airway` package
 (GEO series [GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778);
 human airway smooth muscle cells, four cell lines with and without
-dexamethasone).
+dexamethasone). To make the leader lines and the vertical distribution of the
+labels visible, the heatmap shows **300 genes** and labels 20 of them (12
+neighbouring genes from the top response cluster plus 8 scattered genes).
 
 ```{r anno-heatmap-data, eval = requireNamespace("airway", quietly = TRUE)}
 ## real data: airway RNA-seq (GEO GSE52778)
@@ -373,14 +375,20 @@ counts <- SummarizedExperiment::assay(airway, "counts")
 cpm <- t(t(counts) / colSums(counts)) * 1e6
 logcpm <- log2(cpm[rowSums(cpm > 1) >= 4, ] + 1) # expressed in >= 4 samples
 
-## 60 most variable genes, row z-scores, hierarchical clustering
+## drop duplicated gene symbols so that every label is unique
+name_map <- SummarizedExperiment::rowData(airway)$symbol
+name_map <- ifelse(is.na(name_map) | name_map == "", rownames(airway), name_map)
+names(name_map) <- rownames(airway)
+dup_ids <- names(name_map)[duplicated(name_map) | duplicated(name_map, fromLast = TRUE)]
+logcpm <- logcpm[!rownames(logcpm) %in% dup_ids, ]
+
+## 300 most variable genes, row z-scores, hierarchical clustering
+n_gene <- 300
 vars <- apply(logcpm, 1, var)
-z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[1:60], ])))
+z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[seq_len(n_gene)], ])))
 ord <- hclust(dist(z), method = "ward.D2")$order
 
-sym <- SummarizedExperiment::rowData(airway)$symbol[match(rownames(z), rownames(airway))]
-gene_name <- ifelse(is.na(sym) | sym == "", rownames(z), sym)
-names(gene_name) <- rownames(z)
+gene_name <- name_map[rownames(z)]
 
 ## split the genes into "up" and "down" after dexamethasone, used for the facets
 cd <- as.data.frame(SummarizedExperiment::colData(airway))
@@ -399,22 +407,24 @@ df_gene <- data.frame(
 )
 ```
 
-The heatmap is drawn tall and narrow; the eight glucocorticoid-responsive genes
-that cluster at the top (`TSC22D3`, `KLF15`, `FKBP5`, `PER1`, `ZBTB16`,
-`SPARCL1`, ...) are the only ones labelled:
+```{r anno-heatmap, eval = requireNamespace("airway", quietly = TRUE), fig.width = 6.5, fig.height = 10, fig.cap = "real data (GEO GSE52778), a tall 300-gene heatmap: only 20 genes are labelled, showing how the leader lines and the vertical label spacing are allocated"}
+## 20 labels: 12 neighbouring genes from the top cluster + 8 scattered ones
+mark <- c(
+  gene_name[ord][1:12],
+  gene_name[ord][round(seq(60, n_gene - 10, length.out = 8))]
+)
 
-```{r anno-heatmap, eval = requireNamespace("airway", quietly = TRUE), fig.width = 6.5, fig.height = 9, fig.cap = "real data (GEO GSE52778), tall heatmap: only the 8 glucocorticoid-responsive genes are labelled"}
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
   scale_y_discrete(
     guide = guide_none(),
     sec.axis = dup_axis(
-      guide = guide_axis_smart(which = gene_name[ord][1:8])
+      guide = guide_axis_smart(which = mark)
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
-  labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778)") +
+  labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778), 300 genes") +
   theme_minimal(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
@@ -424,13 +434,13 @@ own labels. Here the genes are split into an "up" and a "down" panel, and each
 panel labels only its four strongest responders (panel heights follow the number
 of genes):
 
-```{r anno-heatmap-facet, eval = requireNamespace("airway", quietly = TRUE), fig.width = 7, fig.height = 9.5, fig.cap = "faceted heatmap: each panel has different data and lays out its own labels"}
+```{r anno-heatmap-facet, eval = requireNamespace("airway", quietly = TRUE), fig.width = 7, fig.height = 10, fig.cap = "faceted heatmap: each panel has different data and lays out its own labels"}
 ## per panel (gene set), label the 4 genes with the largest |delta|
 mark_by_set <- lapply(
   split(names(delta), gene_set),
   function(ids) ids[order(abs(delta[ids]), decreasing = TRUE)][1:4]
 )
-mark <- unlist(mark_by_set, use.names = FALSE)
+mark_facet <- unlist(mark_by_set, use.names = FALSE)
 
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
@@ -438,12 +448,12 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_y_discrete(
     position = "right",
     guide = guide_axis_smart(
-      which = function(labels, positions) labels %in% gene_name[mark]
+      which = function(labels, positions) labels %in% gene_name[mark_facet]
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
-  labs(x = NULL, y = NULL, title = "facet by gene set") +
+  labs(x = NULL, y = NULL, title = "facet by gene set, 300 genes") +
   theme_minimal(base_size = 9) +
   theme(panel.grid = element_blank(),
         strip.placement = "outside",
@@ -455,8 +465,9 @@ Key points:
 
 - single panel: hide all labels on the main axis with `guide = guide_none()` and
   put `guide_axis_smart()` on the axis created by `dup_axis()`;
-- the selected rows are connected with a stub + diagonal + stub line, and adjacent
-  selected rows are staggered automatically so they never overlap;
+- with hundreds of rows the effect is easiest to see: labels that crowd into the
+  same strip are staggered vertically and each leader line goes back to its own
+  row, while isolated labels get a longer horizontal line;
 - **facets**: each panel selects and lays out its own labels independently; use a
   function for `which` (`function(labels, positions)`) so that every panel only
   matches the labels that exist in it;

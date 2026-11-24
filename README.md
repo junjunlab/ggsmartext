@@ -190,7 +190,15 @@ angle = 45, hjust = 1, vjust = 1
 This is the geometry of `ComplexHeatmap::anno_mark()`: hide the full
 axis and label only the rows you care about. Duplicate the axis with
 `dup_axis()`, switch the main guide off with `guide_none()`, and put
-`guide_axis_smart()` on the copy:
+`guide_axis_smart()` on the copy.
+
+The data is real: the
+[`airway`](https://bioconductor.org/packages/airway) package holds an
+RNA-seq experiment on human airway smooth muscle cells (GEO
+[GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778)),
+four cell lines with and without dexamethasone. The heatmap shows 300
+genes and labels 20 of them, so the way leader lines and the vertical
+spacing of the labels are allocated is clearly visible:
 
 ``` r
 ## real RNA-seq data from GEO: airway (GSE52778), 4 cell lines +/- dexamethasone
@@ -201,12 +209,18 @@ counts <- SummarizedExperiment::assay(airway, "counts")
 cpm <- t(t(counts) / colSums(counts)) * 1e6
 logcpm <- log2(cpm[rowSums(cpm > 1) >= 4, ] + 1)
 
+## drop duplicated gene symbols so that every label is unique
+name_map <- SummarizedExperiment::rowData(airway)$symbol
+name_map <- ifelse(is.na(name_map) | name_map == "", rownames(airway), name_map)
+names(name_map) <- rownames(airway)
+dup_ids <- names(name_map)[duplicated(name_map) | duplicated(name_map, fromLast = TRUE)]
+logcpm <- logcpm[!rownames(logcpm) %in% dup_ids, ]
+
+n_gene <- 300
 vars <- apply(logcpm, 1, var)
-z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[1:60], ])))
+z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[seq_len(n_gene)], ])))
 ord <- hclust(dist(z), method = "ward.D2")$order
-sym <- SummarizedExperiment::rowData(airway)$symbol[match(rownames(z), rownames(airway))]
-gene_name <- ifelse(is.na(sym) | sym == "", rownames(z), sym)
-names(gene_name) <- rownames(z)
+gene_name <- name_map[rownames(z)]
 
 cd <- as.data.frame(SummarizedExperiment::colData(airway))
 delta <- rowMeans(z[, cd$dex == "trt"]) - rowMeans(z[, cd$dex == "untrt"])
@@ -222,39 +236,37 @@ df_gene <- data.frame(
   z = as.vector(z[ord, ])
 )
 
+## 12 neighbouring genes + 8 scattered ones
+mark <- c(
+  gene_name[ord][1:12],
+  gene_name[ord][round(seq(60, n_gene - 10, length.out = 8))]
+)
+
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
   scale_y_discrete(
     guide = guide_none(),
     sec.axis = dup_axis(
-      guide = guide_axis_smart(which = gene_name[ord][1:8])
+      guide = guide_axis_smart(which = mark)
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
-  labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778)") +
+  labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778), 300 genes") +
   theme_minimal(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 <div class="figure">
 
-<img src="man/figures/README-anno-mark-1.png" alt="Real RNA-seq data (GEO GSE52778): tall heatmap, only the 8 glucocorticoid-responsive genes are labelled on a duplicated right axis" width="100%" />
+<img src="man/figures/README-anno-mark-1.png" alt="Real RNA-seq data (GEO GSE52778): a tall 300-gene heatmap, only 20 genes are labelled on a duplicated right axis" width="100%" />
 <p class="caption">
 
-Real RNA-seq data (GEO GSE52778): tall heatmap, only the 8
-glucocorticoid-responsive genes are labelled on a duplicated right axis
+Real RNA-seq data (GEO GSE52778): a tall 300-gene heatmap, only 20 genes
+are labelled on a duplicated right axis
 </p>
 
 </div>
-
-Real data from GEO: the
-[`airway`](https://bioconductor.org/packages/airway) package holds an
-RNA-seq experiment on human airway smooth muscle cells (GEO
-[GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778)),
-four cell lines with and without dexamethasone. The eight genes labelled
-here are the glucocorticoid-responsive genes that cluster together at
-the top of the heatmap.
 
 Facets work as well, and every panel lays out its own labels: split the
 genes into an “up” and a “down” panel and label the four strongest
@@ -265,7 +277,7 @@ mark_by_set <- lapply(
   split(names(delta), gene_set),
   function(ids) ids[order(abs(delta[ids]), decreasing = TRUE)][1:4]
 )
-mark <- unlist(mark_by_set, use.names = FALSE)
+mark_facet <- unlist(mark_by_set, use.names = FALSE)
 
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
@@ -273,12 +285,12 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_y_discrete(
     position = "right",
     guide = guide_axis_smart(
-      which = function(labels, positions) labels %in% gene_name[mark]
+      which = function(labels, positions) labels %in% gene_name[mark_facet]
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
-  labs(x = NULL, y = NULL, title = "facet by gene set") +
+  labs(x = NULL, y = NULL, title = "facet by gene set, 300 genes") +
   theme_minimal(base_size = 9) +
   theme(panel.grid = element_blank(),
         strip.placement = "outside",

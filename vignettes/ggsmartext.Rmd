@@ -358,7 +358,9 @@ ggplot(df60, aes(x = sample, y = value)) +
 
 下面用 **GEO 上的真实 RNA-seq 数据**：`airway` 数据包（GEO 编号
 [GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778)，
-人气道平滑肌细胞，4 株细胞系分别做地塞米松处理与对照）。
+人气道平滑肌细胞，4 株细胞系分别做地塞米松处理与对照）。为了看清引导线长度
+和标签上下间距的分配，这里把热图画成 **300 个基因**的竖长图，并标注 20 个基因
+（顶部响应簇里连续 12 个 + 散布在中下部的 8 个）。
 
 ```{r anno-heatmap-data, eval = requireNamespace("airway", quietly = TRUE)}
 ## 真实数据：airway RNA-seq（GEO GSE52778）
@@ -369,14 +371,20 @@ counts <- SummarizedExperiment::assay(airway, "counts")
 cpm <- t(t(counts) / colSums(counts)) * 1e6
 logcpm <- log2(cpm[rowSums(cpm > 1) >= 4, ] + 1) # 至少在 4 个样本中表达
 
-## 变异最大的 60 个基因，按行 z-score 后层次聚类
+## 去掉重复的基因 symbol，保证每个标签唯一
+name_map <- SummarizedExperiment::rowData(airway)$symbol
+name_map <- ifelse(is.na(name_map) | name_map == "", rownames(airway), name_map)
+names(name_map) <- rownames(airway)
+dup_ids <- names(name_map)[duplicated(name_map) | duplicated(name_map, fromLast = TRUE)]
+logcpm <- logcpm[!rownames(logcpm) %in% dup_ids, ]
+
+## 变异最大的 300 个基因，按行 z-score 后层次聚类
+n_gene <- 300
 vars <- apply(logcpm, 1, var)
-z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[1:60], ])))
+z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[seq_len(n_gene)], ])))
 ord <- hclust(dist(z), method = "ward.D2")$order
 
-sym <- SummarizedExperiment::rowData(airway)$symbol[match(rownames(z), rownames(airway))]
-gene_name <- ifelse(is.na(sym) | sym == "", rownames(z), sym)
-names(gene_name) <- rownames(z)
+gene_name <- name_map[rownames(z)]
 
 ## 按"地塞米松处理后上调 / 下调"把基因分成两组，后面用来分面
 cd <- as.data.frame(SummarizedExperiment::colData(airway))
@@ -395,21 +403,24 @@ df_gene <- data.frame(
 )
 ```
 
-热图做成竖长比例，右侧只标注聚类后挤在顶部的那一组经典糖皮质激素响应基因
-（`TSC22D3`、`KLF15`、`FKBP5`、`PER1`、`ZBTB16`、`SPARCL1` 等）：
+```{r anno-heatmap, eval = requireNamespace("airway", quietly = TRUE), fig.width = 6.5, fig.height = 10, fig.cap = "真实数据（GEO GSE52778）300 个基因的竖长热图：只标注 20 个基因，可以看到引导线长度和标签上下间距的自动分配"}
+## 20 个标注：顶部响应簇连续 12 个 + 散布在中下部的 8 个
+mark <- c(
+  gene_name[ord][1:12],
+  gene_name[ord][round(seq(60, n_gene - 10, length.out = 8))]
+)
 
-```{r anno-heatmap, eval = requireNamespace("airway", quietly = TRUE), fig.width = 6.5, fig.height = 9, fig.cap = "真实数据（GEO GSE52778）竖长热图：只标注 8 个糖皮质激素响应基因"}
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
   scale_y_discrete(
     guide = guide_none(),
     sec.axis = dup_axis(
-      guide = guide_axis_smart(which = gene_name[ord][1:8])
+      guide = guide_axis_smart(which = mark)
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
-  labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778)") +
+  labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778), 300 genes") +
   theme_minimal(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
@@ -418,13 +429,13 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
 分成两个面板，每个面板只标注自己那一组里响应最强的 4 个基因（面板高度按基因数
 自适应）：
 
-```{r anno-heatmap-facet, eval = requireNamespace("airway", quietly = TRUE), fig.width = 7, fig.height = 9.5, fig.cap = "按基因集分面的热图：每个面板数据不同，标签各自独立排布"}
+```{r anno-heatmap-facet, eval = requireNamespace("airway", quietly = TRUE), fig.width = 7, fig.height = 10, fig.cap = "按基因集分面的热图：每个面板数据不同，标签各自独立排布"}
 ## 每个面板（基因集）里挑 |delta| 最大的 4 个基因来标注
 mark_by_set <- lapply(
   split(names(delta), gene_set),
   function(ids) ids[order(abs(delta[ids]), decreasing = TRUE)][1:4]
 )
-mark <- unlist(mark_by_set, use.names = FALSE)
+mark_facet <- unlist(mark_by_set, use.names = FALSE)
 
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
@@ -432,12 +443,12 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_y_discrete(
     position = "right",
     guide = guide_axis_smart(
-      which = function(labels, positions) labels %in% gene_name[mark]
+      which = function(labels, positions) labels %in% gene_name[mark_facet]
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
-  labs(x = NULL, y = NULL, title = "facet by gene set") +
+  labs(x = NULL, y = NULL, title = "facet by gene set, 300 genes") +
   theme_minimal(base_size = 9) +
   theme(panel.grid = element_blank(),
         strip.placement = "outside",
@@ -448,7 +459,8 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
 要点：
 
 - 单面板：主轴用 `guide = guide_none()` 隐藏全部标签，`dup_axis()` 复制出来的副轴挂 `guide_axis_smart()`；
-- 选中的行用"短横线 + 斜线 + 短横线"连回，相邻的选中行会自动上下错开，不会叠在一起；
+- 行数多（几百行）时最能看出效果：选中行如果挤在一起，标签会自动上下错开、
+  引导线各自连回自己的行；分散的标签则用较长的横线连过去；
 - **分面（facet）**：每个面板按自己的数据独立选标签、独立排布；`which` 用
   函数形式（`function(labels, positions)`）最稳，因为每个面板只会匹配到
   自己存在的标签；
