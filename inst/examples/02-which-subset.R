@@ -40,7 +40,7 @@ base_plot <- function(title) {
   ggplot(df, aes(x = sample, y = value)) +
     geom_col(fill = "#5B8FF9", width = 0.8) +
     labs(x = NULL, y = "响应值", title = title) +
-    theme_minimal(base_size = 12)
+    theme_grey(base_size = 12)
 }
 
 # ---- 1. 整数下标：每 10 个显示一个 -----------------------------------------

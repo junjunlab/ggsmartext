@@ -40,7 +40,7 @@ base_plot <- function(title, guide) {
     geom_col(fill = "#F6903D", width = 0.8) +
     guide +
     labs(x = "响应值", y = NULL, title = title) +
-    theme_minimal(base_size = 12)
+    theme_grey(base_size = 12)
 }
 
 # ---- 1. 默认轴：40 个标签太密 ----------------------------------------------

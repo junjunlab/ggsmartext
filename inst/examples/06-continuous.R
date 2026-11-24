@@ -39,7 +39,7 @@ p_default <- ggplot(df, aes(x, y)) +
   geom_line(colour = "#5B8FF9", linewidth = 0.8) +
   scale_x_continuous(breaks = seq(0, 100, by = 2), minor_breaks = NULL) +
   labs(x = NULL, y = "响应值", title = "默认轴：51 个刻度标签") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 # ---- 2. 只显示 10 个刻度标签 -------------------------------------------------
 
@@ -48,7 +48,7 @@ p_smart <- ggplot(df, aes(x, y)) +
   scale_x_continuous(breaks = seq(0, 100, by = 2), minor_breaks = NULL) +
   guides(x = guide_axis_smart(n = 10)) +
   labs(x = NULL, y = "响应值", title = "guide_axis_smart(n = 10)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 # ---- 3. y 轴是连续轴、刻度很密时同理 ---------------------------------------
 
@@ -57,7 +57,7 @@ p_y <- ggplot(df, aes(x, y)) +
   scale_y_continuous(breaks = seq(-2, 2, by = 0.1)) +
   guides(y = guide_axis_smart(n = 6, nrow = 1)) +
   labs(x = "x", y = NULL, title = "连续 y 轴：n = 6") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 # ---- 输出 -------------------------------------------------------------------
 

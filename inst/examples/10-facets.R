@@ -19,7 +19,7 @@ suppressPackageStartupMessages({
 outdir <- if (length(commandArgs(TRUE)) >= 1L) commandArgs(TRUE)[1] else tempdir()
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
-base_theme <- theme_minimal(base_size = 11)
+base_theme <- theme_grey(base_size = 11)
 
 ## ---- (1) facet_wrap + free_x：每个面板只标自己有的类别 --------------------
 set.seed(8)
@@ -88,33 +88,26 @@ print(p3)
 invisible(dev.off())
 message("written: 10-facets-crowded.png")
 
-## ---- (4) 热图 facet_wrap + free_y：右侧 y 轴每面板独立标注 ----------------
-set.seed(9)
-n_gene <- 80
-mat <- matrix(rnorm(n_gene * 6), n_gene, 6,
-              dimnames = list(paste0("gene", 1:n_gene), paste0("s", 1:6)))
-df_heat <- data.frame(
-  gene = factor(rep(rownames(mat), times = 6), levels = rev(rownames(mat))),
-  sample = factor(rep(colnames(mat), each = n_gene), levels = colnames(mat)),
-  value = as.vector(mat),
-  set = rep(ifelse(seq_len(n_gene) %% 2 == 0, "even rows", "odd rows"), times = 6)
-)
+## ---- (4) 热图 facet_wrap + free_y：内置真实数据，每面板独立标注 -----------
+data(airway_heatmap, package = "ggsmartext")
+df_heat <- airway_heatmap$df
+mark_wrap <- airway_heatmap$genes$gene[10:21]   # 顶部响应簇里连续的 12 个基因
 
-p4 <- ggplot(df_heat, aes(sample, gene, fill = value)) +
+p4 <- ggplot(df_heat, aes(sample, gene, fill = z)) +
   geom_tile() +
-  facet_wrap(~ set, nrow = 1, scales = "free_y") +
+  facet_wrap(~ gene_set, nrow = 1, scales = "free_y") +
   scale_y_discrete(
     position = "right",
-    guide = guide_axis_smart(which = paste0("gene", 18:29), nrow = 2)
+    guide = guide_axis_smart(which = mark_wrap)
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
   labs(x = NULL, y = NULL,
-       title = "faceted heatmap: each panel labels its own genes") +
-  theme_minimal(base_size = 9) +
+       title = "faceted heatmap (bundled real data): each panel labels its own genes") +
+  theme_grey(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ragg::agg_png(file.path(outdir, "10-facets-heatmap.png"),
-        width = 10, height = 7.5, units = "in", res = 140)
+        width = 10, height = 9, units = "in", res = 140)
 print(p4)
 invisible(dev.off())
 message("written: 10-facets-heatmap.png")

@@ -83,7 +83,7 @@ bar_x <- function(data, title, guide = NULL, fill = "#5B8FF9") {
     geom_col(fill = fill, width = 0.8) +
     guide +
     labs(x = NULL, y = "响应值", title = title) +
-    theme_minimal(base_size = 12)
+    theme_grey(base_size = 12)
 }
 
 # ---- 1. 痛点：默认轴 --------------------------------------------------------
@@ -149,7 +149,7 @@ p <- ggplot(df40, aes(x = value, y = sample)) +
   geom_col(fill = "#F6903D", width = 0.8) +
   guides(y = guide_axis_smart(n = 10, nrow = 2)) +
   labs(x = "响应值", y = NULL, title = "y 轴：n = 10, nrow = 2（2 列）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 save_png(p, "gallery-12-y-axis.png")
 
 # ---- 9. 长标签：多行 vs 45 度 -------------------------------------------------
@@ -173,7 +173,7 @@ p <- ggplot(df_curve, aes(x, y)) +
   scale_x_continuous(breaks = seq(0, 100, by = 2), minor_breaks = NULL) +
   guides(x = guide_axis_smart(n = 10, nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "连续轴：51 个刻度，只显示 10 个") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 save_png(p, "gallery-16-continuous.png")
 
 # ---- 11. facet：每个面板各自排布 --------------------------------------------
@@ -183,7 +183,7 @@ p <- ggplot(df30, aes(x = sample, y = value)) +
   facet_wrap(~group, scales = "free_x") +
   guides(x = guide_axis_smart(n = 6, nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "facet_wrap：每个面板独立排布") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 save_png(p, "gallery-17-facet.png")
 
 # ---- 12. coord_flip：x 轴标签跑到左边；guide 要挂在 scale 上 ----------------
@@ -195,7 +195,7 @@ save_png(p, "gallery-18-coord-flip.png")
 
 # ---- 13. 与 theme 配合：文本样式从主题继承 ---------------------------------
 
-p <- bar_x(df50, "theme_minimal(base_size = 13) + 灰色标签",
+p <- bar_x(df50, "theme_grey(base_size = 13) + 灰色标签",
            guides(x = guide_axis_smart(n = 12, nrow = 2))) +
   theme(axis.text.x = element_text(colour = "grey30", size = 9))
 save_png(p, "gallery-19-theme.png")
@@ -206,14 +206,14 @@ p <- ggplot(df60, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = 24:35)) +
   labs(x = NULL, y = "响应值", title = "which = 24:35（自动分多行）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 save_png(p, "gallery-20-cluster-auto.png")
 
 p <- ggplot(df60, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = 24:35, nrow = 1)) +
   labs(x = NULL, y = "响应值", title = "which = 24:35, nrow = 1（anno_mark 风格）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 save_png(p, "gallery-21-cluster-nrow1.png")
 
 # ---- 15. 热图基因标注：主轴隐藏 + 副轴只标 3 个基因 --------------------------
@@ -228,7 +228,7 @@ p <- ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   ) +
   scale_fill_gradient2(low = "#2E5EAA", mid = "white", high = "#C0392B") +
   labs(x = NULL, y = NULL, title = "热图基因注释：只标 3 个基因") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 save_png(p, "gallery-22-heatmap-secaxis.png")
 
 # ---- 汇总 -------------------------------------------------------------------

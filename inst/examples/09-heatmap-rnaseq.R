@@ -28,7 +28,7 @@ df_gene <- airway_heatmap$df
 mark <- airway_heatmap$mark
 mark_facet <- unlist(airway_heatmap$mark_by_set, use.names = FALSE)
 
-base_theme <- theme_minimal(base_size = 9) +
+base_theme <- theme_grey(base_size = 9) +
   theme(panel.grid = element_blank(),
         axis.text.x = element_text(angle = 45, hjust = 1))
 
@@ -75,7 +75,10 @@ p2 <- ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
        title = "facet by gene set, 300 genes",
        subtitle = "each panel has different data and labels its own genes") +
   base_theme +
-  theme(strip.placement = "outside",
+  theme_grey(base_size = 9) +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.placement = "outside",
         strip.text.y.left = element_text(angle = 0))
 
 f2 <- file.path(outdir, "09-heatmap-rnaseq-facet.png")

@@ -48,7 +48,7 @@ df50 <- data.frame(
 ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   labs(x = NULL, y = "response", title = "Default axis: 50 labels in a pile") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 `ggsmartext` provides `guide_axis_smart()`. It takes over label drawing on a discrete axis and does three things:
@@ -66,7 +66,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 10, nrow = 2)) +
   labs(x = NULL, y = "response", title = "guide_axis_smart(n = 10, nrow = 2)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 Only three things change: load the package, add `guides(x = guide_axis_smart(...))`, keep the rest. Note that you do **not** need `theme(axis.text.x = element_blank())` — the guide draws the labels itself.
@@ -80,13 +80,13 @@ p_guides <- ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 8, nrow = 2)) +
   labs(x = NULL, y = "response", title = "Style 1: guides(x = guide_axis_smart(...))") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 p_scale <- ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   scale_x_discrete(guide = guide_axis_smart(n = 8, nrow = 2)) +
   labs(x = NULL, y = "response", title = "Style 2: scale_x_discrete(guide = ...)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 p_guides
 p_scale
@@ -112,7 +112,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = seq(1, 50, by = 10), nrow = 2)) +
   labs(x = NULL, y = "response", title = "which = seq(1, 50, by = 10)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ## Character vector
@@ -125,7 +125,7 @@ ggplot(df50, aes(x = sample, y = value)) +
     nrow = 1
   )) +
   labs(x = NULL, y = "response", title = "Match label text: which = c(\"Sample1\", \"Sample2\", \"Sample25\", \"Sample50\")") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ## Logical vector
@@ -138,7 +138,7 @@ ggplot(df50, aes(x = sample, y = value)) +
     nrow = 1
   )) +
   labs(x = NULL, y = "response", title = "Logical vector: which = grepl(\"0$\", levels(sample))") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ## Function
@@ -153,7 +153,7 @@ ggplot(df50, aes(x = sample, y = value)) +
     nrow = 2
   )) +
   labs(x = NULL, y = "response", title = "Function: every tenth label") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 The function form is most useful for **position-based** selection: `positions` runs from 0 to 1, so `positions > 0.9` keeps only the right-hand end of the axis.
@@ -167,7 +167,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 5)) +
   labs(x = NULL, y = "response", title = "n = 5 (evenly spaced)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r n-20, fig.cap = "n = 20: 20 labels, split over two rows when one row is not enough"}
@@ -175,7 +175,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 20)) +
   labs(x = NULL, y = "response", title = "n = 20 (rows added automatically)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 When both `which` and `n` are given, `which` selects first and `n` then truncates the **result** to at most `n` labels, evenly spaced (`n` is a hard cap). With `which = NULL`, `n` picks evenly from all labels directly.
@@ -197,7 +197,7 @@ ggplot(df200, aes(x = feature, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.9) +
   guides(x = guide_axis_smart()) +
   labs(x = NULL, y = "importance", title = "200 categories: automatic thinning") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 To silence that message (for example when plotting in a loop), set `options(ggsmartext.quiet = TRUE)`. Still, **always prefer an explicit `n =` or `which =`** so that you decide which labels are shown, rather than the screen size.
@@ -211,7 +211,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 8, nrow = 1)) +
   labs(x = NULL, y = "response", title = "n = 8, nrow = 1") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r nrow-3, fig.cap = "nrow = 3: three staggered rows; more vertical space means more labels"}
@@ -219,7 +219,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 24, nrow = 3)) +
   labs(x = NULL, y = "response", title = "n = 24, nrow = 3") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r nrow-auto, fig.cap = "nrow = NULL: one row when it fits, otherwise rows are added automatically"}
@@ -227,7 +227,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 30)) +
   labs(x = NULL, y = "response", title = "n = 30, nrow = NULL (automatic rows)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 Rules of thumb:
@@ -241,7 +241,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 16, nrow = 2, gap = 0.5, padding = 0.6)) +
   labs(x = NULL, y = "response", title = "gap = 0.5, padding = 0.6") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 # Leader lines: `connection_style` and `link_length`
@@ -257,7 +257,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 2)) +
   labs(x = NULL, y = "response", title = "connection_style = \"diagonal\" (default)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r conn-straight, fig.cap = "connection_style = 'straight': a single diagonal"}
@@ -265,7 +265,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 2, connection_style = "straight")) +
   labs(x = NULL, y = "response", title = "connection_style = \"straight\"") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r conn-elbow, fig.cap = "connection_style = 'elbow': a perpendicular segment plus a shelf"}
@@ -273,7 +273,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 2, connection_style = "elbow")) +
   labs(x = NULL, y = "response", title = "connection_style = \"elbow\"") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 `link_length` (default `3`, in millimetres) controls the length of the leader segment between the axis and the first row (column) of labels: decrease it when there are many rows and the lines get dense, increase it for roomier leader lines.
@@ -293,7 +293,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 10, nrow = 2, tick = "shown")) +
   labs(x = NULL, y = "response", title = "tick = \"shown\"") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 # y axis (vertical discrete axis)
@@ -311,7 +311,7 @@ ggplot(df40, aes(x = value, y = sample)) +
   geom_col(fill = "#F6903D", width = 0.8) +
   guides(y = guide_axis_smart(n = 10, nrow = 2)) +
   labs(x = "response", y = NULL, title = "y axis: n = 10, nrow = 2 (2 columns)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r y-axis-3, fig.cap = "y axis: nrow = 3, three columns make room for more labels"}
@@ -319,7 +319,7 @@ ggplot(df40, aes(x = value, y = sample)) +
   geom_col(fill = "#F6903D", width = 0.8) +
   guides(y = guide_axis_smart(which = seq(1, 40, by = 4), nrow = 3)) +
   labs(x = "response", y = NULL, title = "y axis: which = seq(1, 40, by = 4), nrow = 3") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 # Local annotations and heatmap labels (anno_mark style)
@@ -342,7 +342,7 @@ ggplot(df60, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = 24:35)) +
   labs(x = NULL, y = "response", title = "which = 24:35 (several rows)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 To force the single-row, pure `anno_mark` look (labels stretched along the axis, longer leader lines), write `nrow = 1`:
@@ -352,7 +352,7 @@ ggplot(df60, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = 24:35, nrow = 1)) +
   labs(x = NULL, y = "response", title = "which = 24:35, nrow = 1 (anno_mark style)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ## Heatmap labels: `sec.axis` + `dup_axis()`
@@ -391,7 +391,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
   labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778), 300 genes") +
-  theme_minimal(base_size = 9) +
+  theme_grey(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
@@ -416,7 +416,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
   labs(x = NULL, y = NULL, title = "facet by gene set, 300 genes") +
-  theme_minimal(base_size = 9) +
+  theme_grey(base_size = 9) +
   theme(panel.grid = element_blank(),
         strip.placement = "outside",
         strip.text.y.left = element_text(angle = 0),
@@ -456,7 +456,7 @@ ggplot(df24, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 2)) +
   labs(x = NULL, y = "response", title = "Long labels, staggered rows: n = 12, nrow = 2") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r angle-45, fig.cap = "angle = 45 with nrow = 1, hjust = 1 and vjust = 1"}
@@ -464,7 +464,7 @@ ggplot(df24, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 1, angle = 45, hjust = 1, vjust = 1)) +
   labs(x = NULL, y = "response", title = "angle = 45, hjust = 1, vjust = 1") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r angle-90, fig.cap = "angle = 90 with hjust = 1 and vjust = 0.5"}
@@ -472,7 +472,7 @@ ggplot(df24, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 1, angle = 90, hjust = 1, vjust = 0.5)) +
   labs(x = NULL, y = "response", title = "angle = 90, hjust = 1, vjust = 0.5") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 `hjust` / `vjust` are passed to the label text grob; with `NULL` the guide picks a sensible value for the angle. In practice:
@@ -497,7 +497,7 @@ ggplot(df_curve, aes(x, y)) +
   scale_x_continuous(breaks = seq(0, 100, by = 2), minor_breaks = NULL) +
   guides(x = guide_axis_smart(n = 10)) +
   labs(x = NULL, y = "response", title = "Continuous axis: 51 ticks, only 10 labels") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 On a continuous axis the character form of `which` matches the **formatted** tick text (e.g. `"20"`); for position-based rules the function form is more robust.
@@ -521,7 +521,7 @@ ggplot(df_facet, aes(x = sample, y = value)) +
   facet_wrap(~ group, scales = "free_x") +
   guides(x = guide_axis_smart(n = 6, nrow = 2)) +
   labs(x = NULL, y = "response", title = "facet_wrap: independent layout per panel") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ### Free scales: each panel labels only what it contains
@@ -548,7 +548,7 @@ ggplot(df_facet_free, aes(cat, value)) +
   guides(x = guide_axis_smart(which = mark_facet_free)) +
   labs(x = NULL, y = "response",
        title = "facet_wrap + free_x: each panel labels what it has") +
-  theme_minimal(base_size = 11)
+  theme_grey(base_size = 11)
 ```
 
 ### Crowded labels inside one panel
@@ -569,7 +569,7 @@ ggplot(df_facet_crowd, aes(cat, value)) +
   guides(x = guide_axis_smart(which = 3:14, nrow = 3)) +
   labs(x = NULL, y = "response",
        title = "crowded labels inside a panel: 3 rows") +
-  theme_minimal(base_size = 11)
+  theme_grey(base_size = 11)
 ```
 
 ### facet_grid: a shared axis is drawn once, free axes once per panel
@@ -590,7 +590,7 @@ ggplot(df_facet_grid, aes(cat, value)) +
   guides(x = guide_axis_smart(which = c("g2", "g7", "g12", "h3", "h9", "h14"))) +
   labs(x = NULL, y = "response",
        title = "facet_grid + free_x: each column labels its own") +
-  theme_minimal(base_size = 11)
+  theme_grey(base_size = 11)
 ```
 
 ### Faceted heatmap: the right-hand y axis is labelled per panel
@@ -598,30 +598,24 @@ ggplot(df_facet_grid, aes(cat, value)) +
 For a faceted heatmap attach the guide with `scale_y_discrete(position = "right")`; with `free_y` each panel
 labels only the genes it contains, and a crowded run of genes is spread over rows inside that panel:
 
-```{r facet-heatmap, fig.cap = "faceted heatmap: each panel labels its own genes"}
-set.seed(9)
-n_gene_f <- 80
-mat_f <- matrix(rnorm(n_gene_f * 6), n_gene_f, 6,
-                dimnames = list(paste0("gene", 1:n_gene_f), paste0("s", 1:6)))
-df_facet_heat <- data.frame(
-  gene = factor(rep(rownames(mat_f), times = 6), levels = rev(rownames(mat_f))),
-  sample = factor(rep(colnames(mat_f), each = n_gene_f), levels = colnames(mat_f)),
-  value = as.vector(mat_f),
-  set = rep(ifelse(seq_len(n_gene_f) %% 2 == 0, "even rows", "odd rows"), times = 6)
-)
+```{r facet-heatmap, fig.cap = "faceted heatmap: the bundled real data, each panel labels its own genes"}
+## the real RNA-seq data bundled with the package (GEO GSE52778, 300 genes x 8 samples)
+data(airway_heatmap, package = "ggsmartext")
+df_facet_heat <- airway_heatmap$df
+mark_wrap <- airway_heatmap$genes$gene[10:21]   # 12 neighbouring genes of the top cluster
 
-ggplot(df_facet_heat, aes(sample, gene, fill = value)) +
+ggplot(df_facet_heat, aes(sample, gene, fill = z)) +
   geom_tile() +
-  facet_wrap(~ set, nrow = 1, scales = "free_y") +
+  facet_wrap(~ gene_set, nrow = 1, scales = "free_y") +
   scale_y_discrete(
     position = "right",
-    guide = guide_axis_smart(which = paste0("gene", 18:29))
+    guide = guide_axis_smart(which = mark_wrap)
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
   labs(x = NULL, y = NULL,
        title = "faceted heatmap: each panel labels its own genes") +
-  theme_minimal(base_size = 9) +
+  theme_grey(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
@@ -646,7 +640,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   scale_x_discrete(guide = guide_axis_smart(n = 10, nrow = 2)) +
   coord_flip() +
   labs(x = NULL, y = "response", title = "coord_flip: guide attached to the scale") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 The equivalent spelling is `guides(y = guide_axis_smart(...))` — after flipping, the discrete axis's guide slot moves to `y`.
@@ -660,7 +654,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 2)) +
   labs(x = NULL, y = "response", title = "Label style inherited from the theme") +
-  theme_minimal(base_size = 13) +
+  theme_grey(base_size = 13) +
   theme(axis.text.x = element_text(colour = "grey30", size = 9))
 ```
 

@@ -45,7 +45,7 @@ df50 <- data.frame(
 ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   labs(x = NULL, y = "响应值", title = "默认轴：50 个标签挤成一团") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 `ggsmartext` 提供 `guide_axis_smart()`：它接管分类轴标签的绘制，做三件事——
@@ -63,7 +63,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 10, nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "guide_axis_smart(n = 10, nrow = 2)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 只改了三处：加载包、`guides(x = guide_axis_smart(...))`、其他照旧。注意**不需要**再写 `theme(axis.text.x = element_blank())`，标签的绘制已经完全交给 guide 了。
@@ -77,13 +77,13 @@ p_guides <- ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 8, nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "写法一：guides(x = guide_axis_smart(...))") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 p_scale <- ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   scale_x_discrete(guide = guide_axis_smart(n = 8, nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "写法二：scale_x_discrete(guide = ...)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 p_guides
 p_scale
@@ -109,7 +109,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = seq(1, 50, by = 10), nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "which = seq(1, 50, by = 10)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ## 字符向量
@@ -122,7 +122,7 @@ ggplot(df50, aes(x = sample, y = value)) +
     nrow = 1
   )) +
   labs(x = NULL, y = "响应值", title = "按标签文本挑：which = c(\"样本1\", \"样本2\", \"样本25\", \"样本50\")") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ## 逻辑向量
@@ -135,7 +135,7 @@ ggplot(df50, aes(x = sample, y = value)) +
     nrow = 1
   )) +
   labs(x = NULL, y = "响应值", title = "逻辑向量：which = grepl(\"0$\", levels(sample))") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ## 函数
@@ -150,7 +150,7 @@ ggplot(df50, aes(x = sample, y = value)) +
     nrow = 2
   )) +
   labs(x = NULL, y = "响应值", title = "函数：每 10 个标签显示一个") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 函数形式的典型用途是按**位置**挑：`positions` 是 0 到 1 的相对坐标，比如 `positions > 0.9` 只保留轴末端的标签。
@@ -164,7 +164,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 5)) +
   labs(x = NULL, y = "响应值", title = "n = 5（自动等距挑选）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r n-20, fig.cap = "n = 20：挑 20 个标签，一行放不下时自动分成两行"}
@@ -172,7 +172,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 20)) +
   labs(x = NULL, y = "响应值", title = "n = 20（自动分行）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 `n` 与 `which` 同时给出时，先由 `which` 选出集合，`n` 再把**结果**等距截断为最多 `n` 个（`n` 是硬上限）；`which = NULL` 时 `n` 直接从全部标签里等距挑。
@@ -194,7 +194,7 @@ ggplot(df200, aes(x = feature, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.9) +
   guides(x = guide_axis_smart()) +
   labs(x = NULL, y = "重要度", title = "200 个分类：自动抽稀") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 如果不想看到提示（比如在循环里批量出图），设置 `options(ggsmartext.quiet = TRUE)` 即可静音；但**永远建议显式写 `n =` 或 `which =`**，让显示哪些标签由你决定，而不是由屏幕尺寸决定。
@@ -208,7 +208,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 8, nrow = 1)) +
   labs(x = NULL, y = "响应值", title = "n = 8, nrow = 1") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r nrow-3, fig.cap = "nrow = 3：三行错开，纵向空间用得越充分，能显示的标签就越多"}
@@ -216,7 +216,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 24, nrow = 3)) +
   labs(x = NULL, y = "响应值", title = "n = 24, nrow = 3") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r nrow-auto, fig.cap = "nrow = NULL：能一行放下就一行，放不下才自动分行"}
@@ -224,7 +224,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 30)) +
   labs(x = NULL, y = "响应值", title = "n = 30, nrow = NULL（自动分行）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 调参口诀：
@@ -238,7 +238,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 16, nrow = 2, gap = 0.5, padding = 0.6)) +
   labs(x = NULL, y = "响应值", title = "gap = 0.5, padding = 0.6") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 # 引导线：`connection_style` 与 `link_length`
@@ -254,7 +254,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "connection_style = \"diagonal\"（默认）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r conn-straight, fig.cap = "connection_style 取 straight：一条斜直线"}
@@ -262,7 +262,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 2, connection_style = "straight")) +
   labs(x = NULL, y = "响应值", title = "connection_style = \"straight\"") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r conn-elbow, fig.cap = "connection_style 取 elbow：垂直段 + 平行于轴的台阶"}
@@ -270,7 +270,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 2, connection_style = "elbow")) +
   labs(x = NULL, y = "响应值", title = "connection_style = \"elbow\"") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 `link_length`（默认 `3`，单位毫米）控制"轴线到第一行（列）标签之间那段连线"的长度：行数多、线密的时候调小一点更紧凑，想让引导线更舒展就调大。
@@ -290,7 +290,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 10, nrow = 2, tick = "shown")) +
   labs(x = NULL, y = "响应值", title = "tick = \"shown\"") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 # y 轴（水平分类轴）
@@ -308,7 +308,7 @@ ggplot(df40, aes(x = value, y = sample)) +
   geom_col(fill = "#F6903D", width = 0.8) +
   guides(y = guide_axis_smart(n = 10, nrow = 2)) +
   labs(x = "响应值", y = NULL, title = "y 轴：n = 10, nrow = 2（2 列）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r y-axis-3, fig.cap = "y 轴：nrow = 3，三列错开可以显示更多标签"}
@@ -316,7 +316,7 @@ ggplot(df40, aes(x = value, y = sample)) +
   geom_col(fill = "#F6903D", width = 0.8) +
   guides(y = guide_axis_smart(which = seq(1, 40, by = 4), nrow = 3)) +
   labs(x = "响应值", y = NULL, title = "y 轴：which = seq(1, 40, by = 4), nrow = 3") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 # 集中标注与热图标注（anno_mark 风格）
@@ -339,7 +339,7 @@ ggplot(df60, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = 24:35)) +
   labs(x = NULL, y = "响应值", title = "which = 24:35（自动分多行）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 想强制单行（纯 `anno_mark` 风格，标签沿轴摊开、引导线更长）就写 `nrow = 1`：
@@ -349,7 +349,7 @@ ggplot(df60, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = 24:35, nrow = 1)) +
   labs(x = NULL, y = "响应值", title = "which = 24:35, nrow = 1（anno_mark 风格）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ## 热图基因标注：`sec.axis` + `dup_axis()`
@@ -384,7 +384,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
   labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778), 300 genes") +
-  theme_minimal(base_size = 9) +
+  theme_grey(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
@@ -408,7 +408,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
   labs(x = NULL, y = NULL, title = "facet by gene set, 300 genes") +
-  theme_minimal(base_size = 9) +
+  theme_grey(base_size = 9) +
   theme(panel.grid = element_blank(),
         strip.placement = "outside",
         strip.text.y.left = element_text(angle = 0),
@@ -445,7 +445,7 @@ ggplot(df24, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "长标签多行错开：n = 12, nrow = 2") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r angle-45, fig.cap = "angle = 45：建议 nrow = 1，并配 hjust = 1、vjust = 1"}
@@ -453,7 +453,7 @@ ggplot(df24, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 1, angle = 45, hjust = 1, vjust = 1)) +
   labs(x = NULL, y = "响应值", title = "angle = 45, hjust = 1, vjust = 1") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ```{r angle-90, fig.cap = "angle = 90：hjust = 1、vjust = 0.5 让标签贴着刻度排"}
@@ -461,7 +461,7 @@ ggplot(df24, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 1, angle = 90, hjust = 1, vjust = 0.5)) +
   labs(x = NULL, y = "响应值", title = "angle = 90, hjust = 1, vjust = 0.5") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 `hjust` / `vjust` 直接传给标签文本的 grob；`NULL` 时按角度自动选一个合理值。实践上：
@@ -486,7 +486,7 @@ ggplot(df_curve, aes(x, y)) +
   scale_x_continuous(breaks = seq(0, 100, by = 2), minor_breaks = NULL) +
   guides(x = guide_axis_smart(n = 10)) +
   labs(x = NULL, y = "响应值", title = "连续轴：51 个刻度，只显示 10 个") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 连续轴上 `which` 的"字符匹配"针对的是**格式化之后**的刻度文本（例如 `"20"`），按位置写规则时用函数形式更稳。
@@ -511,7 +511,7 @@ ggplot(df_facet, aes(x = sample, y = value)) +
   facet_wrap(~ group, scales = "free_x") +
   guides(x = guide_axis_smart(n = 6, nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "facet_wrap：每个面板独立排布") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 ### 自由刻度：每个面板只标自己的标签
@@ -537,7 +537,7 @@ ggplot(df_facet_free, aes(cat, value)) +
   guides(x = guide_axis_smart(which = mark_facet_free)) +
   labs(x = NULL, y = "响应值",
        title = "facet_wrap + free_x：每个面板只标自己有的标签") +
-  theme_minimal(base_size = 11)
+  theme_grey(base_size = 11)
 ```
 
 ### 面板内拥挤：自动分层
@@ -557,7 +557,7 @@ ggplot(df_facet_crowd, aes(cat, value)) +
   guides(x = guide_axis_smart(which = 3:14, nrow = 3)) +
   labs(x = NULL, y = "响应值",
        title = "面板内拥挤标签：12 个标签分 3 行") +
-  theme_minimal(base_size = 11)
+  theme_grey(base_size = 11)
 ```
 
 ### facet_grid：共享轴只画一次，自由轴各画各的
@@ -578,7 +578,7 @@ ggplot(df_facet_grid, aes(cat, value)) +
   guides(x = guide_axis_smart(which = c("g2", "g7", "g12", "h3", "h9", "h14"))) +
   labs(x = NULL, y = "响应值",
        title = "facet_grid + free_x：两列各自标注自己的类别") +
-  theme_minimal(base_size = 11)
+  theme_grey(base_size = 11)
 ```
 
 ### 热图分面：右侧 y 轴每面板独立标注
@@ -586,30 +586,24 @@ ggplot(df_facet_grid, aes(cat, value)) +
 热图分面时把 guide 挂在 `scale_y_discrete(position = "right")` 上即可；`free_y` 时每个面板
 只标自己数据里的基因，拥挤的连续基因同样会自动分层：
 
-```{r facet-heatmap, fig.cap = "分面热图：每个面板独立标注自己的基因"}
-set.seed(9)
-n_gene_f <- 80
-mat_f <- matrix(rnorm(n_gene_f * 6), n_gene_f, 6,
-                dimnames = list(paste0("gene", 1:n_gene_f), paste0("s", 1:6)))
-df_facet_heat <- data.frame(
-  gene = factor(rep(rownames(mat_f), times = 6), levels = rev(rownames(mat_f))),
-  sample = factor(rep(colnames(mat_f), each = n_gene_f), levels = colnames(mat_f)),
-  value = as.vector(mat_f),
-  set = rep(ifelse(seq_len(n_gene_f) %% 2 == 0, "偶数行", "奇数行"), times = 6)
-)
+```{r facet-heatmap, fig.cap = "分面热图：用内置真实数据，每个面板独立标注自己的基因"}
+## 用包内置的真实 RNA-seq 数据（GEO GSE52778，300 基因 x 8 样本）
+data(airway_heatmap, package = "ggsmartext")
+df_facet_heat <- airway_heatmap$df
+mark_wrap <- airway_heatmap$genes$gene[10:21]   # 顶部响应簇里连续的 12 个基因
 
-ggplot(df_facet_heat, aes(sample, gene, fill = value)) +
+ggplot(df_facet_heat, aes(sample, gene, fill = z)) +
   geom_tile() +
-  facet_wrap(~ set, nrow = 1, scales = "free_y") +
+  facet_wrap(~ gene_set, nrow = 1, scales = "free_y") +
   scale_y_discrete(
     position = "right",
-    guide = guide_axis_smart(which = paste0("gene", 18:29))
+    guide = guide_axis_smart(which = mark_wrap)
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score") +
   labs(x = NULL, y = NULL,
        title = "分面热图：每个面板只标自己有的基因") +
-  theme_minimal(base_size = 9) +
+  theme_grey(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
@@ -633,7 +627,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   scale_x_discrete(guide = guide_axis_smart(n = 10, nrow = 2)) +
   coord_flip() +
   labs(x = NULL, y = "响应值", title = "coord_flip：guide 挂在 scale 上") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 ```
 
 等价写法是 `guides(y = guide_axis_smart(...))`——翻转后分类轴的 guide 槽位换到了 `y`。
@@ -647,7 +641,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 12, nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "标签样式继承主题") +
-  theme_minimal(base_size = 13) +
+  theme_grey(base_size = 13) +
   theme(axis.text.x = element_text(colour = "grey30", size = 9))
 ```
 

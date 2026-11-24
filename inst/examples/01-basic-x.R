@@ -41,7 +41,7 @@ df <- data.frame(
 p_default <- ggplot(df, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   labs(x = NULL, y = "响应值", title = "默认轴：50 个标签挤成一团") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 # ---- 2. 只显示 10 个标签，分 2 行错开 --------------------------------------
 
@@ -49,7 +49,7 @@ p_smart <- ggplot(df, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(n = 10, nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "guide_axis_smart(n = 10, nrow = 2)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 # ---- 3. 只显示用户指定的几个标签 -------------------------------------------
 
@@ -57,7 +57,7 @@ p_which <- ggplot(df, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = c(1, 10, 20, 30, 40, 50), nrow = 2)) +
   labs(x = NULL, y = "响应值", title = "which = c(1, 10, 20, 30, 40, 50)") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 # ---- 输出 -------------------------------------------------------------------
 

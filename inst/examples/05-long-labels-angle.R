@@ -41,7 +41,7 @@ base_plot <- function(title, guide) {
     geom_col(fill = "#5B8FF9", width = 0.8) +
     guide +
     labs(x = NULL, y = "响应值", title = title) +
-    theme_minimal(base_size = 12)
+    theme_grey(base_size = 12)
 }
 
 # ---- 1. 长标签 + 多行错开（不旋转） ----------------------------------------

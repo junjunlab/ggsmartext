@@ -48,7 +48,7 @@ p_cluster <- ggplot(df60, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = 24:35)) +
   labs(x = NULL, y = "响应值", title = "which = 24:35（自动分多行）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 # ---- 2. 同样的标签强制单行：纯 anno_mark 风格 -------------------------------
 
@@ -56,7 +56,7 @@ p_cluster1 <- ggplot(df60, aes(x = sample, y = value)) +
   geom_col(fill = "#5B8FF9", width = 0.8) +
   guides(x = guide_axis_smart(which = 24:35, nrow = 1)) +
   labs(x = NULL, y = "响应值", title = "which = 24:35, nrow = 1（anno_mark 风格）") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 # ---- 3. 热图基因标注：主轴隐藏 + 副轴只标 3 个基因 --------------------------
 
@@ -70,7 +70,7 @@ p_heat <- ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   ) +
   scale_fill_gradient2(low = "#2E5EAA", mid = "white", high = "#C0392B") +
   labs(x = NULL, y = NULL, title = "热图基因注释：只标 3 个基因") +
-  theme_minimal(base_size = 12)
+  theme_grey(base_size = 12)
 
 # ---- 输出 -------------------------------------------------------------------
 
