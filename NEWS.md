@@ -27,6 +27,7 @@
 
 * 文档：中文 vignette（`vignette("ggsmartext")`）、英文 vignette
   （`vignette("ggsmartext-en")`）、英文 README、22 张示例图
-  （`inst/examples/07-gallery.R`）。
+  （`inst/examples/07-gallery.R`）。热图标注示例使用真实 GEO RNA-seq 数据
+  （`airway`，GEO GSE52778，见 `inst/examples/09-heatmap-rnaseq.R`）。
 
 * 需要 R >= 4.1、ggplot2 >= 4.0.0。

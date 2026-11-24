@@ -359,26 +359,66 @@ ggplot(df60, aes(x = sample, y = value)) +
 
 "Label only a few rows and hide the rest" is the typical `anno_mark()` use case. Switch the main axis off, duplicate it with `dup_axis()`, and attach the smart guide to the copy:
 
-```{r anno-heatmap, fig.cap = "only three genes are labelled on the right of the heatmap: stub + diagonal + stub to each row"}
-set.seed(11)
-genes <- paste0("GENE", sprintf("%03d", 1:60))
+```{r anno-heatmap, eval = requireNamespace("airway", quietly = TRUE), fig.cap = "real data: airway RNA-seq (GEO GSE52778) heatmap, only the 8 glucocorticoid-responsive genes are labelled"}
+## Real data: airway RNA-seq (GEO GSE52778)
+## human airway smooth muscle cells, 4 cell lines x dexamethasone/control
+library(airway)
+data(airway, package = "airway")
+
+counts <- SummarizedExperiment::assay(airway, "counts")
+cpm <- t(t(counts) / colSums(counts)) * 1e6
+keep <- rowSums(cpm > 1) >= 4          # expressed in at least 4 samples
+logcpm <- log2(cpm[keep, ] + 1)
+
+## 60 most variable genes, row z-scores, hierarchical clustering
+vars <- apply(logcpm, 1, var)
+z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[1:60], ])))
+ord <- hclust(dist(z), method = "ward.D2")$order
+
+sym <- SummarizedExperiment::rowData(airway)$symbol[match(rownames(z), rownames(airway))]
+gene_labels <- ifelse(is.na(sym[ord]) | sym[ord] == "", rownames(z)[ord], sym[ord])
+
+cd <- as.data.frame(SummarizedExperiment::colData(airway))
+sample_lab <- factor(paste(cd$cell, cd$dex, sep = "_"),
+                     levels = paste(cd$cell, cd$dex, sep = "_"))
+
 df_gene <- data.frame(
-  gene = factor(genes, levels = rev(genes)),
-  sample = rep(paste0("S", 1:4), each = 60),
-  z = round(rnorm(240), 2)
+  gene = factor(rep(rev(gene_labels), times = nrow(cd)), levels = rev(gene_labels)),
+  sample = factor(rep(sample_lab, each = nrow(z)), levels = levels(sample_lab)),
+  z = as.vector(z[ord, ])
 )
 
+## label only the 8 glucocorticoid-responsive genes, which sit close together
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
   scale_y_discrete(
     guide = guide_none(),
     sec.axis = dup_axis(
-      guide = guide_axis_smart(which = c("GENE005", "GENE018", "GENE047"))
+      guide = guide_axis_smart(which = gene_labels[1:8])
     )
   ) +
-  scale_fill_gradient2(low = "#2E5EAA", mid = "white", high = "#C0392B") +
-  labs(x = NULL, y = NULL, title = "Heatmap labels: only 3 genes") +
-  theme_minimal(base_size = 12)
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score") +
+  labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778)") +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+This uses **real RNA-seq data from GEO**: the `airway` package (GEO series
+[GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778); human
+airway smooth muscle cells, four cell lines with and without dexamethasone).
+`gene_labels[1:8]` are the classic glucocorticoid-responsive genes that cluster
+at the top of the heatmap (`TSC22D3`, `KLF15`, `FKBP5`, `PER1`, `ZBTB16`,
+`SPARCL1`, ...); they crowd into a narrow strip, so `guide_axis_smart()`
+stagger them and ties each one back to its row with a leader line.
+
+`airway` is a `Suggests` dependency; when it is not installed the chunk above is
+skipped:
+
+```r
+if (!requireNamespace("airway", quietly = TRUE)) {
+  BiocManager::install("airway")   # from Bioconductor
+}
 ```
 
 Key points:

@@ -193,12 +193,28 @@ axis and label only the rows you care about. Duplicate the axis with
 `guide_axis_smart()` on the copy:
 
 ``` r
-set.seed(11)
-genes <- paste0("GENE", sprintf("%03d", 1:60))
+## real RNA-seq data from GEO: airway (GSE52778), 4 cell lines +/- dexamethasone
+library(airway)
+data(airway, package = "airway")
+
+counts <- SummarizedExperiment::assay(airway, "counts")
+cpm <- t(t(counts) / colSums(counts)) * 1e6
+logcpm <- log2(cpm[rowSums(cpm > 1) >= 4, ] + 1)
+
+vars <- apply(logcpm, 1, var)
+z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[1:60], ])))
+ord <- hclust(dist(z), method = "ward.D2")$order
+sym <- SummarizedExperiment::rowData(airway)$symbol[match(rownames(z), rownames(airway))]
+gene_labels <- ifelse(is.na(sym[ord]) | sym[ord] == "", rownames(z)[ord], sym[ord])
+
+cd <- as.data.frame(SummarizedExperiment::colData(airway))
+sample_lab <- factor(paste(cd$cell, cd$dex, sep = "_"),
+                     levels = paste(cd$cell, cd$dex, sep = "_"))
+
 df_gene <- data.frame(
-  gene = factor(genes, levels = rev(genes)),
-  sample = rep(paste0("S", 1:4), each = 60),
-  z = round(rnorm(240), 2)
+  gene = factor(rep(rev(gene_labels), times = nrow(cd)), levels = rev(gene_labels)),
+  sample = factor(rep(sample_lab, each = nrow(z)), levels = levels(sample_lab)),
+  z = as.vector(z[ord, ])
 )
 
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
@@ -206,24 +222,35 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_y_discrete(
     guide = guide_none(),
     sec.axis = dup_axis(
-      guide = guide_axis_smart(which = c("GENE005", "GENE018", "GENE047"))
+      guide = guide_axis_smart(which = gene_labels[1:8])
     )
   ) +
-  scale_fill_gradient2(low = "#2E5EAA", mid = "white", high = "#C0392B") +
-  labs(x = NULL, y = NULL, title = "Heatmap annotation: only 3 genes") +
-  theme_minimal(base_size = 12)
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score") +
+  labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778)") +
+  theme_minimal(base_size = 12) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 <div class="figure">
 
-<img src="man/figures/README-anno-mark-1.png" alt="Heatmap annotation: only three genes are labelled on a duplicated right axis" width="100%" />
+<img src="man/figures/README-anno-mark-1.png" alt="Real RNA-seq data (GEO GSE52778): only the 8 glucocorticoid-responsive genes are labelled on a duplicated right axis" width="100%" />
 <p class="caption">
 
-Heatmap annotation: only three genes are labelled on a duplicated right
-axis
+Real RNA-seq data (GEO GSE52778): only the 8 glucocorticoid-responsive
+genes are labelled on a duplicated right axis
 </p>
 
 </div>
+
+Real data from GEO: the
+[`airway`](https://bioconductor.org/packages/airway) package holds an
+RNA-seq experiment on human airway smooth muscle cells (GEO
+[GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778)),
+four cell lines with and without dexamethasone. The eight genes labelled
+here are the glucocorticoid-responsive genes that cluster together at
+the top of the heatmap. `airway` is a `Suggests` dependency; install it
+with `BiocManager::install("airway")` when you re-render this README.
 
 The same works for a cluster of neighbouring categories: select it with
 `which = 24:35` and the guide stacks the labels over several rows
