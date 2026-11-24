@@ -2,6 +2,12 @@
 
 * 首个版本。
 
+* 内置数据 `airway_heatmap`：GEO GSE52778 的真实 RNA-seq 表达矩阵（300 个
+  变异最大的基因，逐基因 z-score，按层次聚类排序），同时带上绘图用的长表
+  `df`、样本/基因注释以及示例标注 `mark` / `mark_by_set`。文档与示例直接
+  `data(airway_heatmap)` 加载后画图，渲染时不再需要 `airway` 和
+  `SummarizedExperiment`，两者也已从 `Suggests` 移除。
+
 * `guide_axis_smart()`：ggplot2 的 `GuideAxis` 子类，用于分类轴标签过多时按需
   显示标签、多行/多列错开、并用引导线把每个标签连回自己的刻度。
 
@@ -16,6 +22,30 @@
     高度按旋转后的包围盒计算。
   - 支持 x 轴、y 轴、顶部/底部/左侧/右侧轴，以及 `sec.axis`（如热图右侧基因
     标注）。与 `facet`、`coord_flip`、`theme` 协作。
+
+* 分面（`facet_wrap()` / `facet_grid()`）：
+
+  - 每个面板各自建立 guide：`free_x` / `free_y` 时只画该面板内存在的标签，
+    `which` 一次写全所有面板的标签即可，不存在的标签静默跳过（不再逐面板
+    警告），详见 `vignettes/ggsmartext.Rmd` 的“与 facet 配合”一节。
+  - 面板内拥挤的标签按该面板宽度自动分层，也可用 `nrow` 强制。
+  - `facet_grid` 行分面共享 x 轴时 guide 只画一次；列分面共享 y 轴同理。
+  - 热图分面时把 guide 挂在 `scale_y_discrete(position = "right", guide = ...)`
+    上（`dup_axis()` 在分面里不会逐面板绘制）。
+  - 新增分面测试 `tests/testthat/test-guide-facets.R`（柱状图 facet_wrap /
+    facet_grid、free 刻度逐面板选标签、面板内拥挤分层、分面热图右侧 y 轴），
+    以及示例 `inst/examples/10-facets.R`（4 张图）。
+
+* 内置数据 `airway_heatmap`（GEO GSE52778，来自 Bioconductor `airway`）：
+
+  - 一次性预处理成 300 个高变基因 × 8 个样本的行 z-score 矩阵（已按层次
+    聚类排序），附带单图标注的 20 个基因 `mark` 与分面用的每组 4 个基因
+    `mark_by_set`；
+  - vignette 与 `inst/examples/09-heatmap-rnaseq.R` 直接用它，渲染时不再
+    依赖 `airway` / `SummarizedExperiment`（两者已从 Suggests 移除），
+    CI 也不再需要 Bioconductor 依赖；
+  - 数据生成脚本见 `.scratch/make_data.R`（不进包），结构契约测试见
+    `tests/testthat/test-data.R`。
 
 * 底层算法（纯 R，无 Rcpp）：
 

@@ -46,7 +46,12 @@ all labels that fit.  Otherwise one of
 a logical vector (or a numeric vector of indices).
 A zero-length vector (\code{integer(0)}, \code{character(0)}, \code{logical(0)}) selects
 no labels at all and draws an empty axis.
-}}
+}
+
+Facets are supported: the guide is built once per panel (or once per column
+for a shared axis), so a character \code{which} such as \code{c("gene1", "gene2")}
+only marks the gene in the panel where it actually appears.  Unmatched
+labels are silently skipped, which keeps a per-panel request quiet.}
 
 \item{n}{Maximum number of labels to display.  When \code{which} is \code{NULL} and
 \code{n} is set, \code{n} evenly spaced labels are picked.  When \code{which} is given, at

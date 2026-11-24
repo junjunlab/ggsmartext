@@ -356,60 +356,23 @@ ggplot(df60, aes(x = sample, y = value)) +
 
 "只标注少数几行、其余不显示"是 `anno_mark()` 的典型场景。做法是：主轴关掉全部标签，再用 `dup_axis()` 复制一根副轴、把 smart guide 挂在副轴上。
 
-下面用 **GEO 上的真实 RNA-seq 数据**：`airway` 数据包（GEO 编号
-[GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778)，
-人气道平滑肌细胞，4 株细胞系分别做地塞米松处理与对照）。为了看清引导线长度
-和标签上下间距的分配，这里把热图画成 **300 个基因**的竖长图，并标注 20 个基因
-（顶部响应簇里连续 12 个 + 散布在中下部的 8 个）。
+下面用包内置的 **`airway_heatmap`** 数据画热图：它来自 GEO 上的真实 RNA-seq
+实验（[GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778)，
+人气道平滑肌细胞，4 株细胞系分别做地塞米松处理与对照）。这份数据已经处理好
+——表达过滤、`log2(CPM + 1)`、逐基因 z-score、按变异挑出 300 个基因并做层次
+聚类排序（细节见 `?airway_heatmap`）——所以下面加载数据就能直接画图。
 
-```{r anno-heatmap-data, eval = requireNamespace("airway", quietly = TRUE)}
-## 真实数据：airway RNA-seq（GEO GSE52778）
-library(airway)
-data(airway, package = "airway")
+为了看清引导线长度和标签上下间距的分配，热图画成 **300 个基因**的竖长图，
+并标注 20 个基因（顶部响应簇里连续 12 个 + 散布在中下部的 8 个）：
 
-counts <- SummarizedExperiment::assay(airway, "counts")
-cpm <- t(t(counts) / colSums(counts)) * 1e6
-logcpm <- log2(cpm[rowSums(cpm > 1) >= 4, ] + 1) # 至少在 4 个样本中表达
-
-## 去掉重复的基因 symbol，保证每个标签唯一
-name_map <- SummarizedExperiment::rowData(airway)$symbol
-name_map <- ifelse(is.na(name_map) | name_map == "", rownames(airway), name_map)
-names(name_map) <- rownames(airway)
-dup_ids <- names(name_map)[duplicated(name_map) | duplicated(name_map, fromLast = TRUE)]
-logcpm <- logcpm[!rownames(logcpm) %in% dup_ids, ]
-
-## 变异最大的 300 个基因，按行 z-score 后层次聚类
-n_gene <- 300
-vars <- apply(logcpm, 1, var)
-z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[seq_len(n_gene)], ])))
-ord <- hclust(dist(z), method = "ward.D2")$order
-
-gene_name <- name_map[rownames(z)]
-
-## 按"地塞米松处理后上调 / 下调"把基因分成两组，后面用来分面
-cd <- as.data.frame(SummarizedExperiment::colData(airway))
-delta <- rowMeans(z[, cd$dex == "trt"]) - rowMeans(z[, cd$dex == "untrt"])
-gene_set <- ifelse(delta > 0, "up in dexamethasone", "down in dexamethasone")
-
-sample_lab <- factor(paste(cd$cell, cd$dex, sep = "_"),
-                     levels = paste(cd$cell, cd$dex, sep = "_"))
-
-df_gene <- data.frame(
-  gene = factor(rep(gene_name[ord], times = nrow(cd)), levels = rev(gene_name[ord])),
-  sample = factor(rep(sample_lab, each = nrow(z)), levels = levels(sample_lab)),
-  gene_set = factor(rep(gene_set[ord], times = nrow(cd)),
-                    levels = c("up in dexamethasone", "down in dexamethasone")),
-  z = as.vector(z[ord, ])
-)
+```{r anno-heatmap-data}
+## 内置数据：300 基因 x 8 样本的行 z-score 矩阵（已按层次聚类排序）
+data(airway_heatmap, package = "ggsmartext")
+df_gene <- airway_heatmap$df
+mark    <- airway_heatmap$mark
 ```
 
-```{r anno-heatmap, eval = requireNamespace("airway", quietly = TRUE), fig.width = 6.5, fig.height = 10, fig.cap = "真实数据（GEO GSE52778）300 个基因的竖长热图：只标注 20 个基因，可以看到引导线长度和标签上下间距的自动分配"}
-## 20 个标注：顶部响应簇连续 12 个 + 散布在中下部的 8 个
-mark <- c(
-  gene_name[ord][1:12],
-  gene_name[ord][round(seq(60, n_gene - 10, length.out = 8))]
-)
-
+```{r anno-heatmap, fig.width = 6.5, fig.height = 10, fig.cap = "真实数据（GEO GSE52778）300 个基因的竖长热图：只标注 20 个基因，可以看到引导线长度和标签上下间距的自动分配"}
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
   scale_y_discrete(
@@ -429,13 +392,9 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
 分成两个面板，每个面板只标注自己那一组里响应最强的 4 个基因（面板高度按基因数
 自适应）：
 
-```{r anno-heatmap-facet, eval = requireNamespace("airway", quietly = TRUE), fig.width = 7, fig.height = 10, fig.cap = "按基因集分面的热图：每个面板数据不同，标签各自独立排布"}
-## 每个面板（基因集）里挑 |delta| 最大的 4 个基因来标注
-mark_by_set <- lapply(
-  split(names(delta), gene_set),
-  function(ids) ids[order(abs(delta[ids]), decreasing = TRUE)][1:4]
-)
-mark_facet <- unlist(mark_by_set, use.names = FALSE)
+```{r anno-heatmap-facet, fig.width = 7, fig.height = 10, fig.cap = "按基因集分面的热图：每个面板数据不同，标签各自独立排布"}
+## 每个面板（基因集）里响应最强的 4 个基因，数据里已经算好
+mark_facet <- unlist(airway_heatmap$mark_by_set, use.names = FALSE)
 
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
@@ -443,7 +402,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_y_discrete(
     position = "right",
     guide = guide_axis_smart(
-      which = function(labels, positions) labels %in% gene_name[mark_facet]
+      which = function(labels, positions) labels %in% mark_facet
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
@@ -466,13 +425,9 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   自己存在的标签；
 - 注意 `dup_axis()` 在分面图里不会逐面板绘制，分面时把 smart guide 直接挂在
   `scale_y_discrete(position = "right", guide = ...)` 上即可；
-- `airway` 是 `Suggests` 依赖，没装时上面三个代码块会自动跳过：
-
-```r
-if (!requireNamespace("airway", quietly = TRUE)) {
-  BiocManager::install("airway")   # 来自 Bioconductor
-}
-```
+- `airway_heatmap` 随包一起发布（`data/airway_heatmap.rda`），不依赖
+  `airway` 或 `SummarizedExperiment`；想看它是怎么从原始 counts 处理出来的，
+  可以按 `?airway_heatmap` 里的步骤用 `airway` 包复现。
 
 # 长标签与角度：`angle`、`hjust`、`vjust`
 
@@ -540,7 +495,8 @@ ggplot(df_curve, aes(x, y)) +
 
 ## facet：每个面板各自排布
 
-分面以后每个面板都有自己的轴；guide 在每个面板里独立计算（面板宽度会变小，必要时会自动多分几行）：
+分面以后每个面板都有自己的轴，guide 在每个面板里**独立计算**：面板变窄时自动多分几行，
+标签也只从该面板自己的刻度里挑。
 
 ```{r facet, fig.cap = "facet_wrap 的两个面板各自排布标签"}
 set.seed(7)
@@ -557,6 +513,113 @@ ggplot(df_facet, aes(x = sample, y = value)) +
   labs(x = NULL, y = "响应值", title = "facet_wrap：每个面板独立排布") +
   theme_minimal(base_size = 12)
 ```
+
+### 自由刻度：每个面板只标自己的标签
+
+`scales = "free_x"`（或 `free_y`）时各面板的类别不同。`which` 里一次写全所有面板想标的标签即可，
+每个面板只画自己这里存在的那些；**某面板里不存在的标签会被静默跳过**，不会逐面板报错或警告：
+
+```{r facet-free, fig.cap = "facet_wrap + free_x：每个面板只标自己有的标签"}
+set.seed(8)
+df_facet_free <- data.frame(
+  cat = factor(
+    c(paste0("A", 1:15), paste0("B", 1:15), paste0("C", 1:15), paste0("D", 1:15)),
+    levels = c(paste0("A", 1:15), paste0("B", 1:15), paste0("C", 1:15), paste0("D", 1:15))
+  ),
+  value = round(runif(60, 10, 100), 1),
+  group = rep(c("组 A", "组 B", "组 C", "组 D"), each = 15)
+)
+mark_facet_free <- c("A3", "A4", "A5", "A6", "B10", "C1", "C8", "D12")
+
+ggplot(df_facet_free, aes(cat, value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  facet_wrap(~ group, nrow = 2, scales = "free_x") +
+  guides(x = guide_axis_smart(which = mark_facet_free)) +
+  labs(x = NULL, y = "响应值",
+       title = "facet_wrap + free_x：每个面板只标自己有的标签") +
+  theme_minimal(base_size = 11)
+```
+
+### 面板内拥挤：自动分层
+
+一个面板里连续标很多标签时，guide 会在该面板内自动摊到多行；面板越窄，行数越多。下面强制 `nrow = 3`：
+
+```{r facet-crowded, fig.cap = "面板里连续标 12 个拥挤标签：自动分 3 行"}
+df_facet_crowd <- data.frame(
+  cat = factor(paste0("c", 1:20), levels = paste0("c", 1:20)),
+  value = rep(c(15, 62, 23, 78, 34, 51, 44, 29), length.out = 40),
+  group = rep(c("组 A", "组 B"), each = 20)
+)
+
+ggplot(df_facet_crowd, aes(cat, value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  facet_wrap(~ group, nrow = 1) +
+  guides(x = guide_axis_smart(which = 3:14, nrow = 3)) +
+  labs(x = NULL, y = "响应值",
+       title = "面板内拥挤标签：12 个标签分 3 行") +
+  theme_minimal(base_size = 11)
+```
+
+### facet_grid：共享轴只画一次，自由轴各画各的
+
+`facet_grid` 行分面、x 轴共享时 guide 只画一次；`scales = "free_x"` 时每一列各自画一次：
+
+```{r facet-grid, fig.cap = "facet_grid：free_x 时每列各自标注"}
+df_facet_grid <- data.frame(
+  cat = factor(c(paste0("g", 1:15), paste0("h", 1:15)),
+               levels = c(paste0("g", 1:15), paste0("h", 1:15))),
+  value = round(runif(30, 10, 100), 1),
+  side = rep(c("左面板", "右面板"), each = 15)
+)
+
+ggplot(df_facet_grid, aes(cat, value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  facet_grid(. ~ side, scales = "free_x") +
+  guides(x = guide_axis_smart(which = c("g2", "g7", "g12", "h3", "h9", "h14"))) +
+  labs(x = NULL, y = "响应值",
+       title = "facet_grid + free_x：两列各自标注自己的类别") +
+  theme_minimal(base_size = 11)
+```
+
+### 热图分面：右侧 y 轴每面板独立标注
+
+热图分面时把 guide 挂在 `scale_y_discrete(position = "right")` 上即可；`free_y` 时每个面板
+只标自己数据里的基因，拥挤的连续基因同样会自动分层：
+
+```{r facet-heatmap, fig.cap = "分面热图：每个面板独立标注自己的基因"}
+set.seed(9)
+n_gene_f <- 80
+mat_f <- matrix(rnorm(n_gene_f * 6), n_gene_f, 6,
+                dimnames = list(paste0("gene", 1:n_gene_f), paste0("s", 1:6)))
+df_facet_heat <- data.frame(
+  gene = factor(rep(rownames(mat_f), times = 6), levels = rev(rownames(mat_f))),
+  sample = factor(rep(colnames(mat_f), each = n_gene_f), levels = colnames(mat_f)),
+  value = as.vector(mat_f),
+  set = rep(ifelse(seq_len(n_gene_f) %% 2 == 0, "偶数行", "奇数行"), times = 6)
+)
+
+ggplot(df_facet_heat, aes(sample, gene, fill = value)) +
+  geom_tile() +
+  facet_wrap(~ set, nrow = 1, scales = "free_y") +
+  scale_y_discrete(
+    position = "right",
+    guide = guide_axis_smart(which = paste0("gene", 18:29))
+  ) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score") +
+  labs(x = NULL, y = NULL,
+       title = "分面热图：每个面板只标自己有的基因") +
+  theme_minimal(base_size = 9) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### 分面检查清单
+
+- `facet_wrap` 与 `facet_grid` 都支持，guide 在每个面板内独立排布；
+- `free_x` / `free_y`：每个面板只画自己有的标签，`which` 可以一次写全所有面板的标签；
+- 共享刻度：轴只画一次，标签按共享刻度走（`facet_grid` 行分面共享 x、列分面共享 y）；
+- 拥挤：面板变窄时自动多分行，也可以用 `nrow` 强制指定行数；
+- 分面 + `dup_axis()` 不生效（每个面板不会各画一次副轴），直接用 `scale_*_discrete(position =, guide =)` 挂 guide。
 
 ## coord_flip：兼容，但推荐直接映射到 y 轴
 

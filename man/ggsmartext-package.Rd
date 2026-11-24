@@ -32,8 +32,9 @@ boxes (pure \code{smartAlign} port).
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/junjun/ggsmartext}
-  \item Report bugs at \url{https://github.com/junjun/ggsmartext/issues}
+  \item \url{https://github.com/junjunlab/ggsmartext}
+  \item \url{https://junjunlab.github.io/ggsmartext/}
+  \item Report bugs at \url{https://github.com/junjunlab/ggsmartext/issues}
 }
 
 }

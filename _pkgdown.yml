@@ -23,3 +23,10 @@ reference:
       - smart_align
       - box_arrange
       - smart_stack
+
+  - title: 内置数据 (Datasets)
+    desc: >
+      示例和 vignette 使用的真实 RNA-seq 热图数据（GEO GSE52778），
+      已预处理成 300 个高变基因 × 8 个样本的行 z-score 矩阵。
+    contents:
+      - airway_heatmap

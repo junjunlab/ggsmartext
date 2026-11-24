@@ -359,61 +359,27 @@ ggplot(df60, aes(x = sample, y = value)) +
 
 "Label only a few rows and hide the rest" is the typical `anno_mark()` use case. Switch the main axis off, duplicate it with `dup_axis()`, and attach the smart guide to the copy.
 
-This section uses **real RNA-seq data from GEO**: the `airway` package
-(GEO series [GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778);
+This section uses the data set bundled with the package, **`airway_heatmap`**:
+real RNA-seq from GEO
+([GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778);
 human airway smooth muscle cells, four cell lines with and without
-dexamethasone). To make the leader lines and the vertical distribution of the
-labels visible, the heatmap shows **300 genes** and labels 20 of them (12
-neighbouring genes from the top response cluster plus 8 scattered genes).
+dexamethasone). The data is already processed — expressed genes only,
+`log2(CPM + 1)`, per-gene z-scores, the 300 most variable genes ordered by
+hierarchical clustering (see `?airway_heatmap` for the exact steps) — so the
+chunks below load it and plot immediately.
 
-```{r anno-heatmap-data, eval = requireNamespace("airway", quietly = TRUE)}
-## real data: airway RNA-seq (GEO GSE52778)
-library(airway)
-data(airway, package = "airway")
+To make the leader lines and the vertical distribution of the labels visible,
+the heatmap shows **300 genes** and labels 20 of them (12 neighbouring genes
+from the top response cluster plus 8 scattered genes):
 
-counts <- SummarizedExperiment::assay(airway, "counts")
-cpm <- t(t(counts) / colSums(counts)) * 1e6
-logcpm <- log2(cpm[rowSums(cpm > 1) >= 4, ] + 1) # expressed in >= 4 samples
-
-## drop duplicated gene symbols so that every label is unique
-name_map <- SummarizedExperiment::rowData(airway)$symbol
-name_map <- ifelse(is.na(name_map) | name_map == "", rownames(airway), name_map)
-names(name_map) <- rownames(airway)
-dup_ids <- names(name_map)[duplicated(name_map) | duplicated(name_map, fromLast = TRUE)]
-logcpm <- logcpm[!rownames(logcpm) %in% dup_ids, ]
-
-## 300 most variable genes, row z-scores, hierarchical clustering
-n_gene <- 300
-vars <- apply(logcpm, 1, var)
-z <- t(scale(t(logcpm[names(sort(vars, decreasing = TRUE))[seq_len(n_gene)], ])))
-ord <- hclust(dist(z), method = "ward.D2")$order
-
-gene_name <- name_map[rownames(z)]
-
-## split the genes into "up" and "down" after dexamethasone, used for the facets
-cd <- as.data.frame(SummarizedExperiment::colData(airway))
-delta <- rowMeans(z[, cd$dex == "trt"]) - rowMeans(z[, cd$dex == "untrt"])
-gene_set <- ifelse(delta > 0, "up in dexamethasone", "down in dexamethasone")
-
-sample_lab <- factor(paste(cd$cell, cd$dex, sep = "_"),
-                     levels = paste(cd$cell, cd$dex, sep = "_"))
-
-df_gene <- data.frame(
-  gene = factor(rep(gene_name[ord], times = nrow(cd)), levels = rev(gene_name[ord])),
-  sample = factor(rep(sample_lab, each = nrow(z)), levels = levels(sample_lab)),
-  gene_set = factor(rep(gene_set[ord], times = nrow(cd)),
-                    levels = c("up in dexamethasone", "down in dexamethasone")),
-  z = as.vector(z[ord, ])
-)
+```{r anno-heatmap-data}
+## bundled data: 300 genes x 8 samples, per-gene z-scores in cluster order
+data(airway_heatmap, package = "ggsmartext")
+df_gene <- airway_heatmap$df
+mark    <- airway_heatmap$mark
 ```
 
-```{r anno-heatmap, eval = requireNamespace("airway", quietly = TRUE), fig.width = 6.5, fig.height = 10, fig.cap = "real data (GEO GSE52778), a tall 300-gene heatmap: only 20 genes are labelled, showing how the leader lines and the vertical label spacing are allocated"}
-## 20 labels: 12 neighbouring genes from the top cluster + 8 scattered ones
-mark <- c(
-  gene_name[ord][1:12],
-  gene_name[ord][round(seq(60, n_gene - 10, length.out = 8))]
-)
-
+```{r anno-heatmap, fig.width = 6.5, fig.height = 10, fig.cap = "real data (GEO GSE52778), a tall 300-gene heatmap: only 20 genes are labelled, showing how the leader lines and the vertical label spacing are allocated"}
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
   scale_y_discrete(
@@ -434,13 +400,9 @@ own labels. Here the genes are split into an "up" and a "down" panel, and each
 panel labels only its four strongest responders (panel heights follow the number
 of genes):
 
-```{r anno-heatmap-facet, eval = requireNamespace("airway", quietly = TRUE), fig.width = 7, fig.height = 10, fig.cap = "faceted heatmap: each panel has different data and lays out its own labels"}
-## per panel (gene set), label the 4 genes with the largest |delta|
-mark_by_set <- lapply(
-  split(names(delta), gene_set),
-  function(ids) ids[order(abs(delta[ids]), decreasing = TRUE)][1:4]
-)
-mark_facet <- unlist(mark_by_set, use.names = FALSE)
+```{r anno-heatmap-facet, fig.width = 7, fig.height = 10, fig.cap = "faceted heatmap: each panel has different data and lays out its own labels"}
+## the four strongest responders of each gene set are precomputed in the data
+mark_facet <- unlist(airway_heatmap$mark_by_set, use.names = FALSE)
 
 ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   geom_tile() +
@@ -448,7 +410,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
   scale_y_discrete(
     position = "right",
     guide = guide_axis_smart(
-      which = function(labels, positions) labels %in% gene_name[mark_facet]
+      which = function(labels, positions) labels %in% mark_facet
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
@@ -473,14 +435,10 @@ Key points:
   matches the labels that exist in it;
 - `dup_axis()` is not drawn per panel in a faceted plot; attach the smart guide
   directly with `scale_y_discrete(position = "right", guide = ...)` instead;
-- `airway` is a `Suggests` dependency; when it is not installed the three chunks
-  above are skipped:
-
-```r
-if (!requireNamespace("airway", quietly = TRUE)) {
-  BiocManager::install("airway")   # from Bioconductor
-}
-```
+- `airway_heatmap` ships with the package (`data/airway_heatmap.rda`), so no
+  `airway` or `SummarizedExperiment` dependency is needed at render time; the
+  processing steps are documented in `?airway_heatmap` if you want to rebuild it
+  from the original counts.
 
 # Long labels and angles: `angle`, `hjust`, `vjust`
 
@@ -548,7 +506,7 @@ On a continuous axis the character form of `which` matches the **formatted** tic
 
 ## facet: each panel lays out its own labels
 
-Facetting gives every panel its own axis; the guide does its layout independently in each panel (a narrower panel may need more rows):
+Facetting gives every panel its own axis; the guide does its layout independently in each panel (a narrower panel may need more rows), and each panel only picks labels from its own breaks.
 
 ```{r facet, fig.cap = "facet_wrap: each panel lays out its labels independently"}
 set.seed(7)
@@ -565,6 +523,116 @@ ggplot(df_facet, aes(x = sample, y = value)) +
   labs(x = NULL, y = "response", title = "facet_wrap: independent layout per panel") +
   theme_minimal(base_size = 12)
 ```
+
+### Free scales: each panel labels only what it contains
+
+With `scales = "free_x"` (or `free_y`) every panel carries different categories. Write all the labels you
+want to mark once in `which`; each panel only draws the ones it actually has, and labels that are
+**not present in a panel are skipped silently** (no error, no warning per panel):
+
+```{r facet-free, fig.cap = "facet_wrap + free_x: each panel labels only its own categories"}
+set.seed(8)
+df_facet_free <- data.frame(
+  cat = factor(
+    c(paste0("A", 1:15), paste0("B", 1:15), paste0("C", 1:15), paste0("D", 1:15)),
+    levels = c(paste0("A", 1:15), paste0("B", 1:15), paste0("C", 1:15), paste0("D", 1:15))
+  ),
+  value = round(runif(60, 10, 100), 1),
+  group = rep(c("Group A", "Group B", "Group C", "Group D"), each = 15)
+)
+mark_facet_free <- c("A3", "A4", "A5", "A6", "B10", "C1", "C8", "D12")
+
+ggplot(df_facet_free, aes(cat, value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  facet_wrap(~ group, nrow = 2, scales = "free_x") +
+  guides(x = guide_axis_smart(which = mark_facet_free)) +
+  labs(x = NULL, y = "response",
+       title = "facet_wrap + free_x: each panel labels what it has") +
+  theme_minimal(base_size = 11)
+```
+
+### Crowded labels inside one panel
+
+A run of neighbouring labels is spread over several rows *inside that panel*; the narrower the panel,
+the more rows are used. Here `nrow = 3` is forced:
+
+```{r facet-crowded, fig.cap = "12 crowded labels inside a panel: spread over 3 rows"}
+df_facet_crowd <- data.frame(
+  cat = factor(paste0("c", 1:20), levels = paste0("c", 1:20)),
+  value = rep(c(15, 62, 23, 78, 34, 51, 44, 29), length.out = 40),
+  group = rep(c("Group A", "Group B"), each = 20)
+)
+
+ggplot(df_facet_crowd, aes(cat, value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  facet_wrap(~ group, nrow = 1) +
+  guides(x = guide_axis_smart(which = 3:14, nrow = 3)) +
+  labs(x = NULL, y = "response",
+       title = "crowded labels inside a panel: 3 rows") +
+  theme_minimal(base_size = 11)
+```
+
+### facet_grid: a shared axis is drawn once, free axes once per panel
+
+With `facet_grid` and a shared x axis the guide is drawn once; with `scales = "free_x"` every column gets its own:
+
+```{r facet-grid, fig.cap = "facet_grid + free_x: each column labels its own categories"}
+df_facet_grid <- data.frame(
+  cat = factor(c(paste0("g", 1:15), paste0("h", 1:15)),
+               levels = c(paste0("g", 1:15), paste0("h", 1:15))),
+  value = round(runif(30, 10, 100), 1),
+  side = rep(c("left panel", "right panel"), each = 15)
+)
+
+ggplot(df_facet_grid, aes(cat, value)) +
+  geom_col(fill = "#5B8FF9", width = 0.8) +
+  facet_grid(. ~ side, scales = "free_x") +
+  guides(x = guide_axis_smart(which = c("g2", "g7", "g12", "h3", "h9", "h14"))) +
+  labs(x = NULL, y = "response",
+       title = "facet_grid + free_x: each column labels its own") +
+  theme_minimal(base_size = 11)
+```
+
+### Faceted heatmap: the right-hand y axis is labelled per panel
+
+For a faceted heatmap attach the guide with `scale_y_discrete(position = "right")`; with `free_y` each panel
+labels only the genes it contains, and a crowded run of genes is spread over rows inside that panel:
+
+```{r facet-heatmap, fig.cap = "faceted heatmap: each panel labels its own genes"}
+set.seed(9)
+n_gene_f <- 80
+mat_f <- matrix(rnorm(n_gene_f * 6), n_gene_f, 6,
+                dimnames = list(paste0("gene", 1:n_gene_f), paste0("s", 1:6)))
+df_facet_heat <- data.frame(
+  gene = factor(rep(rownames(mat_f), times = 6), levels = rev(rownames(mat_f))),
+  sample = factor(rep(colnames(mat_f), each = n_gene_f), levels = colnames(mat_f)),
+  value = as.vector(mat_f),
+  set = rep(ifelse(seq_len(n_gene_f) %% 2 == 0, "even rows", "odd rows"), times = 6)
+)
+
+ggplot(df_facet_heat, aes(sample, gene, fill = value)) +
+  geom_tile() +
+  facet_wrap(~ set, nrow = 1, scales = "free_y") +
+  scale_y_discrete(
+    position = "right",
+    guide = guide_axis_smart(which = paste0("gene", 18:29))
+  ) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score") +
+  labs(x = NULL, y = NULL,
+       title = "faceted heatmap: each panel labels its own genes") +
+  theme_minimal(base_size = 9) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Facet checklist
+
+- both `facet_wrap` and `facet_grid` work; the guide lays out inside every panel;
+- `free_x` / `free_y`: each panel draws only the labels it has, so a single `which` can cover all panels;
+- shared scales: the axis is drawn once (`facet_grid` rows share x, columns share y);
+- crowding: a narrower panel uses more rows automatically, or force it with `nrow`;
+- facets + `dup_axis()` do not work (the copy is not drawn per panel); attach the guide with
+  `scale_*_discrete(position =, guide =)` instead.
 
 ## coord_flip: supported, but mapping to the y axis is recommended
 

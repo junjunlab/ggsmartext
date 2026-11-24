@@ -238,9 +238,13 @@ test_that("which 的退化/非法输入有明确的报错或警告", {
   expect_error(ggplot2::ggplotGrob(p), "logical or numeric")
 
   # 字符 which 里有没有的标签：警告但不报错
-  expect_warning(
-    smart_prepare(paste0("S", 1:5), which = c("S2", "not-there")),
-    "not part of the axis"
+  # character `which`: labels that are not on the axis are skipped silently
+  # (faceted plots request one shared `which` for all panels)
+  expect_no_warning(
+    smart_prepare(paste0("S", 1:5), which = c("x1", "not-there"))
+  )
+  expect_no_warning(
+    smart_prepare(paste0("S", 1:5), which = c("S2", "not-there"))
   )
 })
 
@@ -605,7 +609,7 @@ test_that("y 轴标签按列错开，引导线从刻度指向标签", {
 # ---- 6. 旋转标签预留高度 ---------------------------------------------------
 
 test_that("angle = 45 的标签按其旋转后的包围盒预留高度，不会被裁切", {
-  labels <- paste0("非常长的中文标签", seq_len(12))
+  labels <- paste0("a long label ", seq_len(12))
   pos <- discrete_pos(12)
 
   plain <- smart_prepare(labels, pos = pos)

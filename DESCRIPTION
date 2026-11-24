@@ -15,6 +15,7 @@ Description: A smart axis labelling system for 'ggplot2'. When a
     box arrangement used by the 'ComplexHeatmap' package.
 License: MIT + file LICENSE
 Encoding: UTF-8
+LazyData: true
 Depends:
     R (>= 4.1.0)
 Imports:
@@ -24,14 +25,12 @@ Imports:
     rlang,
     scales
 Suggests:
-    airway,
     ComplexHeatmap,
     circlize,
     knitr,
     pkgdown,
     ragg,
     rmarkdown,
-    SummarizedExperiment,
     systemfonts,
     testthat (>= 3.0.0)
 VignetteBuilder:

@@ -26,6 +26,11 @@
 #'     a logical vector (or a numeric vector of indices).
 #'   A zero-length vector (`integer(0)`, `character(0)`, `logical(0)`) selects
 #'   no labels at all and draws an empty axis.
+#'
+#'   Facets are supported: the guide is built once per panel (or once per column
+#'   for a shared axis), so a character `which` such as `c("gene1", "gene2")`
+#'   only marks the gene in the panel where it actually appears.  Unmatched
+#'   labels are silently skipped, which keeps a per-panel request quiet.
 #' @param n Maximum number of labels to display.  When `which` is `NULL` and
 #'   `n` is set, `n` evenly spaced labels are picked.  When `which` is given, at
 #'   most `n` of the selected labels are kept.
@@ -377,13 +382,9 @@ GuideAxisSmart <- ggplot2::ggproto(
     sel[unique(ii)] <- TRUE
   } else if (is.character(which)) {
     sel <- labels %in% which
-    missing_labels <- setdiff(which, labels)
-    if (length(missing_labels) > 0L) {
-      cli::cli_warn(c(
-        "Some labels requested in {.arg which} are not part of the axis.",
-        "x" = "Not found: {.val {missing_labels}}."
-      ))
-    }
+    ## A faceted plot builds one guide per panel and every panel only holds a
+    ## subset of the labels, so unmatched requests (including typos) are simply
+    ## skipped instead of warning once per panel.
   } else {
     cli::cli_abort("Unsupported {.arg which} specification.")
   }
