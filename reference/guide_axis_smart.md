@@ -23,6 +23,7 @@ guide_axis_smart(
   connection_lwd = 0.5,
   connection_lty = 1,
   tick = c("all", "shown", "none"),
+  theta_side = c("outside", "inside"),
   angle = NULL,
   panel_width = NULL,
   max_nrow = 8L,
@@ -129,6 +130,13 @@ guide_axis_smart(
   Which ticks should be drawn: `"all"` (default), `"shown"` (only the
   ticks of the displayed labels) or `"none"`.
 
+- theta_side:
+
+  Place the radial labels `"outside"` (the default) or `"inside"` the
+  circle. Inside labels sit on a label track inside the circle and grow
+  towards the centre, which suits circular heatmaps with a large
+  `inner.radius`. Ignored on cartesian axes.
+
 - angle:
 
   Rotation of the labels in degrees, `NULL` to inherit the theme.
@@ -186,13 +194,27 @@ port of the `smartAlign` algorithm from the
 [`coord_radial()`](https://rdrr.io/pkg/ggplot2/man/coord_radial.html)
 renames the position scales to `theta` and `r`, and only accepts guides
 that know about the `theta` aesthetic; `guide_axis_smart()` is one of
-them. On a radial axis the labels are placed and rotated along the
-circle exactly like
-[`ggplot2::guide_axis_theta()`](https://rdrr.io/pkg/ggplot2/man/guide_axis_theta.html)
-does, so `which` / `n` pick the categories that appear around the ring
-and `tick = "shown"` only keeps their ticks. Tracks (`nrow`) and leader
-lines (`connection`) are a cartesian-coordinate feature and are ignored
-on a radial axis.
+them. On a radial axis the labels are laid out the way
+[`circlize::circos.labels()`](https://rdrr.io/pkg/circlize/man/circos.labels.html)
+does it: the text is rotated along the radius so that it points towards
+the centre of the circle (turned around on the left half, so nothing is
+upside down) and every label is tied to its tick with a three-segment
+leader line – a short radial stub, a diagonal, then a short radial stub
+at the label.
+
+`which` / `n` pick the categories that appear around the ring,
+`tick = "shown"` only keeps their ticks, and `theta_side` chooses
+between a label track `"outside"` the circle (the default) and one
+attached to the `inner.radius()` of the circle (`"inside"`, useful for
+the hole of a circular heatmap). Labels that crowd into one stretch of
+the circle are spread along the arc with the `smartAlign` algorithm
+(`connection = FALSE` removes the leader lines), and a `start`/`end` arc
+(a half circle) is supported as well.
+
+The label size, colour, font family, face and line height always come
+from the theme's axis text element (`axis.text.x` / `axis.text.y`),
+exactly like the stock axis labels; `angle`, `hjust` and `vjust`
+override the theme only when they are supplied.
 
 ## See also
 
@@ -247,5 +269,68 @@ ggplot(d, aes(value, sample)) +
   geom_col() +
   coord_radial(theta = "y") +
   guides(theta = guide_axis_smart(n = 10))
+
+
+# a crowded run of labels is spread along the arc and connected to its ticks
+# with the three-segment leader lines
+ggplot(d, aes(sample, value)) +
+  geom_col() +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = 9:20))
+
+
+# only part of the circle (a half circle) works the same
+ggplot(d, aes(sample, value)) +
+  geom_col() +
+  coord_radial(theta = "x", start = -0.5 * pi, end = 0.5 * pi) +
+  guides(theta = guide_axis_smart(which = 9:20))
+
+
+# a circular heatmap from the bundled RNA-seq data (300 genes x 8 samples):
+# the genes run around the circle, labels outside
+data(airway_heatmap)
+ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.2) +
+  guides(theta = guide_axis_smart(which = airway_heatmap$mark)) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score")
+
+
+# the same heatmap with the labels attached to the inner radius (inside the
+# hole); a large inner radius leaves room for them
+ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.62) +
+  guides(theta = guide_axis_smart(
+    which = airway_heatmap$mark, theta_side = "inside"
+  )) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score")
+
+
+# with facets every panel is a circle of its own
+d_facet <- data.frame(
+  panel = rep(c("A", "B"), each = 20),
+  cat   = factor(rep(paste0("g", 1:20), 2), levels = paste0("g", 1:20)),
+  value = rnorm(40)
+)
+ggplot(d_facet, aes(cat, value)) +
+  geom_col(fill = "#3b82f6") +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = seq(1, 20, by = 2))) +
+  facet_wrap(~panel)
+
+
+# a faceted circular heatmap needs scales = "free_x": each panel then has its
+# own gene scale, so the ring is complete and only that panel's genes are
+# labelled
+ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.3) +
+  guides(theta = guide_axis_smart(which = unlist(airway_heatmap$mark_by_set))) +
+  facet_wrap(~gene_set, ncol = 2, scales = "free_x") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score")
 
 ```

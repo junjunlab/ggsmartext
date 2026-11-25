@@ -65,6 +65,7 @@ can display at once.  Instead of letting the labels overlap, it</p>
 <span>  connection_lwd <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  connection_lty <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  tick <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"all"</span>, <span class="st">"shown"</span>, <span class="st">"none"</span><span class="op">)</span>,</span>
+<span>  theta_side <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"outside"</span>, <span class="st">"inside"</span><span class="op">)</span>,</span>
 <span>  angle <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  panel_width <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  max_nrow <span class="op">=</span> <span class="fl">8L</span>,</span>
@@ -164,6 +165,13 @@ lines.  <code>connection_col = NULL</code> uses the colour of the axis ticks.</p
 the ticks of the displayed labels) or <code>"none"</code>.</p></dd>
 
 
+<dt id="arg-theta-side">theta_side<a class="anchor" aria-label="anchor" href="#arg-theta-side"></a></dt>
+<dd><p>Place the radial labels <code>"outside"</code> (the default) or
+<code>"inside"</code> the circle.  Inside labels sit on a label track inside the
+circle and grow towards the centre, which suits circular heatmaps with a
+large <code>inner.radius</code>.  Ignored on cartesian axes.</p></dd>
+
+
 <dt id="arg-angle">angle<a class="anchor" aria-label="anchor" href="#arg-angle"></a></dt>
 <dd><p>Rotation of the labels in degrees, <code>NULL</code> to inherit the theme.</p></dd>
 
@@ -215,11 +223,23 @@ the <code>smartAlign</code> algorithm from the
 <a href="https://github.com/jokergoo/circlize" class="external-link">circlize</a> package.</p>
 <p><code><a href="https://rdrr.io/pkg/ggplot2/man/coord_radial.html" class="external-link">coord_radial()</a></code> renames the position scales to <code>theta</code> and <code>r</code>, and only
 accepts guides that know about the <code>theta</code> aesthetic; <code>guide_axis_smart()</code> is
-one of them.  On a radial axis the labels are placed and rotated along the
-circle exactly like <code><a href="https://rdrr.io/pkg/ggplot2/man/guide_axis_theta.html" class="external-link">ggplot2::guide_axis_theta()</a></code> does, so <code>which</code> / <code>n</code> pick
-the categories that appear around the ring and <code>tick = "shown"</code> only keeps
-their ticks.  Tracks (<code>nrow</code>) and leader lines (<code>connection</code>) are a
-cartesian-coordinate feature and are ignored on a radial axis.</p>
+one of them.  On a radial axis the labels are laid out the way
+<code><a href="https://rdrr.io/pkg/circlize/man/circos.labels.html" class="external-link">circlize::circos.labels()</a></code> does it: the text is rotated along the radius so
+that it points towards the centre of the circle (turned around on the left
+half, so nothing is upside down) and every label is tied to its tick with a
+three-segment leader line – a short radial stub, a diagonal, then a short
+radial stub at the label.</p>
+<p><code>which</code> / <code>n</code> pick the categories that appear around the ring,
+<code>tick = "shown"</code> only keeps their ticks, and <code>theta_side</code> chooses between a
+label track <code>"outside"</code> the circle (the default) and one attached to the
+<code>inner.radius()</code> of the circle (<code>"inside"</code>, useful for the hole of a circular
+heatmap).  Labels that crowd into one stretch of the circle are spread along
+the arc with the <code>smartAlign</code> algorithm (<code>connection = FALSE</code> removes the
+leader lines), and a <code>start</code>/<code>end</code> arc (a half circle) is supported as well.</p>
+<p>The label size, colour, font family, face and line height always come from
+the theme's axis text element (<code>axis.text.x</code> / <code>axis.text.y</code>), exactly like
+the stock axis labels; <code>angle</code>, <code>hjust</code> and <code>vjust</code> override the theme only
+when they are supplied.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -274,6 +294,69 @@ cartesian-coordinate feature and are ignored on a radial axis.</p>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/guides.html" class="external-link">guides</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu">guide_axis_smart</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="guide_axis_smart-5.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># a crowded run of labels is spread along the arc and connected to its ticks</span></span></span>
+<span class="r-in"><span><span class="co"># with the three-segment leader lines</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">d</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">sample</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_bar.html" class="external-link">geom_col</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_radial.html" class="external-link">coord_radial</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"x"</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/guides.html" class="external-link">guides</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu">guide_axis_smart</span><span class="op">(</span>which <span class="op">=</span> <span class="fl">9</span><span class="op">:</span><span class="fl">20</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="guide_axis_smart-6.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># only part of the circle (a half circle) works the same</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">d</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">sample</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_bar.html" class="external-link">geom_col</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_radial.html" class="external-link">coord_radial</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"x"</span>, start <span class="op">=</span> <span class="op">-</span><span class="fl">0.5</span> <span class="op">*</span> <span class="va">pi</span>, end <span class="op">=</span> <span class="fl">0.5</span> <span class="op">*</span> <span class="va">pi</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/guides.html" class="external-link">guides</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu">guide_axis_smart</span><span class="op">(</span>which <span class="op">=</span> <span class="fl">9</span><span class="op">:</span><span class="fl">20</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="guide_axis_smart-7.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># a circular heatmap from the bundled RNA-seq data (300 genes x 8 samples):</span></span></span>
+<span class="r-in"><span><span class="co"># the genes run around the circle, labels outside</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">airway_heatmap</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">airway_heatmap</span><span class="op">$</span><span class="va">df</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_tile.html" class="external-link">geom_tile</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_radial.html" class="external-link">coord_radial</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"x"</span>, inner.radius <span class="op">=</span> <span class="fl">0.2</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/guides.html" class="external-link">guides</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu">guide_axis_smart</span><span class="op">(</span>which <span class="op">=</span> <span class="va">airway_heatmap</span><span class="op">$</span><span class="va">mark</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/scale_gradient.html" class="external-link">scale_fill_gradient2</a></span><span class="op">(</span>low <span class="op">=</span> <span class="st">"#2166ac"</span>, mid <span class="op">=</span> <span class="st">"white"</span>, high <span class="op">=</span> <span class="st">"#b2182b"</span>,</span></span>
+<span class="r-in"><span>                       midpoint <span class="op">=</span> <span class="fl">0</span>, name <span class="op">=</span> <span class="st">"z-score"</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="guide_axis_smart-8.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># the same heatmap with the labels attached to the inner radius (inside the</span></span></span>
+<span class="r-in"><span><span class="co"># hole); a large inner radius leaves room for them</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">airway_heatmap</span><span class="op">$</span><span class="va">df</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_tile.html" class="external-link">geom_tile</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_radial.html" class="external-link">coord_radial</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"x"</span>, inner.radius <span class="op">=</span> <span class="fl">0.62</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/guides.html" class="external-link">guides</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu">guide_axis_smart</span><span class="op">(</span></span></span>
+<span class="r-in"><span>    which <span class="op">=</span> <span class="va">airway_heatmap</span><span class="op">$</span><span class="va">mark</span>, theta_side <span class="op">=</span> <span class="st">"inside"</span></span></span>
+<span class="r-in"><span>  <span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/scale_gradient.html" class="external-link">scale_fill_gradient2</a></span><span class="op">(</span>low <span class="op">=</span> <span class="st">"#2166ac"</span>, mid <span class="op">=</span> <span class="st">"white"</span>, high <span class="op">=</span> <span class="st">"#b2182b"</span>,</span></span>
+<span class="r-in"><span>                       midpoint <span class="op">=</span> <span class="fl">0</span>, name <span class="op">=</span> <span class="st">"z-score"</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="guide_axis_smart-9.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># with facets every panel is a circle of its own</span></span></span>
+<span class="r-in"><span><span class="va">d_facet</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  panel <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"A"</span>, <span class="st">"B"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">20</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  cat   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"g"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">20</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>, levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"g"</span>, <span class="fl">1</span><span class="op">:</span><span class="fl">20</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  value <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">40</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">d_facet</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">cat</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_bar.html" class="external-link">geom_col</a></span><span class="op">(</span>fill <span class="op">=</span> <span class="st">"#3b82f6"</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_radial.html" class="external-link">coord_radial</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"x"</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/guides.html" class="external-link">guides</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu">guide_axis_smart</span><span class="op">(</span>which <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">20</span>, by <span class="op">=</span> <span class="fl">2</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">panel</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="guide_axis_smart-10.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># a faceted circular heatmap needs scales = "free_x": each panel then has its</span></span></span>
+<span class="r-in"><span><span class="co"># own gene scale, so the ring is complete and only that panel's genes are</span></span></span>
+<span class="r-in"><span><span class="co"># labelled</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">airway_heatmap</span><span class="op">$</span><span class="va">df</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_tile.html" class="external-link">geom_tile</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_radial.html" class="external-link">coord_radial</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"x"</span>, inner.radius <span class="op">=</span> <span class="fl">0.3</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/guides.html" class="external-link">guides</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu">guide_axis_smart</span><span class="op">(</span>which <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">airway_heatmap</span><span class="op">$</span><span class="va">mark_by_set</span><span class="op">)</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/facet_wrap.html" class="external-link">facet_wrap</a></span><span class="op">(</span><span class="op">~</span><span class="va">gene_set</span>, ncol <span class="op">=</span> <span class="fl">2</span>, scales <span class="op">=</span> <span class="st">"free_x"</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/scale_gradient.html" class="external-link">scale_fill_gradient2</a></span><span class="op">(</span>low <span class="op">=</span> <span class="st">"#2166ac"</span>, mid <span class="op">=</span> <span class="st">"white"</span>, high <span class="op">=</span> <span class="st">"#b2182b"</span>,</span></span>
+<span class="r-in"><span>                       midpoint <span class="op">=</span> <span class="fl">0</span>, name <span class="op">=</span> <span class="st">"z-score"</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="guide_axis_smart-11.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -281,7 +364,7 @@ cartesian-coordinate feature and are ignored on a radial axis.</p>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p>Developed by JunJun.</p>
+  <p>Developed by Zhang Jun.</p>
 </div>
 
 <div class="pkgdown-footer-right">

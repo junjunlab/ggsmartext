@@ -41,4 +41,4 @@ Useful links:
 
 ## Author
 
-**Maintainer**: JunJun <junjun@users.noreply.github.com>
+**Maintainer**: Zhang Jun <junjun@users.noreply.github.com>
