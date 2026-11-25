@@ -419,10 +419,18 @@ y 轴</a></li>
 <p>English version: <code>vignette(&quot;ggutils-en&quot;)</code></p>
 </blockquote>
 <style type="text/css">
-pre, pre code, .sourceCode pre {
-white-space: pre-wrap; 
+
+pre, pre code, code.sourceCode, .sourceCode pre, .sourceCode code {
+white-space: pre-wrap !important;
 overflow-wrap: anywhere;
-overflow-x: auto;
+}
+@media (max-width: 760px) {
+html, body { overflow-x: hidden !important; }
+body { margin: 0 !important; padding: 6px !important; }
+#TOC { width: auto !important; max-width: 100% !important; margin: 0 0 10px 0 !important; }
+#TOC ul { padding-left: 18px !important; margin-left: 0 !important; }
+img { max-width: 100% !important; height: auto !important; }
+table { display: block; width: 100%; overflow-x: auto; }
 }
 </style>
 <div id="动机分类轴一挤图就没法看了" class="section level1">
