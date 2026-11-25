@@ -2,7 +2,7 @@ Package: ggsmartext
 Title: Smart Axis Labels for 'ggplot2'
 Version: 0.0.1
 Authors@R:
-    person("JunJun", role = c("aut", "cre"),
+    person("Zhang Jun", role = c("aut", "cre"),
            email = "junjun@users.noreply.github.com")
 Description: A smart axis labelling system for 'ggplot2'. When a
     discrete x or y axis carries too many category labels, the guide

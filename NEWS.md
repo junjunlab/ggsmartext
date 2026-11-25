@@ -30,9 +30,20 @@
     "theta")`，在环形坐标里把标签沿圆周排布、随角度旋转（复用 ggplot2 的
     `GuideAxisTheta` 绘制），并继续支持 `which` / `n` 选择与 `tick = "shown"`；
   - 使用 `guides(theta = guide_axis_smart(...))` 挂载；
-  - 环形坐标下 `nrow` 轨道与引导线是直角坐标的特性，会被忽略（标签直接排在圆周上）；
-  - 参考手册示例中新增 `coord_radial(theta = "x")` 与 `theta = "y"` 两个可运行示例，
-    测试见 `tests/testthat/test-guide-radial.R`。
+  - 环形坐标的标签统一采用 **circlize 风格**（参考 `circos.labels()` 的实现）：
+    标签放在 label track、文字沿半径朝向圆心、左半边自动翻转避免倒置；拥挤时
+    用 `smartAlign` 沿弧向把标签匀开，连接线是 circlize 的**三段几何**
+    （径向短线段 → 斜线 → 径向短线段，`connection = FALSE` 关闭引导线）；
+  - 新增 `theta_side = c("outside", "inside")`：`"outside"`（默认）把标签放在
+    圆外；`"inside"` 把标签贴到 `coord_radial(inner.radius =)` 的**内圈边界**
+    （适合内圈较大的环形热图，标签落在洞内，第一段引线紧贴内圈）；
+  - 环形标签与 cartesian 标签一致，字号 / 颜色 / 字体 / 字重继承主题的
+    `axis.text.x` / `axis.text.y`（新增测试锁定该行为）；
+  - 参考手册示例新增：`theta = "x"` / `"y"`、拥挤标签沿弧匀开、半圆
+    （`start`/`end`，按弧长计算环形排布）、环形热图（外侧 / 内侧
+    `inner.radius = 0.62`）、环形分面（`facet_wrap`、`free_x`、每个面板一簇
+    拥挤标签、分面环形热图 + `scales = "free_x"`）；测试见
+    `tests/testthat/test-guide-radial.R`。
 
 * 分面（`facet_wrap()` / `facet_grid()`）：
 

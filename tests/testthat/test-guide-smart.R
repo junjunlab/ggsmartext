@@ -755,3 +755,26 @@ test_that("200 个分类时自动抽稀并由 cli 提示一次，可静音", {
   on.exit(options(old), add = TRUE)
   expect_silent(ggplot2::ggplotGrob(p))
 })
+
+# ---- theme inheritance: labels follow axis.text.x / axis.text.y ------------
+
+test_that("smart labels inherit the axis text theme (size, colour, face, family)", {
+  labels <- paste0("S", seq_len(6))
+  pos <- discrete_pos(6)
+  th <- ggplot2::theme_grey() +
+    ggplot2::theme(axis.text.x = ggplot2::element_text(
+      size = 20, colour = "red", face = "bold", family = "serif"
+    ))
+  res <- smart_prepare(labels, pos = pos, theme = th)
+  st <- res$prep$style
+  expect_equal(st$size, 20)
+  expect_identical(st$colour, "red")
+  expect_identical(st$face, "bold")
+  expect_identical(st$family, "serif")
+
+  yth <- ggplot2::theme_grey() +
+    ggplot2::theme(axis.text.y = ggplot2::element_text(size = 14, colour = "blue"))
+  res_y <- smart_prepare(labels, pos = pos, aes = "y", position = "left", theme = yth)
+  expect_equal(res_y$prep$style$size, 14)
+  expect_identical(res_y$prep$style$colour, "blue")
+})

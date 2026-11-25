@@ -319,6 +319,131 @@ ggplot(df40, aes(x = value, y = sample)) +
   theme_grey(base_size = 12)
 ```
 
+
+# 环形坐标：`coord_radial()`
+
+`coord_radial()` 把位置标度改名为 `theta` 和 `r`，guide 要挂在 `guides(theta = ...)` 上。
+`ggsmartext` 会把标签按 `circlize::circos.labels()` 的方式排布：文字沿半径、朝向圆心，
+左半边自动翻转避免倒置；拥挤时用 `smartAlign` 沿弧向匀开，并用三段引导线
+（径向短线 → 斜线 → 径向短线）连回各自刻度。
+
+```{r radial-x, fig.cap = "coord_radial(theta = 'x')：环形条形图，每 4 个显示一个标签"}
+ggplot(df50, aes(sample, value)) +
+  geom_col() +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = seq(1, 50, by = 4)))
+```
+
+```{r radial-crowded, fig.cap = "拥挤的 12 个标签：沿弧匀开，三段引导线连回刻度"}
+ggplot(df50, aes(sample, value)) +
+  geom_col() +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = 9:20))
+```
+
+```{r radial-y, fig.cap = "分类变量映射到 y 轴、theta = 'y' 时同样工作"}
+ggplot(df50, aes(value, sample)) +
+  geom_col() +
+  coord_radial(theta = "y") +
+  guides(theta = guide_axis_smart(n = 10))
+```
+
+```{r radial-half, fig.cap = "半圆（start/end）：只画一段弧也能正常排布"}
+ggplot(df50, aes(sample, value)) +
+  geom_col() +
+  coord_radial(theta = "x", start = -0.5 * pi, end = 0.5 * pi) +
+  guides(theta = guide_axis_smart(which = 9:20))
+```
+
+## 环形热图：标签放外侧还是内侧
+
+内置数据（300 基因 × 8 样本）画成环形热图时，`theta` 轴就是基因方向：
+
+```{r radial-heat-outside, fig.width = 7, fig.height = 7, fig.cap = "环形热图，标签在外侧：拥挤的基因簇沿外圈匀开"}
+data(airway_heatmap)
+ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.2) +
+  guides(theta = guide_axis_smart(which = airway_heatmap$mark)) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score")
+```
+
+内圈半径更大时可以把标签放进洞里（`theta_side = "inside"`），标签贴在内圈边界上：
+
+```{r radial-heat-inside, fig.width = 7, fig.height = 7, fig.cap = "环形热图，标签在内侧：theta_side = 'inside'，标签贴内半径"}
+ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.62) +
+  guides(theta = guide_axis_smart(
+    which = airway_heatmap$mark, theta_side = "inside"
+  )) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score")
+```
+
+
+## 分面：每个面板一个圆
+
+`facet_wrap()` / `facet_grid()` 下每个面板都是独立的圆，标签各自排布：
+
+```{r radial-facet-wrap, fig.cap = "facet_wrap + coord_radial：每个面板一个圆，每 2 个显示一个标签"}
+d_facet <- data.frame(
+  panel = rep(c("A", "B", "C", "D"), each = 20),
+  cat   = factor(rep(paste0("g", 1:20), 4), levels = paste0("g", 1:20)),
+  value = round(runif(80, 5, 100), 1)
+)
+ggplot(d_facet, aes(cat, value)) +
+  geom_col(fill = "#3b82f6") +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = seq(1, 20, by = 2))) +
+  facet_wrap(~panel)
+```
+
+```{r radial-facet-free, fig.cap = "facet_wrap + free_x：每个面板只标自己的前 6 个标签"}
+d_free <- data.frame(
+  panel = c(rep("A", 20), rep("B", 30)),
+  cat   = factor(c(paste0("a", 1:20), paste0("b", 1:30))),
+  value = round(runif(50, 5, 100), 1)
+)
+ggplot(d_free, aes(cat, value)) +
+  geom_col(fill = "#f97316") +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = 1:6)) +
+  facet_wrap(~panel, scales = "free_x")
+```
+
+```{r radial-facet-crowded, fig.cap = "每个面板里都有一簇拥挤标签：各自沿弧匀开，互不影响"}
+d_crowd <- data.frame(
+  panel = rep(c("set1", "set2"), each = 40),
+  gene  = factor(rep(paste0("gene", 1:40), 2)),
+  value = round(runif(80, 5, 100), 1)
+)
+ggplot(d_crowd, aes(gene, value)) +
+  geom_col(fill = "#8b5cf6") +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = c(5:16, 25:30))) +
+  facet_wrap(~panel)
+```
+
+分面环形热图要加 `scales = "free_x"`：每个面板用自己的基因标度，圆环才完整，标签也只落在本面板包含的基因上：
+
+```{r radial-facet-heat, fig.width = 8, fig.height = 7, fig.cap = "分面环形热图 + free_x：每个面板圆环完整，只标自己包含的 4 个基因"}
+ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.3) +
+  guides(theta = guide_axis_smart(which = unlist(airway_heatmap$mark_by_set))) +
+  facet_wrap(~gene_set, ncol = 2, scales = "free_x") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score")
+```
+
+> 提示：不加 `scales = "free_x"` 时各面板共享同一个 `theta` 标度，会留下一半空位，
+> 而且 `which` 选中的 8 个基因会在两个面板都画标签；分面环形热图记得写 `free_x`。
+
+环形坐标的标签同样继承主题的轴标签样式（`axis.text.x` / `axis.text.y`，包括大小、颜色、
+字体等），和普通坐标轴一致。
+
 # 集中标注与热图标注（anno_mark 风格）
 
 `connection_style = "diagonal"` 的几何直接对齐 `circlize` 与 `ComplexHeatmap::anno_mark()`：短垂线 → 斜线 → 短垂线 → 文字。配合"能一行放下一行、集中区域自动分层"的轨道策略，特别适合**只标注少数感兴趣的类别**。

@@ -322,6 +322,138 @@ ggplot(df40, aes(x = value, y = sample)) +
   theme_grey(base_size = 12)
 ```
 
+
+# Radial coordinates: `coord_radial()`
+
+`coord_radial()` renames the position scales to `theta` and `r`, so the guide is
+attached with `guides(theta = ...)`.  On this axis `ggsmartext` lays the labels
+out the way `circlize::circos.labels()` does: the text runs along the radius and
+points towards the centre of the circle (turned around on the left half), crowded
+labels are spread along the arc with the `smartAlign` algorithm, and every label
+is tied to its tick by a three-segment leader line (radial stub, diagonal,
+radial stub).
+
+```{r radial-x, fig.cap = "coord_radial(theta = 'x'): a circular bar chart, every 4th label"}
+ggplot(df50, aes(sample, value)) +
+  geom_col() +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = seq(1, 50, by = 4)))
+```
+
+```{r radial-crowded, fig.cap = "12 crowded labels: spread along the arc and connected with three-segment leader lines"}
+ggplot(df50, aes(sample, value)) +
+  geom_col() +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = 9:20))
+```
+
+```{r radial-y, fig.cap = "categories mapped to y with theta = 'y' work the same way"}
+ggplot(df50, aes(value, sample)) +
+  geom_col() +
+  coord_radial(theta = "y") +
+  guides(theta = guide_axis_smart(n = 10))
+```
+
+```{r radial-half, fig.cap = "a half circle (start/end) is laid out the same way"}
+ggplot(df50, aes(sample, value)) +
+  geom_col() +
+  coord_radial(theta = "x", start = -0.5 * pi, end = 0.5 * pi) +
+  guides(theta = guide_axis_smart(which = 9:20))
+```
+
+## Circular heatmaps: labels outside or inside
+
+With the bundled data (300 genes x 8 samples) the `theta` axis is the gene axis:
+
+```{r radial-heat-outside, fig.width = 7, fig.height = 7, fig.cap = "circular heatmap with the labels outside: the crowded gene cluster spreads along the outer arc"}
+data(airway_heatmap)
+ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.2) +
+  guides(theta = guide_axis_smart(which = airway_heatmap$mark)) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score")
+```
+
+With a large inner radius the labels can go inside the hole
+(`theta_side = "inside"`), attached to the inner radius:
+
+```{r radial-heat-inside, fig.width = 7, fig.height = 7, fig.cap = "circular heatmap with the labels inside: theta_side = 'inside', attached to the inner radius"}
+ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.62) +
+  guides(theta = guide_axis_smart(
+    which = airway_heatmap$mark, theta_side = "inside"
+  )) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score")
+```
+
+
+## Facets: one circle per panel
+
+With `facet_wrap()` / `facet_grid()` every panel is its own circle and lays its
+labels out independently:
+
+```{r radial-facet-wrap, fig.cap = "facet_wrap + coord_radial: one circle per panel, every 2nd label"}
+d_facet <- data.frame(
+  panel = rep(c("A", "B", "C", "D"), each = 20),
+  cat   = factor(rep(paste0("g", 1:20), 4), levels = paste0("g", 1:20)),
+  value = round(runif(80, 5, 100), 1)
+)
+ggplot(d_facet, aes(cat, value)) +
+  geom_col(fill = "#3b82f6") +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = seq(1, 20, by = 2))) +
+  facet_wrap(~panel)
+```
+
+```{r radial-facet-free, fig.cap = "facet_wrap + free_x: each panel labels its own first 6 categories"}
+d_free <- data.frame(
+  panel = c(rep("A", 20), rep("B", 30)),
+  cat   = factor(c(paste0("a", 1:20), paste0("b", 1:30))),
+  value = round(runif(50, 5, 100), 1)
+)
+ggplot(d_free, aes(cat, value)) +
+  geom_col(fill = "#f97316") +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = 1:6)) +
+  facet_wrap(~panel, scales = "free_x")
+```
+
+```{r radial-facet-crowded, fig.cap = "a crowded cluster in every panel: spread independently per panel"}
+d_crowd <- data.frame(
+  panel = rep(c("set1", "set2"), each = 40),
+  gene  = factor(rep(paste0("gene", 1:40), 2)),
+  value = round(runif(80, 5, 100), 1)
+)
+ggplot(d_crowd, aes(gene, value)) +
+  geom_col(fill = "#8b5cf6") +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = c(5:16, 25:30))) +
+  facet_wrap(~panel)
+```
+
+For a faceted circular heatmap add `scales = "free_x"`: each panel then uses its
+own gene scale, so the ring is complete and the labels only land on the genes
+that panel actually contains:
+
+```{r radial-facet-heat, fig.width = 8, fig.height = 7, fig.cap = "faceted circular heatmap + free_x: complete rings, each panel labels its own 4 genes"}
+ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.3) +
+  guides(theta = guide_axis_smart(which = unlist(airway_heatmap$mark_by_set))) +
+  facet_wrap(~gene_set, ncol = 2, scales = "free_x") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score")
+```
+
+> Without `scales = "free_x"` the panels share one `theta` scale: half of each
+> ring stays empty and the 8 genes picked by `which` are labelled in both panels.
+
+Radial labels inherit the theme's axis text style (`axis.text.x` /
+`axis.text.y`: size, colour, family, ...) exactly like the stock axis labels.
+
 # Local annotations and heatmap labels (anno_mark style)
 
 The `"diagonal"` geometry matches `circlize` and `ComplexHeatmap::anno_mark()` exactly: short stub, diagonal, short stub, text. Together with the track strategy ("one row when it fits, clustered labels split into tracks") this is ideal for **labelling only a few categories of interest**.
