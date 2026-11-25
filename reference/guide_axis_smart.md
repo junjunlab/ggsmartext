@@ -1,7 +1,7 @@
 # Smart axis labels for ggplot2
 
 `guide_axis_smart()` is a drop-in replacement for
-[`ggplot2::guide_axis()`](https://rdrr.io/pkg/ggplot2/man/guide_axis.html).
+[`ggplot2::guide_axis()`](https://ggplot2.tidyverse.org/reference/guide_axis.html).
 It is meant for discrete axes that carry more category labels than the
 panel can display at once. Instead of letting the labels overlap, it
 
@@ -42,8 +42,8 @@ guide_axis_smart(
 - title:
 
   A character string or
-  [`waiver()`](https://rdrr.io/pkg/ggplot2/man/waiver.html) for the axis
-  title.
+  [`waiver()`](https://ggplot2.tidyverse.org/reference/waiver.html) for
+  the axis title.
 
 - which:
 
@@ -161,18 +161,18 @@ guide_axis_smart(
 - minor.ticks:
 
   **\[experimental\]** Draw minor ticks, passed on to
-  [`ggplot2::guide_axis()`](https://rdrr.io/pkg/ggplot2/man/guide_axis.html).
+  [`ggplot2::guide_axis()`](https://ggplot2.tidyverse.org/reference/guide_axis.html).
 
 - cap, order, position, theme:
 
   Passed on to
-  [`ggplot2::guide_axis()`](https://rdrr.io/pkg/ggplot2/man/guide_axis.html).
+  [`ggplot2::guide_axis()`](https://ggplot2.tidyverse.org/reference/guide_axis.html).
 
 ## Value
 
 A `guide` object that can be used in
-[`guides()`](https://rdrr.io/pkg/ggplot2/man/guides.html) or in the
-`guide` argument of a scale.
+[`guides()`](https://ggplot2.tidyverse.org/reference/guides.html) or in
+the `guide` argument of a scale.
 
 ## Details
 
@@ -191,7 +191,7 @@ The one-dimensional arrangement of the labels inside each track is a
 port of the `smartAlign` algorithm from the
 [circlize](https://github.com/jokergoo/circlize) package.
 
-[`coord_radial()`](https://rdrr.io/pkg/ggplot2/man/coord_radial.html)
+[`coord_radial()`](https://ggplot2.tidyverse.org/reference/coord_radial.html)
 renames the position scales to `theta` and `r`, and only accepts guides
 that know about the `theta` aesthetic; `guide_axis_smart()` is one of
 them. On a radial axis the labels are laid out the way
@@ -209,7 +209,10 @@ attached to the `inner.radius()` of the circle (`"inside"`, useful for
 the hole of a circular heatmap). Labels that crowd into one stretch of
 the circle are spread along the arc with the `smartAlign` algorithm
 (`connection = FALSE` removes the leader lines), and a `start`/`end` arc
-(a half circle) is supported as well.
+(a half circle) is supported as well. Every label stays anchored on its
+own tick and a crowded group is spread symmetrically around that group,
+so the first label keeps sitting next to its tick instead of the whole
+group sliding towards the end of the arc.
 
 The label size, colour, font family, face and line height always come
 from the theme's axis text element (`axis.text.x` / `axis.text.y`),
@@ -220,8 +223,8 @@ override the theme only when they are supplied.
 
 [`smart_align()`](https://junjunlab.github.io/ggsmartext/reference/smart_align.md),
 [`smart_stack()`](https://junjunlab.github.io/ggsmartext/reference/smart_stack.md),
-[`ggplot2::guide_axis()`](https://rdrr.io/pkg/ggplot2/man/guide_axis.html),
-[`ggplot2::guide_axis_theta()`](https://rdrr.io/pkg/ggplot2/man/guide_axis_theta.html)
+[`ggplot2::guide_axis()`](https://ggplot2.tidyverse.org/reference/guide_axis.html),
+[`ggplot2::guide_axis_theta()`](https://ggplot2.tidyverse.org/reference/guide_axis_theta.html)
 
 ## Examples
 
