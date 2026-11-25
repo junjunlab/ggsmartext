@@ -183,11 +183,23 @@ The one-dimensional arrangement of the labels inside each track is a
 port of the `smartAlign` algorithm from the
 [circlize](https://github.com/jokergoo/circlize) package.
 
+[`coord_radial()`](https://rdrr.io/pkg/ggplot2/man/coord_radial.html)
+renames the position scales to `theta` and `r`, and only accepts guides
+that know about the `theta` aesthetic; `guide_axis_smart()` is one of
+them. On a radial axis the labels are placed and rotated along the
+circle exactly like
+[`ggplot2::guide_axis_theta()`](https://rdrr.io/pkg/ggplot2/man/guide_axis_theta.html)
+does, so `which` / `n` pick the categories that appear around the ring
+and `tick = "shown"` only keeps their ticks. Tracks (`nrow`) and leader
+lines (`connection`) are a cartesian-coordinate feature and are ignored
+on a radial axis.
+
 ## See also
 
 [`smart_align()`](https://junjunlab.github.io/ggsmartext/reference/smart_align.md),
 [`smart_stack()`](https://junjunlab.github.io/ggsmartext/reference/smart_stack.md),
-[`ggplot2::guide_axis()`](https://rdrr.io/pkg/ggplot2/man/guide_axis.html)
+[`ggplot2::guide_axis()`](https://rdrr.io/pkg/ggplot2/man/guide_axis.html),
+[`ggplot2::guide_axis_theta()`](https://rdrr.io/pkg/ggplot2/man/guide_axis_theta.html)
 
 ## Examples
 
@@ -219,5 +231,21 @@ ggplot(d, aes(sample, value)) +
 ggplot(d, aes(value, sample)) +
   geom_point() +
   scale_y_discrete(guide = guide_axis_smart(which = c("S1", "S20", "S40")))
+
+
+# `coord_radial()` (ggplot2 >= 3.5) names the position scales `theta` and `r`;
+# attach the guide with `guides(theta = ...)` and it draws the selected labels
+# along the ring, like `guide_axis_theta()`
+ggplot(d, aes(sample, value)) +
+  geom_col() +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = seq(1, 40, by = 4)))
+
+
+# the categories can also be the `theta` scale when they are mapped to y
+ggplot(d, aes(value, sample)) +
+  geom_col() +
+  coord_radial(theta = "y") +
+  guides(theta = guide_axis_smart(n = 10))
 
 ```

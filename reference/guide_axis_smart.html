@@ -213,10 +213,18 @@ available page space is used efficiently.</p></li>
 </ol><p>The one-dimensional arrangement of the labels inside each track is a port of
 the <code>smartAlign</code> algorithm from the
 <a href="https://github.com/jokergoo/circlize" class="external-link">circlize</a> package.</p>
+<p><code><a href="https://rdrr.io/pkg/ggplot2/man/coord_radial.html" class="external-link">coord_radial()</a></code> renames the position scales to <code>theta</code> and <code>r</code>, and only
+accepts guides that know about the <code>theta</code> aesthetic; <code>guide_axis_smart()</code> is
+one of them.  On a radial axis the labels are placed and rotated along the
+circle exactly like <code><a href="https://rdrr.io/pkg/ggplot2/man/guide_axis_theta.html" class="external-link">ggplot2::guide_axis_theta()</a></code> does, so <code>which</code> / <code>n</code> pick
+the categories that appear around the ring and <code>tick = "shown"</code> only keeps
+their ticks.  Tracks (<code>nrow</code>) and leader lines (<code>connection</code>) are a
+cartesian-coordinate feature and are ignored on a radial axis.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
-    <div class="dont-index"><p><code><a href="smart_align.html">smart_align()</a></code>, <code><a href="smart_stack.html">smart_stack()</a></code>, <code><a href="https://rdrr.io/pkg/ggplot2/man/guide_axis.html" class="external-link">ggplot2::guide_axis()</a></code></p></div>
+    <div class="dont-index"><p><code><a href="smart_align.html">smart_align()</a></code>, <code><a href="smart_stack.html">smart_stack()</a></code>, <code><a href="https://rdrr.io/pkg/ggplot2/man/guide_axis.html" class="external-link">ggplot2::guide_axis()</a></code>,
+<code><a href="https://rdrr.io/pkg/ggplot2/man/guide_axis_theta.html" class="external-link">ggplot2::guide_axis_theta()</a></code></p></div>
     </div>
 
     <div class="section level2">
@@ -249,6 +257,22 @@ the <code>smartAlign</code> algorithm from the
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_point.html" class="external-link">geom_point</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/scale_discrete.html" class="external-link">scale_y_discrete</a></span><span class="op">(</span>guide <span class="op">=</span> <span class="fu">guide_axis_smart</span><span class="op">(</span>which <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"S1"</span>, <span class="st">"S20"</span>, <span class="st">"S40"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-plt img"><img src="guide_axis_smart-3.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># `coord_radial()` (ggplot2 &gt;= 3.5) names the position scales `theta` and `r`;</span></span></span>
+<span class="r-in"><span><span class="co"># attach the guide with `guides(theta = ...)` and it draws the selected labels</span></span></span>
+<span class="r-in"><span><span class="co"># along the ring, like `guide_axis_theta()`</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">d</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">sample</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_bar.html" class="external-link">geom_col</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_radial.html" class="external-link">coord_radial</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"x"</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/guides.html" class="external-link">guides</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu">guide_axis_smart</span><span class="op">(</span>which <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">40</span>, by <span class="op">=</span> <span class="fl">4</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="guide_axis_smart-4.png" alt="" width="700" height="433"></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># the categories can also be the `theta` scale when they are mapped to y</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">d</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">value</span>, <span class="va">sample</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_bar.html" class="external-link">geom_col</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/coord_radial.html" class="external-link">coord_radial</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"y"</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/guides.html" class="external-link">guides</a></span><span class="op">(</span>theta <span class="op">=</span> <span class="fu">guide_axis_smart</span><span class="op">(</span>n <span class="op">=</span> <span class="fl">10</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-plt img"><img src="guide_axis_smart-5.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
