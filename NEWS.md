@@ -31,9 +31,16 @@
     `GuideAxisTheta` 绘制），并继续支持 `which` / `n` 选择与 `tick = "shown"`；
   - 使用 `guides(theta = guide_axis_smart(...))` 挂载；
   - 环形坐标的标签统一采用 **circlize 风格**（参考 `circos.labels()` 的实现）：
-    标签放在 label track、文字沿半径朝向圆心、左半边自动翻转避免倒置；拥挤时
-    用 `smartAlign` 沿弧向把标签匀开，连接线是 circlize 的**三段几何**
-    （径向短线段 → 斜线 → 径向短线段，`connection = FALSE` 关闭引导线）；
+    标签放在 label track、文字沿半径朝向圆心、左半边自动翻转避免倒置；连接线是
+    circlize 的**三段几何**（径向短线段 → 斜线 → 径向短线段，
+    `connection = FALSE` 关闭引导线）；
+  - 拥挤标签按簇沿弧向展开时**以刻度簇为中心左右对称**：整簇只做整体平移，孤立
+    标签保持原位、引线最短，所以第一个标签就贴在它的刻度旁边，不会被整簇拖到弧的
+    一端；
+  - 标签落点以刻度自身（`key$x` / `key$y`）为锚点向外偏移。`coord_radial(start =,
+    end =)` 把弧画成被拉伸的椭圆，原先按“面板中心 + 半径”反推的点并不在弧上，
+    半圆时会让所有标签朝同一侧偏移、引线被拉长；现在改用刻度坐标后，半圆、全圆和
+    环形热图共用同一套几何，引线恒为三段式 5 mm；
   - 新增 `theta_side = c("outside", "inside")`：`"outside"`（默认）把标签放在
     圆外；`"inside"` 把标签贴到 `coord_radial(inner.radius =)` 的**内圈边界**
     （适合内圈较大的环形热图，标签落在洞内，第一段引线紧贴内圈）；

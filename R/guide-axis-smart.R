@@ -100,6 +100,9 @@
 #' heatmap).  Labels that crowd into one stretch of the circle are spread along
 #' the arc with the `smartAlign` algorithm (`connection = FALSE` removes the
 #' leader lines), and a `start`/`end` arc (a half circle) is supported as well.
+#' Every label stays anchored on its own tick and a crowded group is spread
+#' symmetrically around that group, so the first label keeps sitting next to its
+#' tick instead of the whole group sliding towards the end of the arc.
 #'
 #' The label size, colour, font family, face and line height always come from
 #' the theme's axis text element (`axis.text.x` / `axis.text.y`), exactly like

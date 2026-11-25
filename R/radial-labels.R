@@ -35,11 +35,51 @@
     p <- p[ord]
     w <- w[ord]
   }
-  starts <- pmax(p - w / 2, 0)
-  ends <- pmin(p + w / 2, 1)
-  adj <- smart_align(starts, ends, range = c(0, 1))
-  starts <- adj$start
-  ends <- adj$end
+  starts <- p - w / 2
+  ends <- p + w / 2
+
+  ## circlize 的做法（`posTransform.text()` + `smartAlign()`）：先把每个标签
+  ## 以它的刻度为中心展开成盒子，再向右压紧避免重叠。
+  if (n > 1L) {
+    for (i in seq_len(n)[-1]) {
+      if (starts[i] < ends[i - 1L]) {
+        delta <- ends[i - 1L] - starts[i]
+        starts[i] <- starts[i] + delta
+        ends[i] <- ends[i] + delta
+      }
+    }
+  }
+
+  ## 压紧之后把每一簇以原始刻度为基准**左右居中**：整簇只整体平移，让标签
+  ## 分布在刻度的左右两侧，而不是全部堆到刻度的一边。
+  if (n > 1L) {
+    i <- 1L
+    while (i <= n) {
+      j <- i
+      while (j < n && starts[j + 1L] <= ends[j] + 1e-9) j <- j + 1L
+      if (j > i) {
+        idx <- i:j
+        delta <- mean(p[idx]) - mean((starts[idx] + ends[idx]) / 2)
+        lo <- -min(starts[idx])
+        hi <- 1 - max(ends[idx])
+        delta <- min(max(delta, lo), hi)
+        starts[idx] <- starts[idx] + delta
+        ends[idx] <- ends[idx] + delta
+      }
+      i <- j + 1L
+    }
+  }
+
+  if (ends[n] > 1) {
+    delta <- ends[n] - 1
+    starts <- starts - delta
+    ends <- ends - delta
+  }
+  if (starts[1] < 0) {
+    delta <- -starts[1]
+    starts <- starts + delta
+    ends <- ends + delta
+  }
 
   shown_ord <- starts >= -1e-9 & ends <= 1 + 1e-9
   spread_ord <- (starts + ends) / 2
@@ -109,8 +149,8 @@
   inner_frac <- suppressWarnings(as.numeric(params$smart_inner %||% 0)[1] / 0.4)
   if (!is.finite(inner_frac) || inner_frac < 0) inner_frac <- 0
   inner_frac <- min(inner_frac, 1)
-  radius_cm_label <- if (inside && inner_frac > 0) {
-    max(0.5, inner_frac * radius_cm)
+  radius_cm_label <- if (inside) {
+    max(0.5, (if (inner_frac > 0) inner_frac else 1) * radius_cm)
   } else {
     radius_cm
   }
@@ -157,10 +197,19 @@
   adjust <- if (is.numeric(params$angle)) params$angle else 0
   rot <- .ggse_theta_rot(theta_lab, adjust)
 
+  ## The tick position is the only reliable anchor.  `coord_radial(start =,
+  ## end =)` draws the arc as a stretched ellipse, so a point rebuilt from the
+  ## panel centre and a radius (`0.5 + radius * sin(theta)`) does *not* land on
+  ## the arc: it drifts sideways, and with a crowded cluster the drift pushes
+  ## every label in the same direction.  `key$x` / `key$y` are the real tick
+  ## coordinates -- they are what ggplot2's own `GuideAxisTheta` offsets.
+  p0x <- grid::unit(key$x[keep_idx], "npc")
+  p0y <- grid::unit(key$y[keep_idx], "npc")
   r_npc <- sqrt((key$x[keep_idx] - 0.5)^2 + (key$y[keep_idx] - 0.5)^2)
-  if (inside && inner_frac > 0) {
-    ## label track attached to the inner ring, text pointing at the centre
-    boundary_npc <- r_npc * inner_frac
+
+  if (inside) {
+    ## labels attached to the ring (the inner radius when there is a hole)
+    boundary_npc <- r_npc * if (inner_frac > 0) inner_frac else 1
     depth_cm <- conn_cm
     x_lab <- grid::unit(0.5, "npc") +
       (grid::unit(boundary_npc, "npc") - grid::unit(depth_cm, "cm")) * sin(theta_lab)
@@ -179,18 +228,15 @@
     ## text grows towards the centre
     hjust <- ifelse(rot$flip, 0, 1)
   } else {
-    x_lab <- grid::unit(0.5, "npc") +
-      (grid::unit(r_npc, "npc") + grid::unit(conn_cm, "cm")) * sin(theta_lab)
-    y_lab <- grid::unit(0.5, "npc") +
-      (grid::unit(r_npc, "npc") + grid::unit(conn_cm, "cm")) * cos(theta_lab)
-    p0x <- grid::unit(key$x[keep_idx], "npc")
-    p0y <- grid::unit(key$y[keep_idx], "npc")
+    x_lab <- p0x + grid::unit(conn_cm, "cm") * sin(theta_lab)
+    y_lab <- p0y + grid::unit(conn_cm, "cm") * cos(theta_lab)
+    ## circlize's three-segment leader: a short stub at the tick, a diagonal,
+    ## then a short stub at the label.  Both stubs are radial, so the diagonal
+    ## stays short even when a crowded label slides along the arc.
     p1x <- p0x + grid::unit(stub_cm, "cm") * sin(theta)
     p1y <- p0y + grid::unit(stub_cm, "cm") * cos(theta)
-    p2x <- grid::unit(0.5, "npc") +
-      (grid::unit(r_npc, "npc") + grid::unit(2 * stub_cm, "cm")) * sin(theta_lab)
-    p2y <- grid::unit(0.5, "npc") +
-      (grid::unit(r_npc, "npc") + grid::unit(2 * stub_cm, "cm")) * cos(theta_lab)
+    p2x <- x_lab - grid::unit(stub_cm, "cm") * sin(theta_lab)
+    p2y <- y_lab - grid::unit(stub_cm, "cm") * cos(theta_lab)
     ## text grows outwards
     hjust <- ifelse(rot$flip, 1, 0)
   }
