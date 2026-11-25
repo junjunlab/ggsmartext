@@ -908,6 +908,46 @@ One draw goes through roughly these steps:
 
 All three helpers `smart_align()`, `box_arrange()` and `smart_stack()` are exported and can be called directly (see `?smart_align`); the guide is a thin layer on top of them.
 
+# Spiral coordinates: `coord_spiral()`
+
+`coord_spiral()` bends an ordinary Cartesian ggplot into an Archimedean
+spiral. The geometry follows the **spiralize** package: the base spiral is
+r = b·theta and one turn increases the radius by one unit. The x
+aesthetic runs along the spiral as the angle, y becomes the radius inside the
+track. Lines, bars, points and areas are supported, the matching angle and
+radial axes are drawn automatically, and `facet_wrap()` / `facet_grid()` get
+one spiral per panel.
+
+```{r spiral-intro, fig.cap = "coord_spiral(): a line on three turns, with the angle and radial axes"}
+set.seed(42)
+d_sp <- data.frame(
+  x = seq(0, 1, length.out = 300),
+  y = sin(seq(0, 1, length.out = 300) * 8 * pi) * 0.35 + 0.5
+)
+ggplot(d_sp, aes(x, y)) +
+  geom_line(colour = "#2166ac", linewidth = 0.6) +
+  coord_spiral() +
+  labs(x = NULL, y = NULL, title = "coord_spiral(): three turns")
+```
+
+The main arguments: `start` / `end` are degrees (`360 * n + a` means `n` turns
+ending at `a`); `period` sets how many x units one turn covers; `height` is
+the track height as a fraction of the gap between turns; `scale_by = "angle"`
+(default) maps equal x steps to equal angles, while `"curve"` maps them to
+equal lengths along the spiral. `clockwise`, `reverse` and `flip` control
+direction, `labels = FALSE` turns the axes off, and `y_axis_theta` chooses
+where the radial ruler is placed (the outer end by default).
+
+```{r spiral-facet, fig.cap = "facet_wrap(): one spiral per panel, each with its own axis"}
+d_sp$set <- rep(c("A", "B"), length.out = 300)
+ggplot(d_sp, aes(x, y)) +
+  geom_line() +
+  facet_wrap(~set) +
+  coord_spiral(end = 360 + 90) +
+  labs(x = NULL, y = NULL, title = "Two panels, two spirals") +
+  theme(plot.title = element_text(size = 11))
+```
+
 # Known limitations and tuning advice
 
 - **It can only pick existing ticks, never add new ones.** If a category is not in the scale's breaks, `which` cannot select it — add it first with `scale_x_discrete(breaks = ...)`.

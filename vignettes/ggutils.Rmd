@@ -887,6 +887,42 @@ ggplot() +
 
 底层三个函数 `smart_align()`、`box_arrange()`、`smart_stack()` 都是导出函数，可以单独调用（参数见 `?smart_align` 等），guide 只是它们的一层封装。
 
+# 螺旋坐标：`coord_spiral()`
+
+`coord_spiral()` 把普通的笛卡尔 ggplot 弯成阿基米德螺线，几何定义取自
+**spiralize** 包：基螺线为 r = b·θ，每转一圈半径增加一个单位。x 沿着螺线
+映射为角度，y 映射为轨道内的半径；`geom_line()`、`geom_col()`、`geom_point()`、
+`geom_area()` 都能用。坐标系会同时画好对应的角度轴和径向刻度轴，`facet_wrap()`
+与 `facet_grid()` 每个面板各自画一条螺线。
+
+```{r spiral-intro, fig.cap = "coord_spiral()：三段螺线上的折线，外圈是角度刻度与径向刻度轴"}
+set.seed(42)
+d_sp <- data.frame(
+  x = seq(0, 1, length.out = 300),
+  y = sin(seq(0, 1, length.out = 300) * 8 * pi) * 0.35 + 0.5
+)
+ggplot(d_sp, aes(x, y)) +
+  geom_line(colour = "#2166ac", linewidth = 0.6) +
+  coord_spiral() +
+  labs(x = NULL, y = NULL, title = "coord_spiral()：三圈螺线")
+```
+
+常用参数：`start` / `end` 是角度（度），`360 * n + a` 表示转 n 圈后在 a 度结束；
+`period` 指定一圈对应多少 x 单位；`height` 是数据轨道占两圈间距的比例；
+`scale_by = "angle"`（默认）让等差的 x 对应等差的角，`"curve"` 则对应等长的
+螺线弧长；`clockwise`、`reverse`、`flip` 控制方向；`labels = FALSE` 可关掉坐标轴。
+`y_axis_theta` 指定径向刻度轴画在哪个角度（默认螺线最外端）。
+
+```{r spiral-facet, fig.cap = "facet_wrap()：每个面板一条螺线"}
+d_sp$set <- rep(c("A", "B"), length.out = 300)
+ggplot(d_sp, aes(x, y)) +
+  geom_line() +
+  facet_wrap(~set) +
+  coord_spiral(end = 360 + 90) +
+  labs(x = NULL, y = NULL, title = "两个面板，各自的螺线与坐标轴") +
+  theme(plot.title = element_text(size = 11))
+```
+
 # 已知限制与调参建议
 
 - **它只能挑选已有的刻度，不会新增刻度。** 如果某个类别不在 scale 的 breaks 里，`which` 就选不到它——先用 `scale_x_discrete(breaks = ...)` 把它放进去。
