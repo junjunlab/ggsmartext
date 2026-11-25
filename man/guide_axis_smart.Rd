@@ -67,7 +67,8 @@ not fit, the label is dropped (with a message) instead of being drawn on
 top of another one.}
 
 \item{padding}{Minimal gap between two label boxes in a track, as a fraction
-of the label height.  Defaults to \code{0.25}.}
+of the label height.  Defaults to \code{0.25}.  On a radial (\code{theta}) axis it is
+the gap between neighbouring labels measured along the arc.}
 
 \item{gap}{Gap between two neighbouring tracks, as a fraction of the label
 height.  Defaults to \code{0.30}.}

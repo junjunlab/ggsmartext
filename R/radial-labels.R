@@ -104,6 +104,35 @@
   list(angle = ifelse(flip, rot + 180, rot), flip = flip)
 }
 
+## The ring the ticks sit on, in npc.  `coord_radial()` maps a tick to
+## `cx + a * sin(theta)`, `cy + b * cos(theta)`; for a full circle `a == b` and
+## the centre is `(0.5, 0.5)`, but a `start`/`end` arc is stretched to the
+## panel, so `a` and `b` differ (a half circle in a wide panel has `b > a`) and
+## the centre moves.  Both are recovered from the ticks themselves by a
+## least-squares line through `(sin(theta), x)` and `(cos(theta), y)`, which is
+## what lets a label follow its *spread* angle along the arc.  Returns `NULL`
+## when there is not enough information (a single label), in which case the
+## caller falls back to the tick position.
+.ggse_theta_frame <- function(theta, x, y, r = 0.4) {
+  fit1 <- function(v, u, fallback_centre, fallback_slope) {
+    ok <- is.finite(u) & is.finite(v)
+    if (sum(ok) < 2L || diff(range(u[ok])) < 1e-6) {
+      return(c(fallback_centre, fallback_slope))
+    }
+    uu <- u[ok]
+    vv <- v[ok]
+    um <- mean(uu)
+    slope <- sum((uu - um) * (vv - mean(vv))) / sum((uu - um)^2)
+    c(mean(vv) - slope * um, slope)
+  }
+  fx <- fit1(x, sin(theta), 0.5, r)
+  fy <- fit1(y, cos(theta), 0.5, r)
+  list(
+    cx = fx[1], a = if (is.finite(fx[2]) && fx[2] > 1e-6) fx[2] else r,
+    cy = fy[1], b = if (is.finite(fy[2]) && fy[2] > 1e-6) fy[2] else r
+  )
+}
+
 ## Build the label grob for a theta axis (circlize-style label track).
 .ggse_theta_label_grob <- function(key, elements, params) {
   labels <- as.character(key$.label)
@@ -123,14 +152,24 @@
 
   theta <- key$theta
   dev_cm <- .ggse_device_size_cm()
-  ## the key points sit on the outer ring; `radius_cm` estimates that radius
-  radius_cm <- max(1, params$panel_width %||% (0.30 * min(dev_cm)))
+  ## the key points sit on the outer ring; `radius_cm` estimates that radius.
+  ## `key$r` is the radius in npc (0.4 for `coord_radial()`), so the ring is
+  ## about 0.32 * device for a square panel and for the stretched half circle.
+  radius_cm <- max(1, params$panel_width %||% (0.32 * mean(dev_cm)))
   box <- .ggse_text_box_cm(
     labels, size = style$size, colour = style$colour, family = style$family,
     face = style$face, lineheight = style$lineheight, angle = 0
   )
   widths_cm <- box$width
-  heights_cm <- pmax(box$height, 0.4 * .ggse_line_height_cm(style$size, style$lineheight))
+  ## The text runs along the radius, so the space it takes up *along the arc* is
+  ## its height.  The tight glyph box is not enough -- two neighbours then touch
+  ## ink to ink and long labels (gene names) cross each other -- so a full line
+  ## box plus `padding` is reserved, the way circlize's `circos.labels()` does
+  ## its spacing.
+  line_cm <- .ggse_line_height_cm(style$size, max(1.2, style$lineheight %||% 1.2))
+  padding <- min(as.numeric(params$padding %||% 0.25)[1], 2)
+  if (!is.finite(padding) || padding < 0) padding <- 0.25
+  heights_cm <- pmax(box$height, line_cm) * (1 + padding)
 
   ## `coord_radial(start =, end =)` may draw only an arc; normalise angles to
   ## the drawn arc so gaps are measured in arc length.
@@ -197,39 +236,42 @@
   adjust <- if (is.numeric(params$angle)) params$angle else 0
   rot <- .ggse_theta_rot(theta_lab, adjust)
 
-  ## The tick position is the only reliable anchor.  `coord_radial(start =,
-  ## end =)` draws the arc as a stretched ellipse, so a point rebuilt from the
-  ## panel centre and a radius (`0.5 + radius * sin(theta)`) does *not* land on
-  ## the arc: it drifts sideways, and with a crowded cluster the drift pushes
-  ## every label in the same direction.  `key$x` / `key$y` are the real tick
-  ## coordinates -- they are what ggplot2's own `GuideAxisTheta` offsets.
+  ## The label track has to follow the *spread* angle along the arc, not the
+  ## tick: a crowded group is spread here, and drawing it at the tick would pile
+  ## the texts on top of each other while each one is rotated to its new angle.
+  ## The ring is recovered from the ticks (see `.ggse_theta_frame()`), so a
+  ## partial arc that `coord_radial()` stretches into an ellipse is followed
+  ## exactly instead of drifting sideways.
+  ring <- .ggse_theta_frame(key$theta, key$x, key$y, key$r[1] %||% 0.4)
+  if (is.null(ring)) {
+    ring <- list(cx = key$x[keep_idx], cy = key$y[keep_idx],
+                 a = 0, b = 0)
+  }
   p0x <- grid::unit(key$x[keep_idx], "npc")
   p0y <- grid::unit(key$y[keep_idx], "npc")
-  r_npc <- sqrt((key$x[keep_idx] - 0.5)^2 + (key$y[keep_idx] - 0.5)^2)
 
   if (inside) {
-    ## labels attached to the ring (the inner radius when there is a hole)
-    boundary_npc <- r_npc * if (inner_frac > 0) inner_frac else 1
-    depth_cm <- conn_cm
-    x_lab <- grid::unit(0.5, "npc") +
-      (grid::unit(boundary_npc, "npc") - grid::unit(depth_cm, "cm")) * sin(theta_lab)
-    y_lab <- grid::unit(0.5, "npc") +
-      (grid::unit(boundary_npc, "npc") - grid::unit(depth_cm, "cm")) * cos(theta_lab)
+    ## labels sit on the inner ring (the hole) and grow towards the centre
+    hole <- if (inner_frac > 0) inner_frac else 1
+    bx <- grid::unit(ring$cx + hole * ring$a * sin(theta_lab), "npc")
+    by <- grid::unit(ring$cy + hole * ring$b * cos(theta_lab), "npc")
+    x_lab <- bx - grid::unit(conn_cm, "cm") * sin(theta_lab)
+    y_lab <- by - grid::unit(conn_cm, "cm") * cos(theta_lab)
     ## three-segment leader, exactly like circlize: a radial stub starting on
     ## the inner circle, a diagonal, and a radial stub at the label
-    p0x <- grid::unit(0.5, "npc") + grid::unit(boundary_npc, "npc") * sin(theta)
-    p0y <- grid::unit(0.5, "npc") + grid::unit(boundary_npc, "npc") * cos(theta)
+    p0x <- bx
+    p0y <- by
     p1x <- p0x - grid::unit(stub_cm, "cm") * sin(theta)
     p1y <- p0y - grid::unit(stub_cm, "cm") * cos(theta)
-    p2x <- grid::unit(0.5, "npc") +
-      (grid::unit(boundary_npc, "npc") - grid::unit(depth_cm - stub_cm, "cm")) * sin(theta_lab)
-    p2y <- grid::unit(0.5, "npc") +
-      (grid::unit(boundary_npc, "npc") - grid::unit(depth_cm - stub_cm, "cm")) * cos(theta_lab)
+    p2x <- x_lab + grid::unit(stub_cm, "cm") * sin(theta_lab)
+    p2y <- y_lab + grid::unit(stub_cm, "cm") * cos(theta_lab)
     ## text grows towards the centre
     hjust <- ifelse(rot$flip, 0, 1)
   } else {
-    x_lab <- p0x + grid::unit(conn_cm, "cm") * sin(theta_lab)
-    y_lab <- p0y + grid::unit(conn_cm, "cm") * cos(theta_lab)
+    x_lab <- grid::unit(ring$cx + ring$a * sin(theta_lab), "npc") +
+      grid::unit(conn_cm, "cm") * sin(theta_lab)
+    y_lab <- grid::unit(ring$cy + ring$b * cos(theta_lab), "npc") +
+      grid::unit(conn_cm, "cm") * cos(theta_lab)
     ## circlize's three-segment leader: a short stub at the tick, a diagonal,
     ## then a short stub at the label.  Both stubs are radial, so the diagonal
     ## stays short even when a crowded label slides along the arc.
@@ -266,5 +308,7 @@
       lty = params$connection_lty %||% 1
     )
   )
-  grid::grobTree(text, lines)
+  ## the leader goes *under* the text, like circlize: a line running through a
+  ## long gene name would otherwise strike it out
+  grid::grobTree(lines, text)
 }

@@ -42,7 +42,8 @@
 #'   not fit, the label is dropped (with a message) instead of being drawn on
 #'   top of another one.
 #' @param padding Minimal gap between two label boxes in a track, as a fraction
-#'   of the label height.  Defaults to `0.25`.
+#'   of the label height.  Defaults to `0.25`.  On a radial (`theta`) axis it is
+#'   the gap between neighbouring labels measured along the arc.
 #' @param gap Gap between two neighbouring tracks, as a fraction of the label
 #'   height.  Defaults to `0.30`.
 #' @param extend How far a label may be pushed beyond the axis range, as a
