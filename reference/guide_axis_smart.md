@@ -231,7 +231,6 @@ override the theme only when they are supplied.
 
 ``` r
 library(ggplot2)
-#> Warning: package 'ggplot2' was built under R version 4.5.3
 
 d <- data.frame(
   sample = factor(paste0("S", 1:40)),

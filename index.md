@@ -46,6 +46,22 @@ is a `GuideAxis` subclass that takes over label drawing:
   [`ComplexHeatmap::anno_mark()`](https://rdrr.io/pkg/ComplexHeatmap/man/anno_mark.html)
   “diagonal” geometry (short perpendicular stub, diagonal, short stub).
 
+## `coord_spiral()`: Cartesian plots on a spiral
+
+[`coord_spiral()`](https://junjunlab.github.io/ggutils/reference/coord_spiral.md)
+bends an ordinary ggplot into an Archimedean spiral, using the same
+geometry as **spiralize** (r = b·theta with one turn per radius unit).
+The x aesthetic runs along the spiral as the angle, y becomes the radius
+across the track; lines, bars, points and areas all work. The matching
+angle and radial axes are drawn automatically, and `facet_wrap()` /
+`facet_grid()` get one spiral per panel.
+
+``` r
+
+ggplot(d, aes(x, y)) + geom_line() + coord_spiral()
+ggplot(d, aes(x, y)) + geom_line() + facet_wrap(~set) + coord_spiral()
+```
+
 More `ggplot2` utilities will be added here over time. The deliberately
 broad name means you can load one package instead of keeping track of
 several single-function ones.

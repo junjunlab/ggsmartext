@@ -9,6 +9,14 @@
 - [`guide_axis_smart()`](https://junjunlab.github.io/ggutils/reference/guide_axis_smart.md)
   : Smart axis labels for ggplot2
 
+## 坐标系统 (Coordinates)
+
+把普通 ggplot 弯成阿基米德螺线：x 沿螺线作为角度、y 作为轨道内的半径，
+自带角度轴和径向刻度轴，支持 facet_wrap() / facet_grid()。
+
+- [`coord_spiral()`](https://junjunlab.github.io/ggutils/reference/coord_spiral.md)
+  : Spiral coordinates for ggplot2
+
 ## 排布算法 (Layout algorithms)
 
 guide 内部使用的三个底层排布算法：一维防重叠”压紧”

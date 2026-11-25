@@ -76,17 +76,26 @@
 <li>
 <strong>Leader lines</strong>: every displayed label is tied back to its tick, by default with the <code>circlize</code> / <code><a href="https://rdrr.io/pkg/ComplexHeatmap/man/anno_mark.html" class="external-link">ComplexHeatmap::anno_mark()</a></code> “diagonal” geometry (short perpendicular stub, diagonal, short stub).</li>
 </ul>
+</div>
+<div class="section level2">
+<h2 id="coord_spiral-cartesian-plots-on-a-spiral">
+<code>coord_spiral()</code>: Cartesian plots on a spiral<a class="anchor" aria-label="anchor" href="#coord_spiral-cartesian-plots-on-a-spiral"></a>
+</h2>
+<p><code><a href="reference/coord_spiral.html">coord_spiral()</a></code> bends an ordinary ggplot into an Archimedean spiral, using the same geometry as <strong>spiralize</strong> (r = b·theta with one turn per radius unit). The x aesthetic runs along the spiral as the angle, y becomes the radius across the track; lines, bars, points and areas all work. The matching angle and radial axes are drawn automatically, and <code>facet_wrap()</code> / <code>facet_grid()</code> get one spiral per panel.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/coord_spiral.html">coord_spiral</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span><span class="va">set</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/coord_spiral.html">coord_spiral</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>More <code>ggplot2</code> utilities will be added here over time. The deliberately broad name means you can load one package instead of keeping track of several single-function ones.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>Requires R &gt;= 4.1 and <strong>ggplot2 &gt;= 4.0.0</strong> (the guide API used here was rewritten in ggplot2 4.0).</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"junjunlab/ggutils"</span><span class="op">)</span></span></code></pre></div>
 <p>Or, from a local clone of the repository:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_local.html" class="external-link">install_local</a></span><span class="op">(</span><span class="st">"."</span><span class="op">)</span></span>
 <span><span class="co"># or, from a shell:</span></span>
