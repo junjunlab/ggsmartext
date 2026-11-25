@@ -138,6 +138,14 @@ available page space is used efficiently.
 The one-dimensional arrangement of the labels inside each track is a port of
 the \code{smartAlign} algorithm from the
 \href{https://github.com/jokergoo/circlize}{circlize} package.
+
+\code{coord_radial()} renames the position scales to \code{theta} and \code{r}, and only
+accepts guides that know about the \code{theta} aesthetic; \code{guide_axis_smart()} is
+one of them.  On a radial axis the labels are placed and rotated along the
+circle exactly like \code{\link[ggplot2:guide_axis_theta]{ggplot2::guide_axis_theta()}} does, so \code{which} / \code{n} pick
+the categories that appear around the ring and \code{tick = "shown"} only keeps
+their ticks.  Tracks (\code{nrow}) and leader lines (\code{connection}) are a
+cartesian-coordinate feature and are ignored on a radial axis.
 }
 \examples{
 library(ggplot2)
@@ -165,8 +173,23 @@ ggplot(d, aes(value, sample)) +
   geom_point() +
   scale_y_discrete(guide = guide_axis_smart(which = c("S1", "S20", "S40")))
 
+# `coord_radial()` (ggplot2 >= 3.5) names the position scales `theta` and `r`;
+# attach the guide with `guides(theta = ...)` and it draws the selected labels
+# along the ring, like `guide_axis_theta()`
+ggplot(d, aes(sample, value)) +
+  geom_col() +
+  coord_radial(theta = "x") +
+  guides(theta = guide_axis_smart(which = seq(1, 40, by = 4)))
+
+# the categories can also be the `theta` scale when they are mapped to y
+ggplot(d, aes(value, sample)) +
+  geom_col() +
+  coord_radial(theta = "y") +
+  guides(theta = guide_axis_smart(n = 10))
+
 }
 \seealso{
-\code{\link[=smart_align]{smart_align()}}, \code{\link[=smart_stack]{smart_stack()}}, \code{\link[ggplot2:guide_axis]{ggplot2::guide_axis()}}
+\code{\link[=smart_align]{smart_align()}}, \code{\link[=smart_stack]{smart_stack()}}, \code{\link[ggplot2:guide_axis]{ggplot2::guide_axis()}},
+\code{\link[ggplot2:guide_axis_theta]{ggplot2::guide_axis_theta()}}
 }
 \keyword{datasets}

@@ -78,10 +78,20 @@
 #'   passed on to [ggplot2::guide_axis()].
 #' @param cap,order,position,theme Passed on to [ggplot2::guide_axis()].
 #'
+#' @details
+#' `coord_radial()` renames the position scales to `theta` and `r`, and only
+#' accepts guides that know about the `theta` aesthetic; `guide_axis_smart()` is
+#' one of them.  On a radial axis the labels are placed and rotated along the
+#' circle exactly like [ggplot2::guide_axis_theta()] does, so `which` / `n` pick
+#' the categories that appear around the ring and `tick = "shown"` only keeps
+#' their ticks.  Tracks (`nrow`) and leader lines (`connection`) are a
+#' cartesian-coordinate feature and are ignored on a radial axis.
+#'
 #' @return A `guide` object that can be used in `guides()` or in the `guide`
 #'   argument of a scale.
 #'
-#' @seealso [smart_align()], [smart_stack()], [ggplot2::guide_axis()]
+#' @seealso [smart_align()], [smart_stack()], [ggplot2::guide_axis()],
+#'   [ggplot2::guide_axis_theta()]
 #'
 #' @examples
 #' library(ggplot2)
@@ -108,6 +118,20 @@
 #' ggplot(d, aes(value, sample)) +
 #'   geom_point() +
 #'   scale_y_discrete(guide = guide_axis_smart(which = c("S1", "S20", "S40")))
+#'
+#' # `coord_radial()` (ggplot2 >= 3.5) names the position scales `theta` and `r`;
+#' # attach the guide with `guides(theta = ...)` and it draws the selected labels
+#' # along the ring, like `guide_axis_theta()`
+#' ggplot(d, aes(sample, value)) +
+#'   geom_col() +
+#'   coord_radial(theta = "x") +
+#'   guides(theta = guide_axis_smart(which = seq(1, 40, by = 4)))
+#'
+#' # the categories can also be the `theta` scale when they are mapped to y
+#' ggplot(d, aes(value, sample)) +
+#'   geom_col() +
+#'   coord_radial(theta = "y") +
+#'   guides(theta = guide_axis_smart(n = 10))
 #'
 #' @export
 guide_axis_smart <- function(title = ggplot2::waiver(),
@@ -222,7 +246,7 @@ guide_axis_smart <- function(title = ggplot2::waiver(),
     order            = order,
     position         = position,
     theme            = theme,
-    available_aes    = c("x", "y"),
+    available_aes    = c("x", "y", "theta"),
     name             = "axis",
     super            = GuideAxisSmart
   )
@@ -250,6 +274,47 @@ guide_axis_smart <- function(title = ggplot2::waiver(),
   vjust            = NULL
 )
 
+## `coord_radial()` uses the `theta` / `theta.sec` guide positions.  Those are
+## only known once the coordinate system has set up the guides, which is why the
+## branch is decided from `params$position` inside the methods below.
+.ggse_is_theta <- function(params) {
+  position <- params$position
+  !is.null(position) && length(position) == 1L && !is.na(position) &&
+    position %in% c("theta", "theta.sec")
+}
+
+## ggplot2 >= 4.0 keeps `GuideAxisTheta` internal.  The radial branch reuses it
+## so that the labels are placed and rotated exactly like `guide_axis_theta()`.
+.ggse_guide_theta <- function() {
+  ns <- asNamespace("ggplot2")
+  if (!exists("GuideAxisTheta", envir = ns, inherits = FALSE)) {
+    cli::cli_abort(c(
+      "This version of ggplot2 does not provide `GuideAxisTheta`.",
+      "i" = "`coord_radial()` support needs ggplot2 >= 4.0.0."
+    ))
+  }
+  get("GuideAxisTheta", envir = ns, inherits = FALSE)
+}
+
+## Keep only the labels selected by `which` / `n` before the theta drawing is
+## delegated to ggplot2.  `tick = "shown"` reuses the same selection for ticks.
+.ggse_theta_filter_key <- function(key, params) {
+  if (is.null(key) || nrow(key) == 0L) {
+    return(key)
+  }
+  labels <- if (".label" %in% names(key)) {
+    as.character(key$.label)
+  } else {
+    rep(NA_character_, nrow(key))
+  }
+  pos <- if ("theta" %in% names(key)) key$theta else NULL
+  sel <- .ggse_selection(
+    params$which %||% NULL, labels, pos = pos, n = params$n %||% NULL
+  )
+  sel[is.na(sel)] <- FALSE
+  key[sel, , drop = FALSE]
+}
+
 #' @rdname guide_axis_smart
 #' @format NULL
 #' @usage NULL
@@ -259,9 +324,100 @@ GuideAxisSmart <- ggplot2::ggproto(
   ggplot2::GuideAxis,
   params = c(ggplot2::GuideAxis$params, .ggse_guide_params),
 
+  ## -- coordinate system -----------------------------------------------------
+  ## `coord_radial()` renames the position scales to `theta` / `r` and only
+  ## keeps guides that know the `theta` aesthetic.  On a theta axis every
+  ## drawing step is delegated to ggplot2's `GuideAxisTheta`, so the labels sit
+  ## and rotate along the circle exactly like `guide_axis_theta()`; the smart
+  ## part is the selection (`which` / `n`).  Tracks and leader lines are a
+  ## cartesian feature and are ignored on a radial axis.
+  transform = function(self, params, coord, panel_params) {
+    if (.ggse_is_theta(params)) {
+      return(.ggse_guide_theta()$transform(params, coord, panel_params))
+    }
+    ggplot2::ggproto_parent(ggplot2::GuideAxis, self)$transform(
+      params, coord, panel_params
+    )
+  },
+
+  setup_params = function(self, params) {
+    if (.ggse_is_theta(params)) {
+      return(.ggse_guide_theta()$setup_params(params))
+    }
+    ggplot2::ggproto_parent(ggplot2::GuideAxis, self)$setup_params(params)
+  },
+
+  setup_elements = function(self, params, elements, theme) {
+    if (.ggse_is_theta(params)) {
+      return(.ggse_guide_theta()$setup_elements(params, elements, theme))
+    }
+    ggplot2::ggproto_parent(ggplot2::GuideAxis, self)$setup_elements(
+      params, elements, theme
+    )
+  },
+
+  override_elements = function(self, params, elements, theme) {
+    if (.ggse_is_theta(params)) {
+      return(.ggse_guide_theta()$override_elements(params, elements, theme))
+    }
+    ggplot2::ggproto_parent(ggplot2::GuideAxis, self)$override_elements(
+      params, elements, theme
+    )
+  },
+
+  build_decor = function(self, decor, grobs, elements, params) {
+    if (.ggse_is_theta(params)) {
+      return(.ggse_guide_theta()$build_decor(decor, grobs, elements, params))
+    }
+    ggplot2::ggproto_parent(ggplot2::GuideAxis, self)$build_decor(
+      decor, grobs, elements, params
+    )
+  },
+
+  arrange_layout = function(self, key, sizes, params, elements) {
+    if (.ggse_is_theta(params)) {
+      return(.ggse_guide_theta()$arrange_layout(key, sizes, params, elements))
+    }
+    ggplot2::ggproto_parent(ggplot2::GuideAxis, self)$arrange_layout(
+      key, sizes, params, elements
+    )
+  },
+
+  assemble_drawing = function(self, grobs, layout, sizes, params, elements) {
+    if (.ggse_is_theta(params)) {
+      return(.ggse_guide_theta()$assemble_drawing(
+        grobs, layout, sizes, params, elements
+      ))
+    }
+    ggplot2::ggproto_parent(ggplot2::GuideAxis, self)$assemble_drawing(
+      grobs, layout, sizes, params, elements
+    )
+  },
+
+  draw_early_exit = function(self, params, elements) {
+    if (.ggse_is_theta(params)) {
+      return(.ggse_guide_theta()$draw_early_exit(self, params, elements))
+    }
+    ggplot2::ggproto_parent(ggplot2::GuideAxis, self)$draw_early_exit(
+      params, elements
+    )
+  },
+
   ## -- ticks ---------------------------------------------------------------
   build_ticks = function(self, key, elements, params,
                          position = params$opposite) {
+    if (.ggse_is_theta(params)) {
+      tick_mode <- params$tick %||% "all"
+      if (identical(tick_mode, "none")) {
+        return(ggplot2::zeroGrob())
+      }
+      if (identical(tick_mode, "shown")) {
+        key <- .ggse_theta_filter_key(key, params)
+      }
+      return(.ggse_guide_theta()$build_ticks(
+        key, elements, params, params$position
+      ))
+    }
     tick_mode <- params$tick %||% "all"
     if (identical(tick_mode, "none")) {
       return(ggplot2::zeroGrob())
@@ -286,6 +442,10 @@ GuideAxisSmart <- ggplot2::ggproto(
 
   ## -- labels ---------------------------------------------------------------
   build_labels = function(self, key, elements, params) {
+    if (.ggse_is_theta(params)) {
+      key <- .ggse_theta_filter_key(key, params)
+      return(.ggse_guide_theta()$build_labels(key, elements, params))
+    }
     prep <- .ggse_prepare(key, params, elements)
     if (is.null(prep) || !any(prep$shown)) {
       return(list(ggplot2::zeroGrob()))
@@ -297,6 +457,9 @@ GuideAxisSmart <- ggplot2::ggproto(
   ## The default implementation in ggplot2 4.0.x calls `measure()`, which does
   ## not exist any more, so the sizes are computed from scratch here.
   measure_grobs = function(self, grobs, params, elements) {
+    if (.ggse_is_theta(params)) {
+      return(.ggse_guide_theta()$measure_grobs(grobs, params, elements))
+    }
     major_cm <- grid::convertUnit(elements$major_length, "cm", valueOnly = TRUE)
     rng <- range(0, major_cm)
     if (isTRUE(params$minor.ticks) &&

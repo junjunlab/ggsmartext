@@ -23,6 +23,17 @@
   - 支持 x 轴、y 轴、顶部/底部/左侧/右侧轴，以及 `sec.axis`（如热图右侧基因
     标注）。与 `facet`、`coord_flip`、`theme` 协作。
 
+* `coord_radial()`（ggplot2 >= 3.5 / 本包要求的 ggplot2 4.0 中均可用）：
+
+  - theta 轴（`theta = "x"` 或 `"y"`）只接受认识 `theta` aesthetic 的 guide，
+    `guide_axis_smart()` 现在就是其中之一：设置 `available_aes = c("x", "y",
+    "theta")`，在环形坐标里把标签沿圆周排布、随角度旋转（复用 ggplot2 的
+    `GuideAxisTheta` 绘制），并继续支持 `which` / `n` 选择与 `tick = "shown"`；
+  - 使用 `guides(theta = guide_axis_smart(...))` 挂载；
+  - 环形坐标下 `nrow` 轨道与引导线是直角坐标的特性，会被忽略（标签直接排在圆周上）；
+  - 参考手册示例中新增 `coord_radial(theta = "x")` 与 `theta = "y"` 两个可运行示例，
+    测试见 `tests/testthat/test-guide-radial.R`。
+
 * 分面（`facet_wrap()` / `facet_grid()`）：
 
   - 每个面板各自建立 guide：`free_x` / `free_y` 时只画该面板内存在的标签，
