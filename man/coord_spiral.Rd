@@ -9,11 +9,13 @@
 coord_spiral(
   start = 90,
   end = 360 * 3 + 90,
+  turns = NULL,
   period = NULL,
   clockwise = FALSE,
   inner = 0.04,
   outer = 0.46,
-  height = 0.8,
+  height = 0.7,
+  gap = NULL,
   scale_by = c("angle", "curve"),
   reverse = FALSE,
   flip = c("none", "horizontal", "vertical", "both"),
@@ -31,6 +33,10 @@ coord_spiral(
 \code{spiralize::spiral_initialize()}). \code{360 * n + a} is a convenient way to
 ask for \code{n} turns ending at angle \code{a}.}
 
+\item{turns}{Number of turns, as a shortcut for \code{end = start + 360 * turns}.
+When supplied it wins over \code{end}, so \code{coord_spiral(turns = 5)} always
+draws five turns whatever the default \code{end} is.}
+
 \item{period}{Number of x units per turn. When supplied, \code{end} is
 recalculated from the x range and \code{period}.}
 
@@ -38,11 +44,17 @@ recalculated from the x range and \code{period}.}
 counter-clockwise, like \code{spiralize()}.}
 
 \item{inner, outer}{Inner and outer radius of the whole spiral, in panel npc
-units (0.5 is the panel edge). The distance between two turns is
-\code{(outer - inner) / (end - start) * 360}.}
+units (0.5 is the panel edge). Together they set how much of the panel the
+spiral covers; the distance between two turns follows from the number of
+turns.}
 
-\item{height}{Height of the data track as a fraction of the distance
-between two neighbouring turns (0 to 1).}
+\item{height}{Thickness of the data track, as a fraction of the distance
+between two neighbouring turns (0 to 1): \code{0.7} leaves a 30\% white gap.
+\code{gap} is the same knob the other way round, so pick whichever reads
+better; \code{gap} wins when both are given.}
+
+\item{gap}{White gap between two neighbouring turns, as a fraction of their
+distance (0 to 1). \code{gap = 0.3} is the same as \code{height = 0.7}.}
 
 \item{scale_by}{\code{"angle"} maps equal differences in x to equal differences
 in angle; \code{"curve"} maps them to equal distances along the spiral curve.}
@@ -58,7 +70,7 @@ spiral?}
 \item{y_axis}{Draw the radial (y) axis ruler as well as the angle axis?}
 
 \item{y_axis_theta}{Angle in degrees at which the radial ruler is placed;
-\code{NULL} puts it at the outermost end of the spiral.}
+\code{NULL} puts it at 0 degrees (east), like the y axis in spiralize.}
 
 \item{y_axis_n}{Number of ticks on the radial ruler when the y scale has
 no breaks of its own.}

@@ -62,6 +62,56 @@
   fr$theta0 + f * (fr$theta1 - fr$theta0)
 }
 
+## user-facing angle (degrees, counter-clockwise from east) -> theta.  This is
+## the inverse of the `sx`/`sy` used when drawing, so 0 really is to the right
+## of the panel whatever `clockwise` / `flip` do.
+.ggspiral_angle_to_theta <- function(deg, fr) {
+  a <- .ggspiral_deg(deg)
+  sx <- cos(a) * fr$dir * (if (isTRUE(fr$flip_h)) -1 else 1)
+  sy <- sin(a) * (if (isTRUE(fr$flip_v)) -1 else 1)
+  th <- atan2(sx, sy)
+  ## take the last crossing of that direction, so `axis_at` lands on the
+  ## outermost turn instead of the first one
+  th <- fr$theta0 + (th - fr$theta0) %% (2 * pi)
+  if (th <= fr$theta1) th <- fr$theta1 - ((fr$theta1 - th) %% (2 * pi))
+  th
+}
+
+## Warp every position aesthetic, not just `x` and `y`.  ggplot2 hands the
+## layer data over in data scale, and layers such as `geom_segment()` and
+## `geom_rect()` carry extra columns (`xend`, `xmin`, `ymin`, ...).  Each of
+## them is paired with the row's `x` or `y` so that the point lands on the same
+## spiral as its neighbours; the edge between two warped points is still a
+## straight line, which is invisible as long as the segment is short.
+.ggspiral_transform_position <- function(data, fr) {
+  if (is.null(data) || !nrow(data)) return(data)
+  x <- data$x
+  y <- data$y
+  if (is.null(x) && is.null(y)) return(data)
+
+  if (!is.null(x) && !is.null(y)) {
+    data$x <- .ggspiral_xy(x, y, fr)$x
+    data$y <- .ggspiral_xy(x, y, fr)$y
+  } else if (!is.null(x)) {
+    data$x <- .ggspiral_xy(x, rep(fr$yr[1], length(x)), fr)$x
+  } else {
+    data$y <- .ggspiral_xy(rep(fr$xr[1], length(y)), y, fr)$y
+  }
+
+  ## end points of a segment / corners of a rect
+  for (col in c("xend", "xmin", "xmax")) {
+    if (!is.null(data[[col]]) && !is.null(y)) {
+      data[[col]] <- .ggspiral_xy(data[[col]], y, fr)$x
+    }
+  }
+  for (col in c("yend", "ymin", "ymax")) {
+    if (!is.null(data[[col]]) && !is.null(x)) {
+      data[[col]] <- .ggspiral_xy(x, data[[col]], fr)$y
+    }
+  }
+  data
+}
+
 ## (x, y) in data scale -> (x, y) in panel npc
 .ggspiral_xy <- function(x, y, fr) {
   theta <- .ggspiral_theta(x, fr)
@@ -89,15 +139,23 @@
 #' @param start,end Angular range of the spiral, **in degrees** (as in
 #'   `spiralize::spiral_initialize()`). `360 * n + a` is a convenient way to
 #'   ask for `n` turns ending at angle `a`.
+#' @param turns Number of turns, as a shortcut for `end = start + 360 * turns`.
+#'   When supplied it wins over `end`, so `coord_spiral(turns = 5)` always
+#'   draws five turns whatever the default `end` is.
 #' @param period Number of x units per turn. When supplied, `end` is
 #'   recalculated from the x range and `period`.
 #' @param clockwise Draw the spiral clockwise? `FALSE` (the default) draws it
 #'   counter-clockwise, like `spiralize()`.
 #' @param inner,outer Inner and outer radius of the whole spiral, in panel npc
-#'   units (0.5 is the panel edge). The distance between two turns is
-#'   `(outer - inner) / (end - start) * 360`.
-#' @param height Height of the data track as a fraction of the distance
-#'   between two neighbouring turns (0 to 1).
+#'   units (0.5 is the panel edge). Together they set how much of the panel the
+#'   spiral covers; the distance between two turns follows from the number of
+#'   turns.
+#' @param gap White gap between two neighbouring turns, as a fraction of their
+#'   distance (0 to 1). `gap = 0.3` is the same as `height = 0.7`.
+#' @param height Thickness of the data track, as a fraction of the distance
+#'   between two neighbouring turns (0 to 1): `0.7` leaves a 30% white gap.
+#'   `gap` is the same knob the other way round, so pick whichever reads
+#'   better; `gap` wins when both are given.
 #' @param scale_by `"angle"` maps equal differences in x to equal differences
 #'   in angle; `"curve"` maps them to equal distances along the spiral curve.
 #' @param reverse Reverse the y direction inside the track?
@@ -107,7 +165,7 @@
 #'   spiral?
 #' @param y_axis Draw the radial (y) axis ruler as well as the angle axis?
 #' @param y_axis_theta Angle in degrees at which the radial ruler is placed;
-#'   `NULL` puts it at the outermost end of the spiral.
+#'   `NULL` puts it at 0 degrees (east), like the y axis in spiralize.
 #' @param y_axis_n Number of ticks on the radial ruler when the y scale has
 #'   no breaks of its own.
 #' @param clip Clipping of the panel, passed on to ggplot2.
@@ -123,9 +181,10 @@
 #'
 #' ggplot(d[1:60, ], aes(x, y)) +
 #'   geom_col() + coord_spiral(end = 360 + 90, height = 0.8)
-coord_spiral <- function(start = 90, end = 360 * 3 + 90,
+coord_spiral <- function(start = 90, end = 360 * 3 + 90, turns = NULL,
                          period = NULL, clockwise = FALSE,
-                         inner = 0.04, outer = 0.46, height = 0.8,
+                         inner = 0.04, outer = 0.46, height = 0.7,
+                         gap = NULL,
                          scale_by = c("angle", "curve"), reverse = FALSE,
                          flip = c("none", "horizontal", "vertical", "both"),
                          labels = TRUE, y_axis = TRUE, y_axis_theta = NULL,
@@ -134,8 +193,20 @@ coord_spiral <- function(start = 90, end = 360 * 3 + 90,
   scale_by <- match.arg(scale_by)
   flip <- match.arg(flip, several.ok = TRUE)
   if ("none" %in% flip && length(flip) > 1L) flip <- "none"
+  if (!is.null(turns)) {
+    if (!is.numeric(turns) || length(turns) != 1L || !is.finite(turns) || turns <= 0) {
+      cli::cli_abort("{.arg turns} must be a single positive number.")
+    }
+    end <- start + 360 * turns
+  }
   if (!is.numeric(start) || !is.numeric(end) || end <= start) {
     cli::cli_abort("{.arg start} and {.arg end} must be degrees with `end > start`.")
+  }
+  if (!is.null(gap)) {
+    if (!is.numeric(gap) || length(gap) != 1L || gap < 0 || gap >= 1) {
+      cli::cli_abort("{.arg gap} must be a number in [0, 1).")
+    }
+    height <- 1 - gap
   }
   if (!is.numeric(inner) || !is.numeric(outer) || outer <= inner ||
       outer > 0.49 || inner < 0) {
@@ -146,7 +217,7 @@ coord_spiral <- function(start = 90, end = 360 * 3 + 90,
   }
 
   ggproto(NULL, CoordSpiral,
-    start = start, end = end, period = period,
+    start = start, end = end, turns = turns, period = period, gap = gap,
     clockwise = clockwise, inner = inner, outer = outer, height = height,
     scale_by = scale_by, reverse = reverse, flip = flip,
     show_labels = labels, y_axis = y_axis, y_axis_theta = y_axis_theta,
@@ -184,7 +255,9 @@ CoordSpiral <- ggplot2::ggproto("CoordSpiral", ggplot2::Coord,
       x.range = xi$range, y.range = yi$range,
       x.major = xi$major_source, x.minor = xi$minor_source,
       x.labels = xi$labels, y.major = yi$major_source,
-      y.minor = yi$minor_source, y.labels = yi$labels
+      y.minor = yi$minor_source, y.labels = yi$labels,
+      ## settings handed over by scale_x_spiral_axis() / scale_y_spiral_axis()
+      spiral_axis = list(x = scale_x$spiral_axis, y = scale_y$spiral_axis)
     )
   },
 
@@ -205,11 +278,7 @@ CoordSpiral <- ggplot2::ggproto("CoordSpiral", ggplot2::Coord,
   },
 
   transform = function(self, data, panel_params) {
-    fr <- .ggspiral_frame(panel_params, self)
-    xy <- .ggspiral_xy(data$x, data$y, fr)
-    data$x <- xy$x
-    data$y <- xy$y
-    data
+    .ggspiral_transform_position(data, .ggspiral_frame(panel_params, self))
   },
 
   ## distance is used by ggplot2's munching: segments are split until their
@@ -235,94 +304,297 @@ CoordSpiral <- ggplot2::ggproto("CoordSpiral", ggplot2::Coord,
 
   render_bg = function(self, panel_params, theme) {
     fr <- .ggspiral_frame(panel_params, self)
-    theta <- seq(fr$theta0, fr$theta1, length.out = 400L)
-    r <- fr$inner + fr$gap * (theta - fr$theta0)
-    sx <- sin(theta) * fr$dir
-    sy <- cos(theta)
-    if (isTRUE(fr$flip_h)) sx <- -sx
-    if (isTRUE(fr$flip_v)) sy <- -sy
-
-    line_gp <- grid::gpar(col = ggplot2::calc_element("panel.grid.major", theme)$colour %||% "grey80",
-                          lwd = 0.6)
-    base <- grid::polylineGrob(
-      x = 0.5 + r * sx, y = 0.5 + r * sy, gp = line_gp
-    )
-    y_axis <- isTRUE(self$y_axis) && isTRUE(self$show_labels)
-    if (!isTRUE(self$show_labels) && !y_axis) return(grid::grobTree(base))
-    kids <- list(base)
-
-    if (isTRUE(self$show_labels) &&
-        length(panel_params$x.major) && length(panel_params$x.labels)) {
-      ## x (angle) ticks and labels: radial stubs on the outer edge of the track
-    tx <- .ggspiral_theta(panel_params$x.major, fr)
-    tr <- fr$inner + fr$gap * (tx - fr$theta0) + fr$height
-    stx <- sin(tx) * fr$dir
-    sty <- cos(tx)
-    if (isTRUE(fr$flip_h)) stx <- -stx
-    if (isTRUE(fr$flip_v)) sty <- -sty
-    stub <- 0.012
-    tick <- grid::segmentsGrob(
-      x0 = 0.5 + tr * stx, y0 = 0.5 + tr * sty,
-      x1 = 0.5 + (tr + stub) * stx, y1 = 0.5 + (tr + stub) * sty,
-      gp = grid::gpar(col = "grey50", lwd = 0.5)
-    )
-    txt <- ggplot2::element_grob(
-      ggplot2::calc_element("axis.text.x", theme),
-      label = as.character(panel_params$x.labels),
-      x = 0.5 + (tr + stub * 2) * stx,
-      y = 0.5 + (tr + stub * 2) * sty,
-      hjust = ifelse(stx > 0, 0, ifelse(stx < 0, 1, 0.5)),
-      vjust = ifelse(sty > 0, 0, ifelse(sty < 0, 1, 0.5))
-    )
-    kids <- c(kids, list(tick, txt))
+    line_el <- function(name) {
+      el <- ggplot2::calc_element(name, theme)
+      if (inherits(el, "element_blank") || is.null(el)) return(NULL)
+      grid::gpar(col = el$colour %||% "grey80",
+                 lwd = el$linewidth %||% el$size %||% 0.5,
+                 lty = el$linetype %||% 1)
+    }
+    spiral_path <- function(theta, r) {
+      sx <- sin(theta) * fr$dir
+      sy <- cos(theta)
+      if (isTRUE(fr$flip_h)) sx <- -sx
+      if (isTRUE(fr$flip_v)) sy <- -sy
+      list(x = 0.5 + r * sx, y = 0.5 + r * sy)
     }
 
-    ## y axis: a radial ruler at `y_axis_theta`.  A track is thin when the
-    ## spiral has many turns, so the labels are fanned out tangentially and
-    ## connected back to the ticks with short leaders.
+    kids <- list()
+    ## the canvas is white, the data track is painted with the theme's panel
+    ## background and the grid inside it with the theme's grid colour, so the
+    ## default theme_grey() look survives the bend into a spiral
+    plot_bg <- ggplot2::calc_element("plot.background", theme)
+    kids[["background"]] <- grid::rectGrob(
+      gp = grid::gpar(fill = plot_bg$fill %||% "white", col = NA)
+    )
+    bg_el <- ggplot2::calc_element("panel.background", theme)
+    band_fill <- if (inherits(bg_el, "element_blank")) "grey92" else bg_el$fill %||% "grey92"
+
+    theta <- seq(fr$theta0, fr$theta1, length.out = 400L)
+    xr <- panel_params$x.major
+    xr <- xr[!is.na(xr)]
+
+    ## the track is a band between two spirals: fill it first, then draw the
+    ## grid and the borders on top
+    r_in <- fr$inner + fr$gap * (theta - fr$theta0)
+    r_out <- r_in + fr$height
+    p_in <- spiral_path(theta, r_in)
+    p_out <- spiral_path(theta, r_out)
+    kids[["track"]] <- grid::pathGrob(
+      x = c(p_in$x, rev(p_out$x)), y = c(p_in$y, rev(p_out$y)),
+      gp = grid::gpar(fill = band_fill, col = NA)
+    )
+
+    ## vertical grid lines become radial spokes at the x breaks
+    if (length(xr)) {
+      gx <- line_el("panel.grid.major.x")
+      if (!is.null(gx)) {
+        tx <- .ggspiral_theta(xr, fr)
+        r0 <- fr$inner + fr$gap * (tx - fr$theta0)
+        p0 <- spiral_path(tx, r0)
+        p1 <- spiral_path(tx, r0 + fr$height)
+        kids[["grid_x"]] <- grid::segmentsGrob(
+          x0 = p0$x, y0 = p0$y, x1 = p1$x, y1 = p1$y, gp = gx
+        )
+      }
+    }
+
+    ## horizontal grid lines become spirals offset by the y position
+    yr <- panel_params$y.major
+    yr <- yr[!is.na(yr)]
+    if (length(yr)) {
+      gy <- line_el("panel.grid.major.y")
+      if (!is.null(gy)) {
+        yf <- (yr - fr$yr[1]) / if (diff(fr$yr) == 0) 1 else diff(fr$yr)
+        yf <- pmin(pmax(yf, 0), 1)
+        g <- grid::gList()
+        for (i in seq_along(yf)) {
+          p <- spiral_path(theta, r_in + yf[i] * fr$height)
+          g[[i]] <- grid::polylineGrob(x = p$x, y = p$y, gp = gy,
+                                       id = rep(i, length(p$x)))
+        }
+        kids[["grid_y"]] <- do.call(grid::grobTree, g)
+      }
+    }
+
+    ## the two borders of the track
+    border_gp <- line_el("panel.border") %||% grid::gpar(col = "grey80", lwd = 0.5)
+    if (inherits(ggplot2::calc_element("panel.border", theme), "element_blank")) {
+      border_gp <- grid::gpar(col = "grey80", lwd = 0.5)
+    }
+    kids[["border_in"]] <- grid::polylineGrob(x = p_in$x, y = p_in$y, gp = border_gp)
+    kids[["border_out"]] <- grid::polylineGrob(x = p_out$x, y = p_out$y, gp = border_gp)
+
+    ## settings coming from scale_x_spiral_axis() / scale_y_spiral_axis()
+    ax_x <- panel_params$spiral_axis$x %||% list()
+    ax_y <- panel_params$spiral_axis$y %||% list()
+    y_axis <- isTRUE(self$y_axis) && isTRUE(self$show_labels) &&
+      !identical(ax_y$show, FALSE)
+
+    ## where the radial ruler goes, `spiralize::spiral_yaxis()` style: at the
+    ## start of the spiral, at its end, or on both sides.  `outward` is the
+    ## direction in which the ticks grow, away from the track.
+    ypos <- list()
     if (y_axis) {
-      ta <- if (is.null(self$y_axis_theta)) fr$theta1 else .ggspiral_deg(self$y_axis_theta)
-      yv <- panel_params$y.major
+      if (!is.null(ax_y$axis_at)) {
+        ypos <- list(list(theta = .ggspiral_angle_to_theta(ax_y$axis_at, fr),
+                          outward = 1))
+      } else if (!is.null(self$y_axis_theta)) {
+        ypos <- list(list(theta = .ggspiral_deg(self$y_axis_theta), outward = 1))
+      } else {
+        side <- ax_y$side %||% "end"
+        if (side %in% c("start", "both")) {
+          ypos <- c(ypos, list(list(theta = fr$theta0, outward = -1)))
+        }
+        if (side %in% c("end", "both")) {
+          ypos <- c(ypos, list(list(theta = fr$theta1, outward = 1)))
+        }
+      }
+    }
+
+    if (isTRUE(self$show_labels) && !identical(ax_x$show, FALSE) &&
+        length(panel_params$x.major) && length(panel_params$x.labels)) {
+      ## x (angle) ticks and labels: radial stubs on the outer edge of the track
+      tx <- .ggspiral_theta(panel_params$x.major, fr)
+      ## labels sitting under a radial ruler would collide with it.  Compare
+      ## absolute angles along the spiral: a label one whole turn away is at the
+      ## same direction but a different radius, so it does not collide.
+      keep <- rep(TRUE, length(tx))
+      for (p in ypos) keep <- keep & abs(tx - p$theta) > 0.14
+      if (!any(keep)) keep <- rep(TRUE, length(tx))
+      xl <- as.character(panel_params$x.labels)[keep]
+      tx <- tx[keep]
+      tr <- fr$inner + fr$gap * (tx - fr$theta0) + fr$height
+      stx <- sin(tx) * fr$dir
+      sty <- cos(tx)
+      if (isTRUE(fr$flip_h)) stx <- -stx
+      if (isTRUE(fr$flip_v)) sty <- -sty
+      ## the white gap between two turns is all the room there is: keep the
+      ## tick and the label inside it so neither runs into the next band
+      gap_npc <- max(fr$loop - fr$height, 0.004)
+      stub <- min(ax_x$tick_length %||% 0.007, gap_npc * 0.3)
+      ## the label is centred on its anchor, so nudge it out by a bit less
+      ## than half a line: just enough air between the glyphs and the tick,
+      ## like the spiralize axis, not a gaping hole
+      size_x <- ax_x$label_size %||%
+        ggplot2::calc_element("axis.text.x", theme)$size %||% 8.8
+      half_line <- size_x / 72 / 6 * 0.62      # npc, assuming a 6 inch panel
+      lab_off <- min(stub + half_line * 0.55 + 0.0015, gap_npc * 0.72)
+      tick_el <- ggplot2::calc_element("axis.ticks.x", theme)
+      if (stub > 0 && length(tx)) {
+        kids[["x_ticks"]] <- grid::segmentsGrob(
+          x0 = 0.5 + tr * stx, y0 = 0.5 + tr * sty,
+          x1 = 0.5 + (tr + stub) * stx, y1 = 0.5 + (tr + stub) * sty,
+          gp = grid::gpar(col = tick_el$colour %||% "grey20",
+                          lwd = tick_el$linewidth %||% 0.5)
+        )
+      }
+      ## labels stand perpendicular to their tick, i.e. along the tangent.
+      ## The tangent is measured on the drawn path, so `clockwise` and `flip`
+      ## are accounted for (a fixed `-theta` formula is only right for one
+      ## direction).  Text is flipped by 180 when that keeps it upright.
+      tan_pt <- spiral_path(tx + 1e-4, tr)
+      tan_ang <- atan2(tan_pt$y - (0.5 + tr * sty), tan_pt$x - (0.5 + tr * stx)) * 180 / pi
+      rot <- tan_ang
+      rot <- ifelse(abs(rot) > 90, rot - 180 * sign(rot), rot)
+      if (!is.null(ax_x$label_rot)) rot <- ax_x$label_rot
+      ## minor ticks: the same radial stub, shorter and thinner, no label
+      xmi <- panel_params$x.minor
+      if (length(xmi) && stub > 0) {
+        tmi <- .ggspiral_theta(xmi, fr)
+        rmi <- fr$inner + fr$gap * (tmi - fr$theta0) + fr$height
+        smx <- sin(tmi) * fr$dir
+        smy <- cos(tmi)
+        if (isTRUE(fr$flip_h)) smx <- -smx
+        if (isTRUE(fr$flip_v)) smy <- -smy
+        keepm <- rep(TRUE, length(tmi))
+        for (p in ypos) keepm <- keepm & abs(tmi - p$theta) > 0.14
+        if (any(keepm)) {
+          kids[["x_ticks_minor"]] <- grid::segmentsGrob(
+            x0 = 0.5 + rmi[keepm] * smx[keepm],
+            y0 = 0.5 + rmi[keepm] * smy[keepm],
+            x1 = 0.5 + (rmi[keepm] + stub * 0.55) * smx[keepm],
+            y1 = 0.5 + (rmi[keepm] + stub * 0.55) * smy[keepm],
+            gp = grid::gpar(col = tick_el$colour %||% "grey20",
+                            lwd = (tick_el$linewidth %||% 0.5) * 0.7)
+          )
+        }
+      }
+      if (length(xl)) kids[["x_labels"]] <- ggplot2::element_grob(
+        ggplot2::calc_element("axis.text.x", theme),
+        label = xl,
+        x = 0.5 + (tr + lab_off) * stx,
+        y = 0.5 + (tr + lab_off) * sty,
+        hjust = 0.5, vjust = 0.5,
+        angle = rot, size = ax_x$label_size
+      )
+    }
+
+    ## the radial ruler, rewritten from `spiralize::spiral_yaxis()`:
+    ##  * one tick per break, a short segment running *along* the spiral
+    ##    (circumferential), growing outwards from the track;
+    ##  * the label sits just past its tick, turned to the tangent at that
+    ##    point, and flipped by 180 degrees (with the matching justification)
+    ##    when the tangent would leave it upside down or growing inwards.
+    if (length(ypos) && isTRUE(self$show_labels)) {
+      yv <- yr
       if (is.null(yv) || !length(yv)) {
         yv <- seq(fr$yr[1], fr$yr[2], length.out = self$y_axis_n)
       }
-      yv <- yv[yv >= fr$yr[1] & yv <= fr$yr[2]]
+      ylab <- panel_params$y.labels
+      if (length(ylab) != length(yv)) ylab <- format(yv, trim = TRUE, digits = 3)
+      ok <- yv >= fr$yr[1] & yv <= fr$yr[2]
+      yv <- yv[ok]
+      ylab <- ylab[ok]
+      ## how many labels fit is pure geometry: each one needs about a line of
+      ## text across the track, so a thin track holds one or two, not three.
+      ## `max_labels` overrides the guess.
+      txt_el0 <- ggplot2::calc_element("axis.text.y", theme)
+      size0 <- ax_y$label_size %||% txt_el0$size %||% 8
+      ## how tall the panel really is, in inches: `npc` alone carries no size,
+      ## so ask the device.  The panel is roughly 60% of the device, and being
+      ## a little pessimistic is what keeps small panels from over-labelling.
+      dev_h <- tryCatch(
+        grid::convertHeight(grid::unit(1, "npc"), "inches", valueOnly = TRUE),
+        error = function(e) 4.5 / 0.6)
+      panel_h <- max(dev_h * 0.6, 1)
+      need <- size0 / 72 / panel_h * 1.15      # npc of track a label needs
+      fits <- max(1L, floor(fr$height / need))
+      mx <- ax_y$max_labels
+      if (is.null(mx)) mx <- min(3L, fits)
+      if (!is.null(mx) && length(yv) > mx) {
+        idx <- if (mx == 1L) round((length(yv) + 1) / 2) else
+          round(seq(1, length(yv), length.out = mx))
+        yv <- yv[idx]
+        ylab <- ylab[idx]
+      }
+
+      gap_npc <- max(fr$loop - fr$height, 0.004)
+      tlen <- if (is.null(ax_y$tick_length)) 0.008 else ax_y$tick_length
+      tlen <- min(tlen, gap_npc * 0.35)
+      tick_gp <- grid::gpar(
+        col = (ggplot2::calc_element("axis.ticks.x", theme)$colour %||% "grey30"),
+        lwd = (ggplot2::calc_element("axis.ticks.x", theme)$linewidth %||% 0.5))
+      txt_el <- ggplot2::calc_element("axis.text.y", theme)
+      size <- ax_y$label_size %||% txt_el$size %||% 8
+      ## the text box already carries some leading space, so a tiny offset is
+      ## enough to match the hairline the angle labels get
+      gap <- min(0.0015, gap_npc * 0.5)
+
       if (length(yv)) {
-        yf <- pmin(pmax((yv - fr$yr[1]) / diff(fr$yr), 0), 1)
-        rr <- fr$inner + fr$gap * (ta - fr$theta0) + yf * fr$height
-        sx <- sin(ta) * fr$dir
-        sy <- cos(ta)
-        if (isTRUE(fr$flip_h)) sx <- -sx
-        if (isTRUE(fr$flip_v)) sy <- -sy
-        kids[["y_ticks"]] <- grid::segmentsGrob(
-          x0 = 0.5 + rr * sx, y0 = 0.5 + rr * sy,
-          x1 = 0.5 + (rr + 0.012) * sx, y1 = 0.5 + (rr + 0.012) * sy,
-          gp = grid::gpar(col = "grey50", lwd = 0.5)
-        )
-        ## fan the labels so neighbouring values never sit on top of each other
-        m <- length(yv)
-        ang <- ta + (seq_len(m) - (m + 1) / 2) * 0.035 * fr$dir
-        lx <- sin(ang) * fr$dir
-        ly <- cos(ang)
-        if (isTRUE(fr$flip_h)) lx <- -lx
-        if (isTRUE(fr$flip_v)) ly <- -ly
-        lab_r <- pmax(rr + 0.02, fr$outer + 0.02)
-        kids[["y_leaders"]] <- grid::segmentsGrob(
-          x0 = 0.5 + (rr + 0.012) * sx, y0 = 0.5 + (rr + 0.012) * sy,
-          x1 = 0.5 + lab_r * lx, y1 = 0.5 + lab_r * ly,
-          gp = grid::gpar(col = "grey70", lwd = 0.4)
-        )
-        kids[["y_labels"]] <- grid::textGrob(
-          label = format(yv, trim = TRUE, digits = 3),
-          x = 0.5 + lab_r * lx, y = 0.5 + lab_r * ly,
-          hjust = ifelse(lx > 0.1, 0, ifelse(lx < -0.1, 1, 0.5)),
-          vjust = ifelse(ly > 0.1, 0, ifelse(ly < -0.1, 1, 0.5)),
-          gp = grid::gpar(col = "grey25", fontsize = 8)
-        )
+        yf <- pmin(pmax((yv - fr$yr[1]) / if (diff(fr$yr) == 0) 1 else diff(fr$yr), 0), 1)
+        for (i in seq_along(ypos)) {
+          ta <- ypos[[i]]$theta
+          sgn <- ypos[[i]]$outward
+          rr <- fr$inner + fr$gap * (ta - fr$theta0) + yf * fr$height
+          dt <- tlen / pmax(rr, 0.06)
+          p0 <- spiral_path(ta, rr)
+          p1 <- spiral_path(ta + sgn * dt, rr)
+          p2 <- spiral_path(ta + sgn * (tlen + gap) / pmax(rr, 0.06), rr)
+          ## tangent at the label, taken from the drawing itself so that
+          ## `clockwise` / `flip` are already accounted for
+          p3 <- spiral_path(ta + sgn * (tlen + gap + 0.01) / pmax(rr, 0.06), rr)
+          ang <- atan2(p3$y - p2$y, p3$x - p2$x) * 180 / pi
+          flip <- abs(ang) > 90
+          rot <- ifelse(flip, ang - 180 * sign(ang), ang)
+          hjust <- ifelse(flip, 1, 0)
+          if (!is.null(ax_y$label_rot)) {
+            rot <- ax_y$label_rot
+            hjust <- 0
+          }
+
+          one <- list()
+          if (tlen > 0) {
+            one[["y_ticks"]] <- grid::segmentsGrob(
+              x0 = p0$x, y0 = p0$y, x1 = p1$x, y1 = p1$y, gp = tick_gp)
+          }
+          ## a white halo keeps the labels readable where they cross the track
+          one[["y_halo"]] <- grid::textGrob(
+            label = ylab, x = p2$x, y = p2$y, hjust = hjust, vjust = 0.5,
+            rot = rot, gp = grid::gpar(col = "white", fontsize = size + 1.6)
+          )
+          one[["y_labels"]] <- ggplot2::element_grob(
+            txt_el, label = ylab, x = p2$x, y = p2$y,
+            hjust = hjust, vjust = 0.5, angle = rot,
+            size = ax_y$label_size
+          )
+          one <- lapply(names(one), function(nm) {
+            one[[nm]]$name <- nm
+            one[[nm]]
+          })
+          kids[[paste0("y_axis", i)]] <- grid::gTree(
+            children = do.call(grid::gList, one))
+        }
       }
     }
 
-    do.call(grid::grobTree, kids)
+    ## name the grobs themselves: `grobTree()` would rename them, and renaming
+    ## the children of an existing gTree afterwards stops it from drawing
+    kids <- lapply(seq_along(kids), function(i) {
+      kids[[i]]$name <- names(kids)[i]
+      kids[[i]]
+    })
+    grid::gTree(children = do.call(grid::gList, kids))
   },
 
   labels = function(self, labels, panel_params) labels

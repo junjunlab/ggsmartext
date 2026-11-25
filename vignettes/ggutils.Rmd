@@ -923,6 +923,195 @@ ggplot(d_sp, aes(x, y)) +
   theme(plot.title = element_text(size = 11))
 ```
 
+## 螺旋热图：300 个基因 × 8 个样本
+
+热图是螺旋坐标最典型的用法：基因沿螺线排开（x），样本沿半径叠放（y），
+`geom_tile()` 的每个格子都会跟着弯。这里用包里的内置数据，
+和前面「环形热图」用的是同一份（GEO GSE52778，行 z-score）：
+
+```{r spiral-heatmap, fig.cap = "内置数据画成螺旋热图：300 个基因沿四圈螺线铺开，8 个样本是 8 条同心色带", fig.width = 7, fig.height = 7}
+data(airway_heatmap)
+d_hm <- airway_heatmap$df
+d_hm$x <- as.numeric(d_hm$gene)
+d_hm$y <- as.numeric(d_hm$sample)
+
+ggplot(d_hm, aes(x, y, fill = z)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "#2166ac", mid = "#f7f7f7", high = "#b2182b",
+                       limits = c(-2.5, 2.5), oob = scales::squish, name = "z") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_spiral(turns = 4, height = .9, inner = .12, labels = FALSE) +
+  labs(x = NULL, y = NULL)
+```
+
+三个要点：
+
+- **`expand = c(0, 0)` 必须加**（x 和 y 都要），否则色带缩不到轨道边缘、首尾留白；
+- **`inner` 要放大**，默认 `0.04` 时最内圈半径太小，格子会挤成一团，`0.10 ~ 0.12` 合适；
+- **4 圈以上建议 `labels = FALSE`**：300 个基因的刻度没有意义，2 圈时再打开，
+  径向刻度标样本名能定位到具体样本。
+
+想在径向标出样本名，就把圈数减到 2、打开坐标轴，并把 y 的刻度换成样本：
+
+```r
+ggplot(d_hm, aes(x, y, fill = z)) +
+  geom_tile() +
+  scale_y_continuous(expand = c(0, 0), breaks = 1:8,
+                     labels = paste0("S", 1:8)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  coord_spiral(turns = 2, height = .85, inner = .1)
+```
+
+## 沿螺线画箭头（`spiral_arrow()` 风格）
+
+`spiralize` 里的 `spiral_arrow(0.2, 0.8)`，在 ggplot 里就是**把一段 x 区间沿着轨道
+插值成一条 `geom_path()`**，再加上箭头。关键是必须用 `geom_path()`：它按数据顺序把
+所有插值点连起来，才贴着螺线走；`geom_segment()` 只有两个端点，会变成横穿面板的直线。
+
+```{r spiral-arrow, fig.cap = "沿螺线从 x = 0.2 画到 0.8 的箭头，主刻度间带次刻度", fig.width = 5.6, fig.height = 5.6}
+d_arrow <- data.frame(x = seq(0.2, 0.8, length.out = 900), y = 0.5)
+
+ggplot(d_arrow, aes(x, y)) +
+  geom_path(linewidth = 2.6, colour = "#e41a1c", lineend = "round",
+            arrow = grid::arrow(length = unit(5.5, "mm"), type = "closed")) +
+  scale_x_spiral_axis(breaks = seq(0.2, 0.8, by = 0.05),
+                      minor_breaks = seq(0.2, 0.8, by = 0.0125),
+                      label_size = 5) +
+  scale_y_spiral_axis(show = FALSE) +
+  coord_spiral(turns = 3, height = .78, inner = .06, outer = .46, y_axis = FALSE)
+```
+
+几个取值不是随便写的：`linewidth = 2.6`（毫米）约等于轨道厚度的 60%，红线正好躺在
+带子中间；`minor_breaks` 每 0.0125 一个，主刻度（0.05）之间就有四条小刻度，
+和 `spiralize` 那套「主刻度带标签、次刻度只画线」一致。想要反方向，用
+`scale_x_reverse()` 即可。
+
+
+# 支持哪些图层
+
+`coord_spiral()` 是一个标准的 ggproto `Coord`：它只做一件事——把每个点从数据尺度
+映射到面板坐标。因此**凡是把 `x`/`y` 交给坐标变换的图层都能直接用**，不需要任何额外设置。
+
+| 图层 | 状态 | 说明 |
+|---|---|---|
+| `geom_point()` / `geom_jitter()` | 可用 | 点落在轨道上 |
+| `geom_line()` / `geom_step()` | 可用 | 折线沿螺线铺开 |
+| `geom_path()` | 可用 | 按数据顺序连线，顺序乱时线会绕回 |
+| `geom_area()` / `geom_ribbon()` | 可用 | 上下界一起弯成螺线 |
+| `geom_col()` / `geom_bar()` | 可用 | 柱子变成轨道上的扇形块 |
+| `geom_histogram()` / `geom_density()` | 可用 | 分箱与核密度都正常 |
+| `geom_smooth()` | 可用 | 拟合曲线与置信带都跟随螺线 |
+| `geom_tile()` | 可用 | 热图沿螺线铺开（见下图） |
+| `geom_boxplot()` / `geom_violin()` | 可用 | 需要离散的 x |
+| `geom_text()` / `geom_label()` | 可用 | 字号要调小，否则会跨圈 |
+| `geom_errorbar()` / `geom_pointrange()` / `geom_linerange()` | 可用 | 误差线成为轨道上的短弧 |
+| `geom_polygon()` | 可用 | 顶点被映射，边是直线段（见下方说明） |
+| `geom_raster()` | 降级 | 提示"只支持线性坐标"，自动改用 `geom_rect()` 绘制 |
+| `geom_segment()` / `geom_curve()` | 可用 | 两端各自变换，箭头（`arrow =`）也正常；两点之间是直线，跨度小时与弧无异 |
+| `geom_rect()` | 可用 | 四个角都变换，得到贴着轨道的四边形 |
+| `geom_hline()` / `geom_vline()` / `geom_abline()` | 不可用 | 无穷延伸的线没有端点可变换，会画成闭合的怪形 |
+| `geom_sf()` / `geom_map()` | 不可用 | 各自需要 `coord_sf()` / 专门的坐标 |
+
+```{r spiral-geoms, fig.cap = "ggplot2 官方示例直接换成 coord_spiral()：点、线、面积、柱状、直方图、拟合、箱线、热图、文字", fig.width = 8.4, fig.height = 7.4}
+library(patchwork)
+
+## the layer examples are the ones from the ggplot2 reference pages
+sp <- function(p, title) {
+  p + coord_spiral(turns = 3, labels = FALSE) +
+    labs(x = NULL, y = NULL, title = title) +
+    theme(plot.title = element_text(size = 9),
+          axis.text = element_text(size = 5),
+          legend.position = "none")
+}
+
+wrap_plots(
+  sp(ggplot(mpg, aes(displ, hwy)) + geom_point(), "geom_point()"),
+  sp(ggplot(economics, aes(date, unemploy)) + geom_line(), "geom_line()"),
+  sp(ggplot(economics, aes(date, unemploy)) + geom_area(fill = "#9ecae1"), "geom_area()"),
+  sp(ggplot(mpg, aes(class, hwy)) + geom_col(), "geom_col()"),
+  sp(ggplot(mpg, aes(hwy)) + geom_histogram(binwidth = 2), "geom_histogram()"),
+  sp(ggplot(mpg, aes(displ, hwy)) + geom_point() + geom_smooth(), "geom_smooth()"),
+  sp(ggplot(mpg, aes(class, hwy)) + geom_boxplot(), "geom_boxplot()"),
+  sp(ggplot(faithfuld, aes(waiting, eruptions, fill = density)) + geom_tile(), "geom_tile()"),
+  sp(ggplot(mpg[seq(1, 234, 12), ], aes(displ, hwy, label = cyl)) +
+       geom_text(size = 2), "geom_text()"),
+  ncol = 3
+)
+```
+
+
+**为什么线段之间是直线**：坐标变换作用在每个位置美学上（`x`、`y`、`xend`、`yend`、
+`xmin`、`xmax`、`ymin`、`ymax`），但两个端点之间的边仍然是直线段。线段很短时看不出
+差别——下面这张图就是 `spiralize::spiral_segments()` 的复刻，每段只跨 0.02 个 x 单位，
+看起来完全贴着轨道。跨度很大时才会明显切掉弧线，那种情况请改用 `geom_path()`
+手工沿弧插值（把每条线段拆成若干中间点、`x` 均匀递增，再用 `group` 区分）。
+
+```{r spiral-segments, fig.cap = "复刻 spiralize 的 Segments 示例：左为彩色线段，右为带箭头的线段", fig.width = 8.4, fig.height = 4.4}
+set.seed(2)
+n <- 400
+d_seg <- data.frame(
+  x  = runif(n), y = runif(n)
+)
+d_seg$xend <- d_seg$x + runif(n, min = -0.01, max = 0.01)
+d_seg$yend <- 1 - d_seg$y
+d_seg$col <- grDevices::hcl.colors(n, "Dark 3")
+
+p_seg <- ggplot(d_seg, aes(x, y)) +
+  geom_segment(aes(xend = xend, yend = yend), colour = d_seg$col,
+               linewidth = .6, show.legend = FALSE) +
+  coord_spiral(turns = 4, height = .85, labels = FALSE)
+
+p_arrow <- ggplot(d_seg[seq_len(120), ], aes(x, y)) +
+  geom_segment(aes(xend = xend, yend = yend), colour = d_seg$col[seq_len(120)],
+               linewidth = .6, show.legend = FALSE,
+               arrow = arrow(length = unit(2, "mm"))) +
+  coord_spiral(turns = 4, height = .85, labels = FALSE)
+
+wrap_plots(p_seg, p_arrow, ncol = 2)
+```
+
+## 径向柱状图与堆叠柱状图
+
+`spiralize::spiral_bars()` 那种图，用 `geom_col()` 直接就能画：柱子从 y 的最小值
+（通常是 0）向外长，`width` 控制它占多少角度。把 `expand` 设成 0 是为了让柱子正好
+填满轨道、第一根和最后一根不留下空隙。
+
+```{r spiral-bars, fig.cap = "左：单列柱状图；右：矩阵三列对应的堆叠柱状图", fig.width = 8.4, fig.height = 4.4}
+set.seed(1)
+
+## one value per column
+d1 <- data.frame(x = seq_len(240), v = runif(240, .05, 1))
+p1 <- ggplot(d1, aes(x, v)) +
+  geom_col(width = 1, fill = "grey20") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_spiral(turns = 3, height = .8) +
+  labs(x = NULL, y = NULL, title = "one column: geom_col()")
+
+## a matrix: one column per stack
+n <- 200
+m <- matrix(runif(3 * n), ncol = 3)
+m <- m / rowSums(m)
+d2 <- data.frame(x = rep(seq_len(n), 3),
+                 stack = factor(rep(c("A", "B", "C"), each = n)),
+                 v = as.vector(m))
+p2 <- ggplot(d2, aes(x, v, fill = stack)) +
+  geom_col(width = 1) +
+  scale_fill_manual(values = c("#4C72B0", "#DD8452", "#55A868")) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_spiral(turns = 3, height = .8) +
+  labs(x = NULL, y = NULL, title = "matrix columns: position = \"stack\"")
+
+wrap_plots(p1, p2, ncol = 2) &
+  theme(plot.title = element_text(size = 10), legend.position = "bottom")
+```
+
+堆叠之所以成立，是因为 y 在 `coord_spiral()` 里就是轨道内的半径：`position = "stack"`
+把每一段沿着半径方向叠起来，于是矩阵的每一列变成一圈同心的色带。同理，
+`position = "dodge"` 会把并列的柱子沿**角度**方向摊开，`position = "fill"` 则归一化到轨道宽度。
+
 # 已知限制与调参建议
 
 - **它只能挑选已有的刻度，不会新增刻度。** 如果某个类别不在 scale 的 breaks 里，`which` 就选不到它——先用 `scale_x_discrete(breaks = ...)` 把它放进去。

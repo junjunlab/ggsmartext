@@ -1,3 +1,33 @@
+# ggutils 0.0.2
+
+* `coord_spiral()` 新增 `turns` 与 `gap`：直接给圈数和圈间白隙，
+  不必自己换算 `end` / `height`；两者同时给时 `gap` 优先。
+
+* 新增 `scale_x_spiral_axis()` / `scale_y_spiral_axis()`，用来调螺线上的坐标轴：
+
+  - `breaks` / `labels` / `minor_breaks` / `limits` 等按普通连续标度使用，
+    `discrete = TRUE` 时 x 是因子也能用；
+  - `axis_at` 把径向轴放到任意角度（0 = 正东），`side` 选 `"start"` / `"end"` / `"both"`；
+  - `tick_length`、`label_rot`、`label_size`、`max_labels`、`show = FALSE` 控制刻度与标签。
+
+* 坐标变换现在成对变换所有位置美学（`xend`、`yend`、`xmin`、`xmax`、`ymin`、`ymax`），
+  于是 `geom_segment()`（含 `arrow =`）、`geom_rect()`、`geom_ribbon()` 在任意 y 范围
+  下都贴着轨道绘制。`geom_hline()` / `geom_vline()` / `geom_abline()` 仍不支持——它们
+  没有端点可变换。
+
+* 刻度与标签按圈间白隙自适应：刻度长度被白隙约束，标签落在白隙内并与刻度留一条细缝；
+  径向标签的数量按轨道厚度与画布实际高度自动决定，薄轨道不会再挤成一团。
+
+* 角度标签改为按绘制路径的真实切线旋转，`clockwise` / `flip` 都正确：正上正下水平、
+  正左正右竖直，永不倒置。新增 `minor_breaks` 次刻度。
+
+* 修复两个问题：多圈螺旋下"标签让位"用角度取模判断，会误删整圈之外的标签、甚至把
+  标签向量清空导致 `segmentsGrob()` 报错；给 `grobTree()` 的子元素改名会静默地
+  让整棵树不再绘制。
+
+* vignette 新增「螺旋热图」「径向柱状图与堆叠柱状图」「沿螺线画箭头」「支持哪些图层」
+  四节，示例代码取自 ggplot2 官方文档。
+
 # ggutils 0.0.1
 
 * 首个版本。

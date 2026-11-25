@@ -20,6 +20,8 @@ reference:
     contents:
       - coord_spiral
       - CoordSpiral
+      - scale_x_spiral_axis
+      - scale_y_spiral_axis
 
   - title: 排布算法 (Layout algorithms)
     desc: >

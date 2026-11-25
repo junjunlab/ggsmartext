@@ -948,6 +948,205 @@ ggplot(d_sp, aes(x, y)) +
   theme(plot.title = element_text(size = 11))
 ```
 
+## Spiral heat map: 300 genes x 8 samples
+
+A heat map is the most typical use of the spiral: genes run along the spiral (x) and
+samples stack along the radius (y), with every `geom_tile()` cell bending with the
+track.  This uses the package's built-in data, the same matrix as the circular heat
+map above (GEO GSE52778, row z-scores):
+
+```{r spiral-heatmap, fig.cap = "The built-in data as a spiral heat map: 300 genes over four turns, with the eight samples as concentric bands", fig.width = 7, fig.height = 7}
+data(airway_heatmap)
+d_hm <- airway_heatmap$df
+d_hm$x <- as.numeric(d_hm$gene)
+d_hm$y <- as.numeric(d_hm$sample)
+
+ggplot(d_hm, aes(x, y, fill = z)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "#2166ac", mid = "#f7f7f7", high = "#b2182b",
+                       limits = c(-2.5, 2.5), oob = scales::squish, name = "z") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_spiral(turns = 4, height = .9, inner = .12, labels = FALSE) +
+  labs(x = NULL, y = NULL)
+```
+
+Three things matter:
+
+- add **`expand = c(0, 0)`** on both scales, otherwise the colour band stops short of
+  the track edges and leaves white slivers at the start and the end;
+- make **`inner` larger**; the default `0.04` leaves the innermost turn so small that
+  the cells pile up, `0.10 - 0.12` works well;
+- for four turns or more use **`labels = FALSE`** - 300 gene ticks mean nothing; turn
+  them back on at two turns, where the radial ticks label the samples.
+To label the samples on the radius instead, use two turns, keep the axis and
+replace the y breaks with the sample names:
+
+```r
+ggplot(d_hm, aes(x, y, fill = z)) +
+  geom_tile() +
+  scale_y_continuous(expand = c(0, 0), breaks = 1:8,
+                     labels = paste0("S", 1:8)) +
+  scale_x_continuous(expand = c(0, 0)) +
+  coord_spiral(turns = 2, height = .85, inner = .1)
+```
+
+## An arrow along the spiral (`spiral_arrow()` style)
+
+`spiralize`'s `spiral_arrow(0.2, 0.8)` is just **an x interval interpolated into a
+`geom_path()` along the track**, plus an arrow head.  `geom_path()` is essential: it
+connects the interpolated points in data order, so the line follows the spiral;
+`geom_segment()` only has two end points and would cut straight across the panel.
+
+```{r spiral-arrow, fig.cap = "An arrow along the spiral from x = 0.2 to 0.8, with minor ticks between the labelled ones", fig.width = 5.6, fig.height = 5.6}
+d_arrow <- data.frame(x = seq(0.2, 0.8, length.out = 900), y = 0.5)
+
+ggplot(d_arrow, aes(x, y)) +
+  geom_path(linewidth = 2.6, colour = "#e41a1c", lineend = "round",
+            arrow = grid::arrow(length = unit(5.5, "mm"), type = "closed")) +
+  scale_x_spiral_axis(breaks = seq(0.2, 0.8, by = 0.05),
+                      minor_breaks = seq(0.2, 0.8, by = 0.0125),
+                      label_size = 5) +
+  scale_y_spiral_axis(show = FALSE) +
+  coord_spiral(turns = 3, height = .78, inner = .06, outer = .46, y_axis = FALSE)
+```
+
+The numbers are not arbitrary: `linewidth = 2.6` mm is about 60% of the track, so the
+red band sits inside it; `minor_breaks` every 0.0125 puts four small ticks between two
+labelled ones, the way `spiralize` draws major ticks with labels and minor ticks
+without.  For the opposite direction use `scale_x_reverse()`.
+
+
+# Which layers are supported
+
+`coord_spiral()` is an ordinary ggproto `Coord`: all it does is map every point
+from the data scale to panel coordinates.  So **any layer that hands its `x`/`y`
+to the coordinate transform just works**, with no extra setup.
+
+| Layer | Status | Notes |
+|---|---|---|
+| `geom_point()` / `geom_jitter()` | works | points land on the track |
+| `geom_line()` / `geom_step()` | works | the line is bent along the spiral |
+| `geom_path()` | works | connects in data order, so an unordered path loops back |
+| `geom_area()` / `geom_ribbon()` | works | both bounds follow the spiral |
+| `geom_col()` / `geom_bar()` | works | bars become wedges of the track |
+| `geom_histogram()` / `geom_density()` | works | binning and density are fine |
+| `geom_smooth()` | works | curve and confidence band both follow the spiral |
+| `geom_tile()` | works | heat maps unroll along the spiral (below) |
+| `geom_boxplot()` / `geom_violin()` | works | needs a discrete x |
+| `geom_text()` / `geom_label()` | works | keep the font small, or the text spans turns |
+| `geom_errorbar()` / `geom_pointrange()` / `geom_linerange()` | works | whiskers become short arcs on the track |
+| `geom_polygon()` | works | vertices are mapped, edges are straight (see below) |
+| `geom_raster()` | falls back | warns that it needs a linear coord and draws via `geom_rect()` |
+| `geom_segment()` / `geom_curve()` | works | both ends are transformed, arrows (`arrow =`) included; the edge between them is straight, invisible over short spans |
+| `geom_rect()` | works | all four corners are transformed, giving a quad that hugs the track |
+| `geom_hline()` / `geom_vline()` / `geom_abline()` | not supported | an infinite line has no end points to transform, so it turns into a closed shape |
+| `geom_sf()` / `geom_map()` | not supported | they need `coord_sf()` / their own coord |
+
+```{r spiral-geoms, fig.cap = "ggplot2's own layer examples drawn on coord_spiral(): points, line, area, bars, histogram, smooth, boxplot, heat map, text", fig.width = 8.4, fig.height = 7.4}
+library(patchwork)
+
+## the layer examples are the ones from the ggplot2 reference pages
+sp <- function(p, title) {
+  p + coord_spiral(turns = 3, labels = FALSE) +
+    labs(x = NULL, y = NULL, title = title) +
+    theme(plot.title = element_text(size = 9),
+          axis.text = element_text(size = 5),
+          legend.position = "none")
+}
+
+wrap_plots(
+  sp(ggplot(mpg, aes(displ, hwy)) + geom_point(), "geom_point()"),
+  sp(ggplot(economics, aes(date, unemploy)) + geom_line(), "geom_line()"),
+  sp(ggplot(economics, aes(date, unemploy)) + geom_area(fill = "#9ecae1"), "geom_area()"),
+  sp(ggplot(mpg, aes(class, hwy)) + geom_col(), "geom_col()"),
+  sp(ggplot(mpg, aes(hwy)) + geom_histogram(binwidth = 2), "geom_histogram()"),
+  sp(ggplot(mpg, aes(displ, hwy)) + geom_point() + geom_smooth(), "geom_smooth()"),
+  sp(ggplot(mpg, aes(class, hwy)) + geom_boxplot(), "geom_boxplot()"),
+  sp(ggplot(faithfuld, aes(waiting, eruptions, fill = density)) + geom_tile(), "geom_tile()"),
+  sp(ggplot(mpg[seq(1, 234, 12), ], aes(displ, hwy, label = cyl)) +
+       geom_text(size = 2), "geom_text()"),
+  ncol = 3
+)
+```
+
+
+**Why the edges between two points are straight**: the transform is applied to every
+position aesthetic (`x`, `y`, `xend`, `yend`, `xmin`, `xmax`, `ymin`, `ymax`), but the
+edge between two transformed points is still a straight segment.  Over a short span
+you cannot see the difference - the figure below is a copy of
+`spiralize::spiral_segments()`, where every segment spans only 0.02 x units and looks
+like it lies exactly on the track.  Over a long span the chord becomes visible; in
+that case draw the line with `geom_path()` instead, interpolating intermediate points
+along the arc and separating the pieces with `group`.
+
+```{r spiral-segments, fig.cap = "A copy of spiralize's Segments example: coloured segments on the left, segments with arrow heads on the right", fig.width = 8.4, fig.height = 4.4}
+set.seed(2)
+n <- 400
+d_seg <- data.frame(
+  x  = runif(n), y = runif(n)
+)
+d_seg$xend <- d_seg$x + runif(n, min = -0.01, max = 0.01)
+d_seg$yend <- 1 - d_seg$y
+d_seg$col <- grDevices::hcl.colors(n, "Dark 3")
+
+p_seg <- ggplot(d_seg, aes(x, y)) +
+  geom_segment(aes(xend = xend, yend = yend), colour = d_seg$col,
+               linewidth = .6, show.legend = FALSE) +
+  coord_spiral(turns = 4, height = .85, labels = FALSE)
+
+p_arrow <- ggplot(d_seg[seq_len(120), ], aes(x, y)) +
+  geom_segment(aes(xend = xend, yend = yend), colour = d_seg$col[seq_len(120)],
+               linewidth = .6, show.legend = FALSE,
+               arrow = arrow(length = unit(2, "mm"))) +
+  coord_spiral(turns = 4, height = .85, labels = FALSE)
+
+wrap_plots(p_seg, p_arrow, ncol = 2)
+```
+
+## Radial and stacked bars
+
+The `spiralize::spiral_bars()` look comes straight out of `geom_col()`: bars grow
+from the smallest y (usually 0) towards the outside, and `width` sets how much of
+the angle they take.  Setting `expand` to 0 makes the bars fill the track, with no
+gap before the first one or after the last one.
+
+```{r spiral-bars, fig.cap = "Left: one bar per column. Right: a matrix stacked by position = \"stack\"", fig.width = 8.4, fig.height = 4.4}
+set.seed(1)
+
+## one value per column
+d1 <- data.frame(x = seq_len(240), v = runif(240, .05, 1))
+p1 <- ggplot(d1, aes(x, v)) +
+  geom_col(width = 1, fill = "grey20") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_spiral(turns = 3, height = .8) +
+  labs(x = NULL, y = NULL, title = "one column: geom_col()")
+
+## a matrix: one column per stack
+n <- 200
+m <- matrix(runif(3 * n), ncol = 3)
+m <- m / rowSums(m)
+d2 <- data.frame(x = rep(seq_len(n), 3),
+                 stack = factor(rep(c("A", "B", "C"), each = n)),
+                 v = as.vector(m))
+p2 <- ggplot(d2, aes(x, v, fill = stack)) +
+  geom_col(width = 1) +
+  scale_fill_manual(values = c("#4C72B0", "#DD8452", "#55A868")) +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_spiral(turns = 3, height = .8) +
+  labs(x = NULL, y = NULL, title = "matrix columns: position = \"stack\"")
+
+wrap_plots(p1, p2, ncol = 2) &
+  theme(plot.title = element_text(size = 10), legend.position = "bottom")
+```
+
+Stacking works because y *is* the radius inside the track: `position = "stack"`
+stacks the pieces along the radius, so every column of the matrix becomes one
+concentric band.  In the same way `position = "dodge"` spreads the bars along the
+angle, and `position = "fill"` normalises them to the track width.
+
 # Known limitations and tuning advice
 
 - **It can only pick existing ticks, never add new ones.** If a category is not in the scale's breaks, `which` cannot select it — add it first with `scale_x_discrete(breaks = ...)`.

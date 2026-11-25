@@ -1,6 +1,6 @@
 Package: ggutils
 Title: Utilities for 'ggplot2'
-Version: 0.0.1
+Version: 0.0.2
 Authors@R:
     person("Zhang Jun", role = c("aut", "cre"),
            email = "junjun@users.noreply.github.com")
@@ -27,6 +27,7 @@ Suggests:
     ComplexHeatmap,
     circlize,
     knitr,
+    patchwork,
     pkgdown,
     ragg,
     rmarkdown,
