@@ -92,6 +92,64 @@ p_guides
 p_scale
 ```
 
+# Parameter reference: what every argument does
+
+The arguments fall into four groups: **which labels**, **how they are laid
+out**, **how the leader lines are drawn**, and **the rest, passed on to
+`guide_axis()`**. In practice you only touch five of them: `which`, `n`,
+`nrow`, `connection_style` and `angle`.
+
+| Parameter | Default | Meaning |
+|---|---|---|
+| **Which labels** | | |
+| `which` | `NULL` | labels to show: integer indices / label text / logical vector / function. `NULL` shows as many as fit |
+| `n` | `NULL` | maximum number of labels. With `which = NULL`, `n` evenly spaced labels are picked; with `which`, the selection is truncated to `n` |
+| **Layout** | | |
+| `nrow` | `NULL` | number of parallel tracks: rows on an x axis, columns on a y axis. `NULL` is automatic: one track while everything fits, more only when labels crowd together |
+| `padding` | `0.25` | minimum gap between two label boxes in a track, as a fraction of the label height; on a radial axis it is the gap along the arc |
+| `gap` | `0.30` | gap between two neighbouring tracks (relative to label height) |
+| `extend` | `0` | how far a label may be pushed beyond the axis range (0 to 0.5). `0` keeps every label inside the panel; larger values need enough `plot.margin` |
+| `panel_width` | `NULL` | panel width (x axis) or height (y axis) in cm, assumed when estimating the number of tracks; `NULL` estimates it from the device |
+| `max_nrow` | `8L` | upper bound for the automatic number of tracks |
+| **Leader lines** | | |
+| `connection` | `TRUE` | draw leader lines? |
+| `connection_style` | `"diagonal"` | `"diagonal"` (short stub, diagonal, short stub -- the circlize / `anno_mark()` shape), `"straight"` (one line), `"elbow"` (perpendicular plus a shelf) |
+| `link_length` | `3` | length in mm of the leader between the axis and the first track; on a radial axis, the distance between the circle and the label |
+| `connection_col` | `NULL` | leader colour; `NULL` takes the tick colour |
+| `connection_lwd` | `0.5` | leader width |
+| `connection_lty` | `1` | leader line type |
+| **Ticks and text** | | |
+| `tick` | `"all"` | `"all"` ticks, `"shown"` only the ticks of drawn labels, `"none"` no ticks |
+| `angle` | `NULL` | label rotation in degrees; `NULL` inherits the theme |
+| `hjust`, `vjust` | `NULL` | label justification inside its box; `NULL` centres it, which keeps the leader on the visual centre of the text |
+| **Radial only** | | |
+| `theta_side` | `"outside"` | labels outside the circle (`"outside"`) or attached to the inner ring of `coord_radial(inner.radius =)` (`"inside"`) |
+| **Passed to `guide_axis()`** | | |
+| `title` | `waiver()` | axis title |
+| `minor.ticks` | `FALSE` | draw minor ticks |
+| `cap` | `"none"` | axis line end style |
+| `order` | `0` | drawing order among guides |
+| `position` | `waiver()` | axis position (top/bottom/left/right); rarely changed |
+| `theme` | `NULL` | theme elements that apply to this guide only |
+
+Four combinations that cover most plots:
+
+```r
+# 8 genes out of 200, one track
+guides(y = guide_axis_smart(which = c("TP53", "EGFR", "MYC", "KRAS",
+                                      "BRCA1", "PTEN", "RB1", "ALK")))
+
+# 50 samples, at most 10 labels, staggered over two rows
+guides(x = guide_axis_smart(n = 10, nrow = 2))
+
+# long labels, crowded: extra tracks plus longer leader lines
+guides(x = guide_axis_smart(which = 1:40, nrow = 3,
+                            connection_style = "diagonal", link_length = 5))
+
+# circular heatmap: labels outside the ring, 20 genes only
+guides(theta = guide_axis_smart(which = mark, theta_side = "outside"))
+```
+
 # Show only the labels you want: four forms of `which`
 
 `which` decides which labels are displayed. It accepts four forms:
@@ -849,34 +907,6 @@ One draw goes through roughly these steps:
 5. **Draw the leader lines**: the default `"diagonal"` style is short stub, diagonal, short stub: it leaves the tick perpendicular to the axis (for `link_length`), crosses to the label's row with a diagonal, and drops perpendicular onto the label box.
 
 All three helpers `smart_align()`, `box_arrange()` and `smart_stack()` are exported and can be called directly (see `?smart_align`); the guide is a thin layer on top of them.
-
-# Parameter reference
-
-| Parameter | Default | Description |
-|---|---|---|
-| `title` | `waiver()` | axis title, as in `guide_axis()` |
-| `which` | `NULL` | which labels to show: integer indices / label text / logical vector / function |
-| `n` | `NULL` | maximum number of labels; truncates the `which` selection evenly; picks evenly from all labels when `which = NULL` |
-| `nrow` | `NULL` | rows on an x axis / columns on a y axis; `NULL` = automatic |
-| `padding` | `0.25` | minimum space between label boxes in one row (relative to label height) |
-| `gap` | `0.30` | space between rows (relative to label height) |
-| `extend` | `0` | fraction (0 to 0.5) by which labels may leave the panel. `0` guarantees labels stay inside; larger values need a matching `plot.margin` |
-| `connection` | `TRUE` | draw leader lines? |
-| `connection_style` | `"diagonal"` | `"diagonal"` (stub + diagonal + stub) / `"straight"` (one diagonal) / `"elbow"` (perpendicular + shelf) |
-| `link_length` | `3` | length of the leader segment between the axis and the first label track, in mm |
-| `connection_col` | `NULL` | leader line colour; `NULL` uses the tick colour |
-| `connection_lwd` | `0.5` | leader line width |
-| `connection_lty` | `1` | leader line type |
-| `tick` | `"all"` | ticks: `"all"` / `"shown"` / `"none"` |
-| `angle` | `NULL` | label rotation (0/45/90); `NULL` inherits the theme |
-| `hjust`, `vjust` | `NULL` | label justification inside its box; `NULL` centres |
-| `panel_width` | `NULL` | panel width (cm) assumed when estimating rows; defaults to about 0.7 x device width |
-| `max_nrow` | `8L` | upper bound on the automatic number of tracks |
-| `minor.ticks` | `FALSE` | draw minor ticks (passes through to `guide_axis()`) |
-| `cap` | `"none"` | axis line end style (passes through to `guide_axis()`) |
-| `order` | `0` | guide drawing order (passes through to `guide_axis()`) |
-| `position` | `waiver()` | axis position (top/bottom/left/right); rarely needed |
-| `theme` | `NULL` | theme element(s) passed to the guide (as in `guide_axis()`) |
 
 # Known limitations and tuning advice
 

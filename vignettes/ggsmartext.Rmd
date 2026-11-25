@@ -89,6 +89,63 @@ p_guides
 p_scale
 ```
 
+# 参数一览：每个参数是干什么的
+
+`guide_axis_smart()` 的参数分四类：**选哪些标签**、**标签怎么排**、**引导线怎么画**、
+**其余透传给 `guide_axis()`**。日常改得最多的只有五个：`which`、`n`、`nrow`、
+`connection_style`、`angle`，其余保持默认即可。
+
+| 参数 | 默认值 | 含义 |
+|---|---|---|
+| **选哪些标签** | | |
+| `which` | `NULL` | 显示哪些标签。整数下标 / 字符标签 / 逻辑向量 / 函数四种写法，`NULL` 表示"放得下多少显示多少" |
+| `n` | `NULL` | 最多显示几个。`which = NULL` 时等距挑 `n` 个；给了 `which` 则把选区再截到 `n` 个 |
+| **标签怎么排** | | |
+| `nrow` | `NULL` | 并行轨道数（x 轴是行，y 轴是列）。`NULL` 为自动：一行放得下就一行，挤在一起才分层 |
+| `padding` | `0.25` | 同一轨道内两个标签之间的最小间隙，单位是"标签高度的倍数"；环形轴上是沿弧的间隙 |
+| `gap` | `0.30` | 两条轨道之间的间隙（相对标签高度） |
+| `extend` | `0` | 允许标签越过轴范围的比例（0 到 0.5）。默认 `0` 保证标签不被面板裁掉；调大需配合足够的 `plot.margin` |
+| `panel_width` | `NULL` | 预估计轨道数时假设的面板宽度（x 轴）或高度（y 轴），单位 cm；`NULL` 按设备尺寸估算 |
+| `max_nrow` | `8L` | 自动分行时轨道数的上限 |
+| **引导线** | | |
+| `connection` | `TRUE` | 是否画引导线 |
+| `connection_style` | `"diagonal"` | 线的形状：`"diagonal"` 短垂线→斜线→短垂线（circlize / `anno_mark()` 同款）、`"straight"` 一条直线、`"elbow"` 垂直段加台阶 |
+| `link_length` | `3` | 轴线到第一行（列）标签的连线长度，单位 mm；环形轴上是圆到标签的距离 |
+| `connection_col` | `NULL` | 引导线颜色，`NULL` 时取刻度线的颜色 |
+| `connection_lwd` | `0.5` | 引导线粗细 |
+| `connection_lty` | `1` | 引导线线型 |
+| **刻度与文字** | | |
+| `tick` | `"all"` | 刻度线画哪些：`"all"` 全画、`"shown"` 只画有标签的、`"none"` 不画 |
+| `angle` | `NULL` | 标签旋转角度（0/45/90…）；`NULL` 继承主题 |
+| `hjust`, `vjust` | `NULL` | 标签在自己盒子内的对齐方式；`NULL` 居中（居中时引导线才对准文字视觉中心） |
+| **环形坐标专用** | | |
+| `theta_side` | `"outside"` | 标签放圆外 `"outside"`，还是贴住 `coord_radial(inner.radius =)` 的内圈 `"inside"` |
+| **透传给 `guide_axis()`** | | |
+| `title` | `waiver()` | 轴标题 |
+| `minor.ticks` | `FALSE` | 是否画次刻度 |
+| `cap` | `"none"` | 轴线末端样式 |
+| `order` | `0` | 多个 guide 时的绘制顺序 |
+| `position` | `waiver()` | 轴的位置（top/bottom/left/right），一般不用改 |
+| `theme` | `NULL` | 只作用于这个 guide 的主题元素 |
+
+几个常见组合，直接抄：
+
+```r
+# 200 个基因里只标 8 个，一行
+guides(y = guide_axis_smart(which = c("TP53", "EGFR", "MYC", "KRAS",
+                                      "BRCA1", "PTEN", "RB1", "ALK")))
+
+# 50 个样本，最多标 10 个，分两行错开
+guides(x = guide_axis_smart(n = 10, nrow = 2))
+
+# 标签很长、挤在一起：分层 + 斜线引导，线再长一点
+guides(x = guide_axis_smart(which = 1:40, nrow = 3,
+                            connection_style = "diagonal", link_length = 5))
+
+# 环形热图：标签放圆外，只标 20 个基因
+guides(theta = guide_axis_smart(which = mark, theta_side = "outside"))
+```
+
 # 只显示指定标签：`which` 的四种写法
 
 `which` 决定"显示哪些标签"，可以接受四种形式：
@@ -829,34 +886,6 @@ ggplot() +
 5. **画引导线**：默认的 `"diagonal"` 样式是"短垂线 → 斜线 → 短垂线"：从刻度先垂直于轴走一小段（`link_length`），再用斜线跨到标签所在行，最后垂直落到标签盒；旋转或平移的幅度由标签被推开的距离决定。
 
 底层三个函数 `smart_align()`、`box_arrange()`、`smart_stack()` 都是导出函数，可以单独调用（参数见 `?smart_align` 等），guide 只是它们的一层封装。
-
-# 参数速查
-
-| 参数 | 默认值 | 说明 |
-|---|---|---|
-| `title` | `waiver()` | 轴标题，同 `guide_axis()` |
-| `which` | `NULL` | 显示哪些标签：整数下标 / 字符标签 / 逻辑向量 / 函数 |
-| `n` | `NULL` | 最多显示多少个；`which` 选完后再等距截断；`which = NULL` 时直接等距挑 |
-| `nrow` | `NULL` | x 轴行数 / y 轴列数；`NULL` = 自动 |
-| `padding` | `0.25` | 同一行内标签盒之间的最小间距（相对标签高度） |
-| `gap` | `0.30` | 行间距（相对标签高度） |
-| `extend` | `0` | 允许标签越出面板范围的比例（0 到 0.5）。默认 `0` 保证标签绝不越界；调大后需要足够的 `plot.margin` |
-| `connection` | `TRUE` | 是否画引导线 |
-| `connection_style` | `"diagonal"` | `"diagonal"`（短垂线 + 斜线 + 短垂线）/ `"straight"`（一条斜线）/ `"elbow"`（垂直段 + 台阶） |
-| `link_length` | `3` | 轴线到第一行（列）标签的连线长度，单位 mm |
-| `connection_col` | `NULL` | 引导线颜色，`NULL` 时用刻度线的颜色 |
-| `connection_lwd` | `0.5` | 引导线粗细 |
-| `connection_lty` | `1` | 引导线线型 |
-| `tick` | `"all"` | 刻度线：`"all"` / `"shown"` / `"none"` |
-| `angle` | `NULL` | 标签角度（0/45/90），`NULL` 继承主题 |
-| `hjust`, `vjust` | `NULL` | 标签在标签盒内的对齐，`NULL` 居中 |
-| `panel_width` | `NULL` | 自动估计行数时假设的面板宽度（cm），默认约为设备宽度的 0.7 倍 |
-| `max_nrow` | `8L` | 自动分行时轨道数（行数/列数）的上限 |
-| `minor.ticks` | `FALSE` | 是否画次刻度（沿用 `guide_axis()` 的语义） |
-| `cap` | `"none"` | 轴线末端样式（沿用 `guide_axis()`） |
-| `order` | `0` | guide 绘制顺序（沿用 `guide_axis()`） |
-| `position` | `waiver()` | 轴位置（top/bottom/left/right），一般不用改 |
-| `theme` | `NULL` | 传给 guide 的主题元素（沿用 `guide_axis()`） |
 
 # 已知限制与调参建议
 
