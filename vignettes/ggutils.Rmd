@@ -30,10 +30,19 @@ library(ggutils)
 ```
 
 ```{css, echo = FALSE}
-pre, pre code, .sourceCode pre {
-  white-space: pre-wrap;      /* wrap instead of running past the grey box */
+/* pandoc sets `white-space: pre` on `pre > code.sourceCode`, which beats a
+   plain `pre` rule; wrap hard so long lines stay inside the grey box. */
+pre, pre code, code.sourceCode, .sourceCode pre, .sourceCode code {
+  white-space: pre-wrap !important;
   overflow-wrap: anywhere;
-  overflow-x: auto;
+}
+@media (max-width: 760px) {
+  html, body { overflow-x: hidden !important; }
+  body { margin: 0 !important; padding: 6px !important; }
+  #TOC { width: auto !important; max-width: 100% !important; margin: 0 0 10px 0 !important; }
+  #TOC ul { padding-left: 18px !important; margin-left: 0 !important; }
+  img { max-width: 100% !important; height: auto !important; }
+  table { display: block; width: 100%; overflow-x: auto; }
 }
 ```
 
