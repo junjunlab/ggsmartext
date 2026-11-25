@@ -32,6 +32,14 @@ library(ggplot2)
 library(ggutils)
 ```
 
+```{css, echo = FALSE}
+pre, pre code, .sourceCode pre {
+  white-space: pre-wrap;      /* wrap instead of running past the grey box */
+  overflow-wrap: anywhere;
+  overflow-x: auto;
+}
+```
+
 # Motivation: when a discrete axis gets crowded
 
 `ggplot2` draws a tick and a label for **every** level of a discrete axis. With many categories (50 samples, 200 features) the labels pile up under the axis: at best they overlap and become unreadable, at worst you delete them and lose the information. Rotating them by 90 degrees helps a little, but long labels and many categories still run off the panel.
@@ -1111,7 +1119,7 @@ from the smallest y (usually 0) towards the outside, and `width` sets how much o
 the angle they take.  Setting `expand` to 0 makes the bars fill the track, with no
 gap before the first one or after the last one.
 
-```{r spiral-bars, fig.cap = "Left: one bar per column. Right: a matrix stacked by position = \"stack\"", fig.width = 8.4, fig.height = 4.4}
+```{r spiral-bars, fig.cap = "Left: one bar per column. Right: the same data stacked", fig.width = 8.4, fig.height = 4.4}
 set.seed(1)
 
 ## one value per column
@@ -1136,7 +1144,7 @@ p2 <- ggplot(d2, aes(x, v, fill = stack)) +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   coord_spiral(turns = 3, height = .8) +
-  labs(x = NULL, y = NULL, title = "matrix columns: position = \"stack\"")
+  labs(x = NULL, y = NULL, title = "matrix columns: stacked")
 
 wrap_plots(p1, p2, ncol = 2) &
   theme(plot.title = element_text(size = 10), legend.position = "bottom")

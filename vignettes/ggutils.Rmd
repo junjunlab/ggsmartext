@@ -29,6 +29,14 @@ library(ggplot2)
 library(ggutils)
 ```
 
+```{css, echo = FALSE}
+pre, pre code, .sourceCode pre {
+  white-space: pre-wrap;      /* wrap instead of running past the grey box */
+  overflow-wrap: anywhere;
+  overflow-x: auto;
+}
+```
+
 # 动机：分类轴一挤，图就没法看了
 
 `ggplot2` 默认会把分类轴的**每一个**水平都画上一个刻度和一个标签。类别一多（比如 50 个样本、200 个特征），标签在轴下方挤成一团：轻则互相压住、一个字都读不出来，重则你只能把标签整体删掉，于是图上的信息也没了。旋转 90° 能救一部分，但标签一长、类别一多照样越界。
