@@ -30,7 +30,10 @@ scale_y_spiral_axis(
 \arguments{
 \item{...}{Passed on to \code{\link[ggplot2:scale_continuous]{ggplot2::scale_x_continuous()}} /
 \code{\link[ggplot2:scale_discrete]{ggplot2::scale_x_discrete()}} or \code{\link[ggplot2:scale_continuous]{ggplot2::scale_y_continuous()}}, for
-example \code{breaks}, \code{labels}, \code{limits} or \code{trans}.}
+example \code{breaks}, \code{minor_breaks}, \code{labels}, \code{limits} or \code{trans}.
+\code{minor_breaks} draws the short unlabelled ticks between two breaks; the
+coord paints them at 55\% of \code{tick_length}, and \code{minor_breaks = NULL}
+leaves them out.}
 
 \item{discrete}{Use a discrete scale instead of a continuous one, for a
 factor or character x aesthetic (one violin or box per category).  Only
@@ -79,9 +82,15 @@ ticks are and how its labels are turned.
 }
 \details{
 Use them exactly like \code{\link[ggplot2:scale_continuous]{ggplot2::scale_x_continuous()}} /
-\code{\link[ggplot2:scale_continuous]{ggplot2::scale_y_continuous()}}; \code{breaks}, \code{labels}, \code{limits}, \code{trans}, ...
-keep their usual meaning, so the ticks shown on the spiral are the breaks of
-the scale.
+\code{\link[ggplot2:scale_continuous]{ggplot2::scale_y_continuous()}}; \code{breaks}, \code{minor_breaks}, \code{labels},
+\code{limits}, \code{trans}, ... keep their usual meaning, so the ticks shown on the
+spiral are the breaks of the scale.
+
+Both axes size themselves against the white gap between two turns: the ticks
+are shortened to fit, the labels sit just outside them, and the number of
+radial labels follows the thickness of the track and the height of the
+device.  Nothing has to be tuned by hand, but every piece can still be
+overridden through the arguments below.
 }
 \examples{
 library(ggplot2)

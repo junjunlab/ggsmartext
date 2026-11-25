@@ -70,7 +70,8 @@ spiral?}
 \item{y_axis}{Draw the radial (y) axis ruler as well as the angle axis?}
 
 \item{y_axis_theta}{Angle in degrees at which the radial ruler is placed;
-\code{NULL} puts it at 0 degrees (east), like the y axis in spiralize.}
+\code{NULL} follows \code{side} of \code{\link[=scale_y_spiral_axis]{scale_y_spiral_axis()}} (the end of the spiral by
+default).  Ignored when that scale sets \code{axis_at}.}
 
 \item{y_axis_n}{Number of ticks on the radial ruler when the y scale has
 no breaks of its own.}
@@ -89,6 +90,24 @@ base spiral is \code{r = b * theta} with \code{b} chosen so that one turn is one
 radius unit.  The x aesthetic runs along the spiral (as the angle) and the
 y aesthetic runs across the track (as the radius).  Points, lines, bars and
 areas are all supported, and facets get one spiral per panel.
+}
+\details{
+The coordinate draws both axes itself.  Their ticks are kept short enough to
+sit inside the white gap between two neighbouring turns, the labels stay just
+outside the ticks, and the number of radial labels follows the thickness of
+the track, so a thin track gets fewer of them instead of a pile of
+overlapping text.
+
+Every position aesthetic is warped, not only \code{x} and \code{y}: \code{xend} / \code{yend},
+\code{xmin} / \code{xmax} and \code{ymin} / \code{ymax} are mapped through the same formula.  So
+\code{geom_segment()} (arrows included), \code{geom_rect()}, \code{geom_ribbon()} and
+\code{geom_boxplot()} land on the track, although the edge between two warped
+points is still a straight line.  Layers without end points
+(\code{geom_hline()}, \code{geom_vline()}, \code{geom_abline()}) are not supported.
+
+Use \code{\link[=scale_x_spiral_axis]{scale_x_spiral_axis()}} and \code{\link[=scale_y_spiral_axis]{scale_y_spiral_axis()}} to change where the
+axes sit, how long their ticks are and how the labels are turned; they
+otherwise behave like ordinary continuous scales.
 }
 \examples{
 library(ggplot2)

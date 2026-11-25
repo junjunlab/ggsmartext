@@ -6,13 +6,22 @@
 #' ticks are and how its labels are turned.
 #'
 #' Use them exactly like [ggplot2::scale_x_continuous()] /
-#' [ggplot2::scale_y_continuous()]; `breaks`, `labels`, `limits`, `trans`, ...
-#' keep their usual meaning, so the ticks shown on the spiral are the breaks of
-#' the scale.
+#' [ggplot2::scale_y_continuous()]; `breaks`, `minor_breaks`, `labels`,
+#' `limits`, `trans`, ... keep their usual meaning, so the ticks shown on the
+#' spiral are the breaks of the scale.
+#'
+#' Both axes size themselves against the white gap between two turns: the ticks
+#' are shortened to fit, the labels sit just outside them, and the number of
+#' radial labels follows the thickness of the track and the height of the
+#' device.  Nothing has to be tuned by hand, but every piece can still be
+#' overridden through the arguments below.
 #'
 #' @param ... Passed on to [ggplot2::scale_x_continuous()] /
 #'   [ggplot2::scale_x_discrete()] or [ggplot2::scale_y_continuous()], for
-#'   example `breaks`, `labels`, `limits` or `trans`.
+#'   example `breaks`, `minor_breaks`, `labels`, `limits` or `trans`.
+#'   `minor_breaks` draws the short unlabelled ticks between two breaks; the
+#'   coord paints them at 55% of `tick_length`, and `minor_breaks = NULL`
+#'   leaves them out.
 #' @param discrete Use a discrete scale instead of a continuous one, for a
 #'   factor or character x aesthetic (one violin or box per category).  Only
 #'   `scale_x_spiral_axis()` needs it; `breaks` then takes the category values.

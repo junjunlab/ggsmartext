@@ -165,11 +165,30 @@
 #'   spiral?
 #' @param y_axis Draw the radial (y) axis ruler as well as the angle axis?
 #' @param y_axis_theta Angle in degrees at which the radial ruler is placed;
-#'   `NULL` puts it at 0 degrees (east), like the y axis in spiralize.
+#'   `NULL` follows `side` of [scale_y_spiral_axis()] (the end of the spiral by
+#'   default).  Ignored when that scale sets `axis_at`.
 #' @param y_axis_n Number of ticks on the radial ruler when the y scale has
 #'   no breaks of its own.
 #' @param clip Clipping of the panel, passed on to ggplot2.
 #' @param xlim,ylim Limits passed on to the coord (usually set on the scales).
+#'
+#' @details
+#' The coordinate draws both axes itself.  Their ticks are kept short enough to
+#' sit inside the white gap between two neighbouring turns, the labels stay just
+#' outside the ticks, and the number of radial labels follows the thickness of
+#' the track, so a thin track gets fewer of them instead of a pile of
+#' overlapping text.
+#'
+#' Every position aesthetic is warped, not only `x` and `y`: `xend` / `yend`,
+#' `xmin` / `xmax` and `ymin` / `ymax` are mapped through the same formula.  So
+#' `geom_segment()` (arrows included), `geom_rect()`, `geom_ribbon()` and
+#' `geom_boxplot()` land on the track, although the edge between two warped
+#' points is still a straight line.  Layers without end points
+#' (`geom_hline()`, `geom_vline()`, `geom_abline()`) are not supported.
+#'
+#' Use [scale_x_spiral_axis()] and [scale_y_spiral_axis()] to change where the
+#' axes sit, how long their ticks are and how the labels are turned; they
+#' otherwise behave like ordinary continuous scales.
 #'
 #' @return A `CoordSpiral` ggproto object.
 #' @export
