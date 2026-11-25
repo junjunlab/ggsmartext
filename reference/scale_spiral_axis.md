@@ -41,7 +41,10 @@ scale_y_spiral_axis(
   [`ggplot2::scale_x_discrete()`](https://ggplot2.tidyverse.org/reference/scale_discrete.html)
   or
   [`ggplot2::scale_y_continuous()`](https://ggplot2.tidyverse.org/reference/scale_continuous.html),
-  for example `breaks`, `labels`, `limits` or `trans`.
+  for example `breaks`, `minor_breaks`, `labels`, `limits` or `trans`.
+  `minor_breaks` draws the short unlabelled ticks between two breaks;
+  the coord paints them at 55% of `tick_length`, and
+  `minor_breaks = NULL` leaves them out.
 
 - discrete:
 
@@ -109,8 +112,15 @@ Use them exactly like
 [`ggplot2::scale_x_continuous()`](https://ggplot2.tidyverse.org/reference/scale_continuous.html)
 /
 [`ggplot2::scale_y_continuous()`](https://ggplot2.tidyverse.org/reference/scale_continuous.html);
-`breaks`, `labels`, `limits`, `trans`, ... keep their usual meaning, so
-the ticks shown on the spiral are the breaks of the scale.
+`breaks`, `minor_breaks`, `labels`, `limits`, `trans`, ... keep their
+usual meaning, so the ticks shown on the spiral are the breaks of the
+scale.
+
+Both axes size themselves against the white gap between two turns: the
+ticks are shortened to fit, the labels sit just outside them, and the
+number of radial labels follows the thickness of the track and the
+height of the device. Nothing has to be tuned by hand, but every piece
+can still be overridden through the arguments below.
 
 ## Examples
 

@@ -82,7 +82,10 @@ ticks are and how its labels are turned.</p>
 <dl><dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Passed on to <code><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">ggplot2::scale_x_continuous()</a></code> /
 <code><a href="https://ggplot2.tidyverse.org/reference/scale_discrete.html" class="external-link">ggplot2::scale_x_discrete()</a></code> or <code><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">ggplot2::scale_y_continuous()</a></code>, for
-example <code>breaks</code>, <code>labels</code>, <code>limits</code> or <code>trans</code>.</p></dd>
+example <code>breaks</code>, <code>minor_breaks</code>, <code>labels</code>, <code>limits</code> or <code>trans</code>.
+<code>minor_breaks</code> draws the short unlabelled ticks between two breaks; the
+coord paints them at 55% of <code>tick_length</code>, and <code>minor_breaks = NULL</code>
+leaves them out.</p></dd>
 
 
 <dt id="arg-discrete">discrete<a class="anchor" aria-label="anchor" href="#arg-discrete"></a></dt>
@@ -144,9 +147,14 @@ thin for all the breaks.  <code>NULL</code> keeps every break.  Only used by
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Use them exactly like <code><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">ggplot2::scale_x_continuous()</a></code> /
-<code><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">ggplot2::scale_y_continuous()</a></code>; <code>breaks</code>, <code>labels</code>, <code>limits</code>, <code>trans</code>, ...
-keep their usual meaning, so the ticks shown on the spiral are the breaks of
-the scale.</p>
+<code><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">ggplot2::scale_y_continuous()</a></code>; <code>breaks</code>, <code>minor_breaks</code>, <code>labels</code>,
+<code>limits</code>, <code>trans</code>, ... keep their usual meaning, so the ticks shown on the
+spiral are the breaks of the scale.</p>
+<p>Both axes size themselves against the white gap between two turns: the ticks
+are shortened to fit, the labels sit just outside them, and the number of
+radial labels follows the thickness of the track and the height of the
+device.  Nothing has to be tuned by hand, but every piece can still be
+overridden through the arguments below.</p>
     </div>
 
     <div class="section level2">

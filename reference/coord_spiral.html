@@ -152,7 +152,8 @@ spiral?</p></dd>
 
 <dt id="arg-y-axis-theta">y_axis_theta<a class="anchor" aria-label="anchor" href="#arg-y-axis-theta"></a></dt>
 <dd><p>Angle in degrees at which the radial ruler is placed;
-<code>NULL</code> puts it at 0 degrees (east), like the y axis in spiralize.</p></dd>
+<code>NULL</code> follows <code>side</code> of <code><a href="scale_spiral_axis.html">scale_y_spiral_axis()</a></code> (the end of the spiral by
+default).  Ignored when that scale sets <code>axis_at</code>.</p></dd>
 
 
 <dt id="arg-y-axis-n">y_axis_n<a class="anchor" aria-label="anchor" href="#arg-y-axis-n"></a></dt>
@@ -171,6 +172,23 @@ no breaks of its own.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A <code>CoordSpiral</code> ggproto object.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
+    <p>The coordinate draws both axes itself.  Their ticks are kept short enough to
+sit inside the white gap between two neighbouring turns, the labels stay just
+outside the ticks, and the number of radial labels follows the thickness of
+the track, so a thin track gets fewer of them instead of a pile of
+overlapping text.</p>
+<p>Every position aesthetic is warped, not only <code>x</code> and <code>y</code>: <code>xend</code> / <code>yend</code>,
+<code>xmin</code> / <code>xmax</code> and <code>ymin</code> / <code>ymax</code> are mapped through the same formula.  So
+<code><a href="https://ggplot2.tidyverse.org/reference/geom_segment.html" class="external-link">geom_segment()</a></code> (arrows included), <code><a href="https://ggplot2.tidyverse.org/reference/geom_tile.html" class="external-link">geom_rect()</a></code>, <code><a href="https://ggplot2.tidyverse.org/reference/geom_ribbon.html" class="external-link">geom_ribbon()</a></code> and
+<code><a href="https://ggplot2.tidyverse.org/reference/geom_boxplot.html" class="external-link">geom_boxplot()</a></code> land on the track, although the edge between two warped
+points is still a straight line.  Layers without end points
+(<code><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_hline()</a></code>, <code><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_vline()</a></code>, <code><a href="https://ggplot2.tidyverse.org/reference/geom_abline.html" class="external-link">geom_abline()</a></code>) are not supported.</p>
+<p>Use <code><a href="scale_spiral_axis.html">scale_x_spiral_axis()</a></code> and <code><a href="scale_spiral_axis.html">scale_y_spiral_axis()</a></code> to change where the
+axes sit, how long their ticks are and how the labels are turned; they
+otherwise behave like ordinary continuous scales.</p>
     </div>
 
     <div class="section level2">

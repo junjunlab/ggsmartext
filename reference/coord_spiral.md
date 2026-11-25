@@ -100,8 +100,11 @@ coord_spiral(
 
 - y_axis_theta:
 
-  Angle in degrees at which the radial ruler is placed; `NULL` puts it
-  at 0 degrees (east), like the y axis in spiralize.
+  Angle in degrees at which the radial ruler is placed; `NULL` follows
+  `side` of
+  [`scale_y_spiral_axis()`](https://junjunlab.github.io/ggutils/reference/scale_spiral_axis.md)
+  (the end of the spiral by default). Ignored when that scale sets
+  `axis_at`.
 
 - y_axis_n:
 
@@ -119,6 +122,38 @@ coord_spiral(
 ## Value
 
 A `CoordSpiral` ggproto object.
+
+## Details
+
+The coordinate draws both axes itself. Their ticks are kept short enough
+to sit inside the white gap between two neighbouring turns, the labels
+stay just outside the ticks, and the number of radial labels follows the
+thickness of the track, so a thin track gets fewer of them instead of a
+pile of overlapping text.
+
+Every position aesthetic is warped, not only `x` and `y`: `xend` /
+`yend`, `xmin` / `xmax` and `ymin` / `ymax` are mapped through the same
+formula. So
+[`geom_segment()`](https://ggplot2.tidyverse.org/reference/geom_segment.html)
+(arrows included),
+[`geom_rect()`](https://ggplot2.tidyverse.org/reference/geom_tile.html),
+[`geom_ribbon()`](https://ggplot2.tidyverse.org/reference/geom_ribbon.html)
+and
+[`geom_boxplot()`](https://ggplot2.tidyverse.org/reference/geom_boxplot.html)
+land on the track, although the edge between two warped points is still
+a straight line. Layers without end points
+([`geom_hline()`](https://ggplot2.tidyverse.org/reference/geom_abline.html),
+[`geom_vline()`](https://ggplot2.tidyverse.org/reference/geom_abline.html),
+[`geom_abline()`](https://ggplot2.tidyverse.org/reference/geom_abline.html))
+are not supported.
+
+Use
+[`scale_x_spiral_axis()`](https://junjunlab.github.io/ggutils/reference/scale_spiral_axis.md)
+and
+[`scale_y_spiral_axis()`](https://junjunlab.github.io/ggutils/reference/scale_spiral_axis.md)
+to change where the axes sit, how long their ticks are and how the
+labels are turned; they otherwise behave like ordinary continuous
+scales.
 
 ## Examples
 
