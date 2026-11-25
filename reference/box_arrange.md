@@ -59,9 +59,9 @@ data.frame。
 
 ## See also
 
-[`smart_align()`](https://junjunlab.github.io/ggsmartext/reference/smart_align.md)：circlize
+[`smart_align()`](https://junjunlab.github.io/ggutils/reference/smart_align.md)：circlize
 的压紧算法（要求输入有序）；
-[`smart_stack()`](https://junjunlab.github.io/ggsmartext/reference/smart_stack.md)：多行标签排布引擎。
+[`smart_stack()`](https://junjunlab.github.io/ggutils/reference/smart_stack.md)：多行标签排布引擎。
 
 ## Examples
 

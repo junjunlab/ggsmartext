@@ -222,8 +222,8 @@ override the theme only when they are supplied.
 
 ## See also
 
-[`smart_align()`](https://junjunlab.github.io/ggsmartext/reference/smart_align.md),
-[`smart_stack()`](https://junjunlab.github.io/ggsmartext/reference/smart_stack.md),
+[`smart_align()`](https://junjunlab.github.io/ggutils/reference/smart_align.md),
+[`smart_stack()`](https://junjunlab.github.io/ggutils/reference/smart_stack.md),
 [`ggplot2::guide_axis()`](https://ggplot2.tidyverse.org/reference/guide_axis.html),
 [`ggplot2::guide_axis_theta()`](https://ggplot2.tidyverse.org/reference/guide_axis_theta.html)
 

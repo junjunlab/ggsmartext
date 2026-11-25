@@ -21,7 +21,7 @@ smart_align(start, end, range = range(c(start, end)))
   或数据坐标）。两个向量长度必须相同。`start` 必须按
   升序排列（这是算法假设，与参考实现一致；乱序输入请先
   [`order()`](https://rdrr.io/r/base/order.html)，或改用
-  [`box_arrange()`](https://junjunlab.github.io/ggsmartext/reference/box_arrange.md)——它会自行按中点排序）。
+  [`box_arrange()`](https://junjunlab.github.io/ggutils/reference/box_arrange.md)——它会自行按中点排序）。
 
 - range:
 
@@ -47,14 +47,14 @@ smart_align(start, end, range = range(c(start, end)))
 
 注意：若所有盒子宽度之和大于 `diff(range)`，算法无法消除重叠，
 此时（与参考实现一致）会把该 cluster 居中放置，结果会**超出**
-`range`。调用方应在调用前自己判断可行性（[`smart_stack()`](https://junjunlab.github.io/ggsmartext/reference/smart_stack.md)
+`range`。调用方应在调用前自己判断可行性（[`smart_stack()`](https://junjunlab.github.io/ggutils/reference/smart_stack.md)
 会先丢弃 低优先级标签再调用本函数）。
 
 ## See also
 
-[`box_arrange()`](https://junjunlab.github.io/ggsmartext/reference/box_arrange.md)：另一种（`ComplexHeatmap`
+[`box_arrange()`](https://junjunlab.github.io/ggutils/reference/box_arrange.md)：另一种（`ComplexHeatmap`
 的 BoxArrange）
-排布算法，允许输入乱序；[`smart_stack()`](https://junjunlab.github.io/ggsmartext/reference/smart_stack.md)：多行标签排布引擎。
+排布算法，允许输入乱序；[`smart_stack()`](https://junjunlab.github.io/ggutils/reference/smart_stack.md)：多行标签排布引擎。
 
 ## Examples
 

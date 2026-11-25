@@ -5,14 +5,14 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Smart Axis Labels for ggplot2 • ggsmartext</title>
+<title>Utilities for ggplot2 • ggutils</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
 <script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
-<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Smart Axis Labels for ggplot2">
-<meta name="description" content="A smart axis labelling system for ggplot2. When a discrete x or y axis carries too many category labels, the guide implemented here displays only the labels the user asks for, packs the remaining space with leader lines that connect each displayed label to its tick, and distributes the labels over several rows (or columns) so that the available page space is used efficiently. The one-dimensional, overlap-free arrangement is a port of the smartAlign algorithm used by the circlize package and of the box arrangement used by the ComplexHeatmap package.">
-<meta property="og:description" content="A smart axis labelling system for ggplot2. When a discrete x or y axis carries too many category labels, the guide implemented here displays only the labels the user asks for, packs the remaining space with leader lines that connect each displayed label to its tick, and distributes the labels over several rows (or columns) so that the available page space is used efficiently. The one-dimensional, overlap-free arrangement is a port of the smartAlign algorithm used by the circlize package and of the box arrangement used by the ComplexHeatmap package.">
+<script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="Utilities for ggplot2">
+<meta name="description" content="A collection of utility functions for ggplot2. It currently provides guide_axis_smart(), a smart axis guide for discrete axes with many categories: it selects which labels to show, arranges them overlap-free over several rows or columns, and connects each label to its tick with a leader line. The package is meant to grow with further ggplot2 helpers. The overlap-free one-dimensional arrangement is a port of the smartAlign algorithm from the circlize package and of the box arrangement from the ComplexHeatmap package.">
+<meta property="og:description" content="A collection of utility functions for ggplot2. It currently provides guide_axis_smart(), a smart axis guide for discrete axes with many categories: it selects which labels to show, arranges them overlap-free over several rows or columns, and connects each label to its tick with a leader line. The package is meant to grow with further ggplot2 helpers. The overlap-free one-dimensional arrangement is a port of the smartAlign algorithm from the circlize package and of the box arrangement from the ComplexHeatmap package.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -20,7 +20,7 @@
 
     <nav class="navbar navbar-expand-lg fixed-top bg-light" data-bs-theme="light" aria-label="Site navigation"><div class="container">
 
-    <a class="navbar-brand me-2" href="index.html">ggsmartext</a>
+    <a class="navbar-brand me-2" href="index.html">ggutils</a>
 
     <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
 
@@ -31,12 +31,12 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto">
-<li class="nav-item"><a class="nav-link" href="articles/ggsmartext.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="articles/ggutils.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/ggsmartext-en.html">ggsmartext: Smart Axis Labels for ggplot2</a></li>
+<li><a class="dropdown-item" href="articles/ggutils-en.html">ggutils: Smart Axis Labels for ggplot2</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -45,7 +45,7 @@
 <li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json">
 </form></li>
-<li class="nav-item"><a class="external-link nav-link" href="https://github.com/junjunlab/ggsmartext/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
+<li class="nav-item"><a class="external-link nav-link" href="https://github.com/junjunlab/ggutils/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
       </ul>
 </div>
 
@@ -54,13 +54,18 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="ggsmartext">ggsmartext<a class="anchor" aria-label="anchor" href="#ggsmartext"></a>
+<div class="page-header"><h1 id="ggutils">ggutils<a class="anchor" aria-label="anchor" href="#ggutils"></a>
 </h1></div>
-<p><a href="https://github.com/junjunlab/ggsmartext/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/junjunlab/ggsmartext/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a> <a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://cran.r-project.org/" class="external-link"><img src="https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg" alt="R &gt;= 4.1"></a> <a href="https://ggplot2.tidyverse.org/" class="external-link"><img src="https://img.shields.io/badge/ggplot2-%3E%3D%204.0-blueviolet.svg" alt="ggplot2 &gt;= 4.0"></a> <a href="https://junjunlab.github.io/ggsmartext/"><img src="https://img.shields.io/badge/docs-pkgdown-2E7D6B.svg" alt="Docs"></a> <a href="https://github.com/junjunlab/ggsmartext/commits/main" class="external-link"><img src="https://img.shields.io/github/last-commit/junjunlab/ggsmartext.svg" alt="Last commit"></a></p>
+<p><a href="https://github.com/junjunlab/ggutils/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/junjunlab/ggutils/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a> <a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://cran.r-project.org/" class="external-link"><img src="https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg" alt="R &gt;= 4.1"></a> <a href="https://ggplot2.tidyverse.org/" class="external-link"><img src="https://img.shields.io/badge/ggplot2-%3E%3D%204.0-blueviolet.svg" alt="ggplot2 &gt;= 4.0"></a> <a href="https://junjunlab.github.io/ggutils/"><img src="https://img.shields.io/badge/docs-pkgdown-2E7D6B.svg" alt="Docs"></a> <a href="https://github.com/junjunlab/ggutils/commits/main" class="external-link"><img src="https://img.shields.io/github/last-commit/junjunlab/ggutils.svg" alt="Last commit"></a></p>
 <blockquote>
-<p>Smart axis labels for ggplot2: show only the categories you care about, connect each label to its tick with a leader line, and stagger the labels over several rows so that the space outside the axis is actually used.</p>
+<p>Utility functions for <code>ggplot2</code>. The package starts with a smart axis label guide and is meant to grow: new helpers belong here rather than in a collection of single-purpose packages.</p>
 </blockquote>
-<p>When a discrete axis carries many categories (50 samples, 200 features, …) the stock <code>ggplot2</code> axis draws every label on a single line. The labels overlap, or you rotate them all by 90°, or you hide them and lose the information. <code>ggsmartext</code> adds <code><a href="reference/guide_axis_smart.html">guide_axis_smart()</a></code>, a <code>GuideAxis</code> subclass that takes over label drawing:</p>
+<p><code>ggutils</code> collects small, reusable helpers that smooth over the rough edges of building plots with <code>ggplot2</code>. They plug into the usual grammar — no new geometry, no special data format — and each one solves a concrete problem.</p>
+<div class="section level2">
+<h2 id="guide_axis_smart-readable-labels-on-crowded-axes">
+<code>guide_axis_smart()</code>: readable labels on crowded axes<a class="anchor" aria-label="anchor" href="#guide_axis_smart-readable-labels-on-crowded-axes"></a>
+</h2>
+<p>When a discrete axis carries many categories (50 samples, 200 genes, …) the stock <code>ggplot2</code> axis draws every label on a single line. The labels overlap, or you rotate them all by 90°, or you hide them and lose the information. <code><a href="reference/guide_axis_smart.html">guide_axis_smart()</a></code> is a <code>GuideAxis</code> subclass that takes over label drawing:</p>
 <ul>
 <li>
 <strong>Choose the labels</strong>: <code>which =</code> (integer index / label text / logical vector / function) or <code>n =</code> (auto-pick at most <code>n</code> labels, evenly spaced).</li>
@@ -71,13 +76,15 @@
 <li>
 <strong>Leader lines</strong>: every displayed label is tied back to its tick, by default with the <code>circlize</code> / <code><a href="https://rdrr.io/pkg/ComplexHeatmap/man/anno_mark.html" class="external-link">ComplexHeatmap::anno_mark()</a></code> “diagonal” geometry (short perpendicular stub, diagonal, short stub).</li>
 </ul>
+<p>More <code>ggplot2</code> utilities will be added here over time. The deliberately broad name means you can load one package instead of keeping track of several single-function ones.</p>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>Requires R &gt;= 4.1 and <strong>ggplot2 &gt;= 4.0.0</strong> (the guide API used here was rewritten in ggplot2 4.0).</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"junjunlab/ggsmartext"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"junjunlab/ggutils"</span><span class="op">)</span></span></code></pre></div>
 <p>Or, from a local clone of the repository:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
@@ -91,13 +98,13 @@
 <p>The complete reference manual — every function, argument and example — is published on the package documentation site:</p>
 <ul>
 <li>
-<strong>Reference manual</strong>: <a href="https://junjunlab.github.io/ggsmartext/reference/" class="uri">https://junjunlab.github.io/ggsmartext/reference/</a>
+<strong>Reference manual</strong>: <a href="https://junjunlab.github.io/ggutils/reference/" class="uri">https://junjunlab.github.io/ggutils/reference/</a>
 </li>
 <li>
-<strong>中文 vignette（入门与全部用法）</strong>: <a href="https://junjunlab.github.io/ggsmartext/articles/ggsmartext.html" class="uri">https://junjunlab.github.io/ggsmartext/articles/ggsmartext.html</a>
+<strong>中文 vignette（入门与全部用法）</strong>: <a href="https://junjunlab.github.io/ggutils/articles/ggutils.html" class="uri">https://junjunlab.github.io/ggutils/articles/ggutils.html</a>
 </li>
 <li>
-<strong>English vignette</strong>: <a href="https://junjunlab.github.io/ggsmartext/articles/ggsmartext-en.html" class="uri">https://junjunlab.github.io/ggsmartext/articles/ggsmartext-en.html</a>
+<strong>English vignette</strong>: <a href="https://junjunlab.github.io/ggutils/articles/ggutils-en.html" class="uri">https://junjunlab.github.io/ggutils/articles/ggutils-en.html</a>
 </li>
 </ul>
 <p>The vignettes walk through label selection (<code>which</code>), automatic selection (<code>n</code>), staggered rows (<code>nrow</code>), the three leader-line styles, vertical axes, facets and heatmap annotation; the reference manual documents every argument and default. The layout algorithms <code><a href="reference/smart_align.html">smart_align()</a></code>, <code><a href="reference/box_arrange.html">box_arrange()</a></code> and <code><a href="reference/smart_stack.html">smart_stack()</a></code> are exported and can also be used on their own.</p>
@@ -105,15 +112,15 @@
 <div class="section level2">
 <h2 id="credits">Credits<a class="anchor" aria-label="anchor" href="#credits"></a>
 </h2>
-<p>The one-dimensional, overlap-free compaction is a port of the <code>smartAlign</code> algorithm from the <strong>circlize</strong> package; the box arrangement is a port of the <strong>ComplexHeatmap</strong> package. <code>ggsmartext</code> only re-uses the algorithms — the ggplot2 guide integration is new.</p>
+<p>The one-dimensional, overlap-free compaction is a port of the <code>smartAlign</code> algorithm from the <strong>circlize</strong> package; the box arrangement is a port of the <strong>ComplexHeatmap</strong> package. <code>ggutils</code> only re-uses the algorithms — the ggplot2 guide integration is new.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
 <h2 data-toc-skip>Links</h2>
 <ul class="list-unstyled">
-<li><a href="https://github.com/junjunlab/ggsmartext" class="external-link">View on GitHub</a></li>
-<li><a href="https://github.com/junjunlab/ggsmartext/" class="external-link">Browse source code</a></li>
-<li><a href="https://github.com/junjunlab/ggsmartext/issues" class="external-link">Report a bug</a></li>
+<li><a href="https://github.com/junjunlab/ggutils" class="external-link">View on GitHub</a></li>
+<li><a href="https://github.com/junjunlab/ggutils/" class="external-link">Browse source code</a></li>
+<li><a href="https://github.com/junjunlab/ggutils/issues" class="external-link">Report a bug</a></li>
 </ul>
 </div>
 
@@ -130,7 +137,7 @@
 <div class="citation">
 <h2 data-toc-skip>Citation</h2>
 <ul class="list-unstyled">
-<li><a href="authors.html#citation">Citing ggsmartext</a></li>
+<li><a href="authors.html#citation">Citing ggutils</a></li>
 </ul>
 </div>
 

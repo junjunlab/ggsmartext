@@ -3,7 +3,7 @@
 `smart_stack()` 把一系列标签盒（每个盒子有轴线上的中心位置 `positions`
 与宽度 `widths`，单位均为 npc）分配到 `n` 行（y 轴时为 `n` 列）中的某
 一行，使每个标签都能画出来、行内不重叠、并且尽量贴近原始位置。它是
-[`guide_axis_smart()`](https://junjunlab.github.io/ggsmartext/reference/guide_axis_smart.md)
+[`guide_axis_smart()`](https://junjunlab.github.io/ggutils/reference/guide_axis_smart.md)
 的核心排布算法，也可以单独使用。
 
 ## Usage
@@ -42,7 +42,7 @@ smart_stack(
 
   非负标量：允许标签超出 `range` 的比例（`0.02` 表示两侧各 放宽轴跨度的
   0.02 倍），与
-  [`guide_axis_smart()`](https://junjunlab.github.io/ggsmartext/reference/guide_axis_smart.md)
+  [`guide_axis_smart()`](https://junjunlab.github.io/ggutils/reference/guide_axis_smart.md)
   的同名参数一致。
 
 - padding:
@@ -105,8 +105,8 @@ smart_stack(
 
 ## See also
 
-[`smart_align()`](https://junjunlab.github.io/ggsmartext/reference/smart_align.md),
-[`box_arrange()`](https://junjunlab.github.io/ggsmartext/reference/box_arrange.md)
+[`smart_align()`](https://junjunlab.github.io/ggutils/reference/smart_align.md),
+[`box_arrange()`](https://junjunlab.github.io/ggutils/reference/box_arrange.md)
 
 ## Examples
 

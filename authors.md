@@ -7,15 +7,15 @@
 ## Citation
 
 Source:
-[`DESCRIPTION`](https://github.com/junjunlab/ggsmartext/blob/HEAD/DESCRIPTION)
+[`DESCRIPTION`](https://github.com/junjunlab/ggutils/blob/HEAD/DESCRIPTION)
 
-Zhang Jun (2026). *ggsmartext: Smart Axis Labels for 'ggplot2'*. R
-package version 0.0.1, <https://github.com/junjunlab/ggsmartext>.
+Zhang Jun (2026). *ggutils: Utilities for 'ggplot2'*. R package version
+0.0.1, <https://github.com/junjunlab/ggutils>.
 
     @Manual{,
-      title = {ggsmartext: Smart Axis Labels for 'ggplot2'},
+      title = {ggutils: Utilities for 'ggplot2'},
       author = {{Zhang Jun}},
       year = {2026},
       note = {R package version 0.0.1},
-      url = {https://github.com/junjunlab/ggsmartext},
+      url = {https://github.com/junjunlab/ggutils},
     }
