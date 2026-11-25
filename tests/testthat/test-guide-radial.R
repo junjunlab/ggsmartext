@@ -107,7 +107,7 @@ test_that("crowded theta labels are spread over rings and kept", {
 test_that(".ggse_theta_spread separates crowded labels and keeps the order", {
   pos <- c(0.30, 0.305, 0.31, 0.8)
   widths <- rep(0.02, 4)
-  spread <- ggsmartext:::.ggse_theta_spread(pos, widths, wrap = TRUE)
+  spread <- ggutils:::.ggse_theta_spread(pos, widths, wrap = TRUE)
   expect_true(all(spread$shown))
   ord <- order(spread$pos)
   starts <- spread$pos[ord] - widths[ord] / 2
@@ -118,7 +118,7 @@ test_that(".ggse_theta_spread separates crowded labels and keeps the order", {
 })
 
 test_that("crowded circular heatmap renders and labels the cluster", {
-  data(airway_heatmap, package = "ggsmartext")
+  data(airway_heatmap, package = "ggutils")
   d <- airway_heatmap$df
   p <- ggplot2::ggplot(d, ggplot2::aes(gene, sample, fill = z)) +
     ggplot2::geom_tile() +
@@ -155,7 +155,7 @@ test_that("half circle: theta taken from the y scale works too", {
 })
 
 test_that("half-circle heatmap with a crowded cluster renders", {
-  data(airway_heatmap, package = "ggsmartext")
+  data(airway_heatmap, package = "ggutils")
   d <- airway_heatmap$df
   p <- ggplot2::ggplot(d, ggplot2::aes(gene, sample, fill = z)) +
     ggplot2::geom_tile() +

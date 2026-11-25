@@ -1,15 +1,15 @@
-# ggsmartext —— 示例 06：连续轴也能用
+# ggutils —— 示例 06：连续轴也能用
 #
 # 连续轴的刻度也可以通过 scale_*_continuous(breaks = ...) 设得很密，
 # 此时 guide_axis_smart() 同样可以只显示其中一部分、并分多行错开。
 #
-# 运行方式（需要先安装 ggsmartext）：
+# 运行方式（需要先安装 ggutils）：
 #   Rscript inst/examples/06-continuous.R
 
 library(ggplot2)
-library(ggsmartext)
+library(ggutils)
 
-out_dir <- Sys.getenv("GGSMARTEXT_FIG_DIR", unset = file.path(tempdir(), "ggsmartext-examples"))
+out_dir <- Sys.getenv("ggutils_FIG_DIR", unset = file.path(tempdir(), "ggutils-examples"))
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 save_png <- function(plot, name, width = 1600, height = 900) {

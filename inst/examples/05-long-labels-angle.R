@@ -1,16 +1,16 @@
-# ggsmartext —— 示例 05：长标签与角度（angle）
+# ggutils —— 示例 05：长标签与角度（angle）
 #
 # 标签很长时，多行错开已经不够用，可以旋转标签：
 #   angle = 45：建议 nrow = 1，配合 hjust = 1, vjust = 1（右对齐）
 #   angle = 90：建议 hjust = 1, vjust = 0.5
 #
-# 运行方式（需要先安装 ggsmartext）：
+# 运行方式（需要先安装 ggutils）：
 #   Rscript inst/examples/05-long-labels-angle.R
 
 library(ggplot2)
-library(ggsmartext)
+library(ggutils)
 
-out_dir <- Sys.getenv("GGSMARTEXT_FIG_DIR", unset = file.path(tempdir(), "ggsmartext-examples"))
+out_dir <- Sys.getenv("ggutils_FIG_DIR", unset = file.path(tempdir(), "ggutils-examples"))
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 save_png <- function(plot, name, width = 1600, height = 900) {

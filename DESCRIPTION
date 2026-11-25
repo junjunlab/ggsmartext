@@ -1,18 +1,17 @@
-Package: ggsmartext
-Title: Smart Axis Labels for 'ggplot2'
+Package: ggutils
+Title: Utilities for 'ggplot2'
 Version: 0.0.1
 Authors@R:
     person("Zhang Jun", role = c("aut", "cre"),
            email = "junjun@users.noreply.github.com")
-Description: A smart axis labelling system for 'ggplot2'. When a
-    discrete x or y axis carries too many category labels, the guide
-    implemented here displays only the labels the user asks for, packs
-    the remaining space with leader lines that connect each displayed
-    label to its tick, and distributes the labels over several rows (or
-    columns) so that the available page space is used efficiently. The
-    one-dimensional, overlap-free arrangement is a port of the
-    'smartAlign' algorithm used by the 'circlize' package and of the
-    box arrangement used by the 'ComplexHeatmap' package.
+Description: A collection of utility functions for 'ggplot2'. It currently
+    provides 'guide_axis_smart()', a smart axis guide for discrete axes with
+    many categories: it selects which labels to show, arranges them
+    overlap-free over several rows or columns, and connects each label to
+    its tick with a leader line. The package is meant to grow with further
+    'ggplot2' helpers. The overlap-free one-dimensional arrangement is a
+    port of the 'smartAlign' algorithm from the 'circlize' package and of
+    the box arrangement from the 'ComplexHeatmap' package.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
@@ -39,6 +38,6 @@ Config/testthat/edition: 3
 Config/Needs/website: pkgdown
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
-URL: https://github.com/junjunlab/ggsmartext,
-    https://junjunlab.github.io/ggsmartext/
-BugReports: https://github.com/junjunlab/ggsmartext/issues
+URL: https://github.com/junjunlab/ggutils,
+    https://junjunlab.github.io/ggutils/
+BugReports: https://github.com/junjunlab/ggutils/issues

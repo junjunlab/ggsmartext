@@ -1,4 +1,4 @@
 library(testthat)
-library(ggsmartext)
+library(ggutils)
 
-test_check("ggsmartext")
+test_check("ggutils")

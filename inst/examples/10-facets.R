@@ -13,7 +13,7 @@
 .libPaths(c(".Rlib", .libPaths()))
 suppressPackageStartupMessages({
   library(ggplot2)
-  library(ggsmartext)
+  library(ggutils)
 })
 
 outdir <- if (length(commandArgs(TRUE)) >= 1L) commandArgs(TRUE)[1] else tempdir()
@@ -89,7 +89,7 @@ invisible(dev.off())
 message("written: 10-facets-crowded.png")
 
 ## ---- (4) 热图 facet_wrap + free_y：内置真实数据，每面板独立标注 -----------
-data(airway_heatmap, package = "ggsmartext")
+data(airway_heatmap, package = "ggutils")
 df_heat <- airway_heatmap$df
 mark_wrap <- airway_heatmap$genes$gene[10:21]   # 顶部响应簇里连续的 12 个基因
 

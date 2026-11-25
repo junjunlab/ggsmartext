@@ -1,7 +1,7 @@
 ## 内置数据 airway_heatmap 的结构契约（文档 R/data.R 中描述的内容必须成立）
 
 test_that("airway_heatmap 的结构与文档一致", {
-  data(airway_heatmap, package = "ggsmartext")
+  data(airway_heatmap, package = "ggutils")
 
   expect_type(airway_heatmap, "list")
   expect_named(
@@ -64,7 +64,7 @@ test_that("airway_heatmap 的结构与文档一致", {
 })
 
 test_that("airway_heatmap 的示例标注都指向真实存在的基因", {
-  data(airway_heatmap, package = "ggsmartext")
+  data(airway_heatmap, package = "ggutils")
   genes <- airway_heatmap$genes$gene
 
   ## 单面板示例：20 个基因

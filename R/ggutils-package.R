@@ -1,4 +1,4 @@
-#' ggsmartext: Smart Axis Labels for ggplot2
+#' ggutils: Smart Axis Labels for ggplot2
 #'
 #' When a discrete axis of a `ggplot2` plot carries more category labels than it
 #' can display, `guide_axis_smart()` shows only the labels you ask for, connects

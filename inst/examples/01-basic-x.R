@@ -1,18 +1,18 @@
-# ggsmartext —— 示例 01：最基础的 x 轴用法
+# ggutils —— 示例 01：最基础的 x 轴用法
 #
 # 50 个分类水平时，ggplot2 默认会把每一个标签都画出来，互相压在一起。
 # guide_axis_smart() 只显示其中一部分标签，并把它们分成多行错开。
 #
-# 运行方式（需要先安装 ggsmartext）：
+# 运行方式（需要先安装 ggutils）：
 #   Rscript inst/examples/01-basic-x.R
 #
-# 图片默认写入 tempdir()；设置环境变量 GGSMARTEXT_FIG_DIR 可指定输出目录：
-#   Sys.setenv(GGSMARTEXT_FIG_DIR = "figures"); source("inst/examples/01-basic-x.R")
+# 图片默认写入 tempdir()；设置环境变量 ggutils_FIG_DIR 可指定输出目录：
+#   Sys.setenv(ggutils_FIG_DIR = "figures"); source("inst/examples/01-basic-x.R")
 
 library(ggplot2)
-library(ggsmartext)
+library(ggutils)
 
-out_dir <- Sys.getenv("GGSMARTEXT_FIG_DIR", unset = file.path(tempdir(), "ggsmartext-examples"))
+out_dir <- Sys.getenv("ggutils_FIG_DIR", unset = file.path(tempdir(), "ggutils-examples"))
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 save_png <- function(plot, name, width = 1600, height = 900) {

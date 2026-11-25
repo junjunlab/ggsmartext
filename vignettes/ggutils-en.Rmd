@@ -1,5 +1,5 @@
 ---
-title: "ggsmartext: Smart Axis Labels for ggplot2"
+title: "ggutils: Smart Axis Labels for ggplot2"
 subtitle: "Clean labels for crowded discrete axes"
 output:
   rmarkdown::html_vignette:
@@ -7,12 +7,12 @@ output:
     toc_depth: 3
     number_sections: false
 vignette: >
-  %\VignetteIndexEntry{ggsmartext (English): Smart Axis Labels for ggplot2}
+  %\VignetteIndexEntry{ggutils (English): Smart Axis Labels for ggplot2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-> 中文版 (Chinese version): `vignette("ggsmartext")`
+> 中文版 (Chinese version): `vignette("ggutils")`
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -29,7 +29,7 @@ knitr::opts_chunk$set(
 # identifies the English version); skip rmarkdown's consistency check.
 options(rmarkdown.html_vignette.check_title = FALSE)
 library(ggplot2)
-library(ggsmartext)
+library(ggutils)
 ```
 
 # Motivation: when a discrete axis gets crowded
@@ -51,7 +51,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   theme_grey(base_size = 12)
 ```
 
-`ggsmartext` provides `guide_axis_smart()`. It takes over label drawing on a discrete axis and does three things:
+`ggutils` provides `guide_axis_smart()`. It takes over label drawing on a discrete axis and does three things:
 
 1. **Show only the labels you care about** (`which =` / `n =`). Every other tick is still connected to its meaning by a **leader line**, so the correspondence stays obvious.
 2. **Spread the labels over several rows (x axis) or columns (y axis)** outside the axis, using the page space that a default axis wastes.
@@ -258,7 +258,7 @@ ggplot(df200, aes(x = feature, y = value)) +
   theme_grey(base_size = 12)
 ```
 
-To silence that message (for example when plotting in a loop), set `options(ggsmartext.quiet = TRUE)`. Still, **always prefer an explicit `n =` or `which =`** so that you decide which labels are shown, rather than the screen size.
+To silence that message (for example when plotting in a loop), set `options(ggutils.quiet = TRUE)`. Still, **always prefer an explicit `n =` or `which =`** so that you decide which labels are shown, rather than the screen size.
 
 # Staggering over rows: `nrow`, `gap`, `padding`
 
@@ -384,7 +384,7 @@ ggplot(df40, aes(x = value, y = sample)) +
 # Radial coordinates: `coord_radial()`
 
 `coord_radial()` renames the position scales to `theta` and `r`, so the guide is
-attached with `guides(theta = ...)`.  On this axis `ggsmartext` lays the labels
+attached with `guides(theta = ...)`.  On this axis `ggutils` lays the labels
 out the way `circlize::circos.labels()` does: the text runs along the radius and
 points towards the centre of the circle (turned around on the left half), crowded
 labels are spread along the arc with the `smartAlign` algorithm, and every label
@@ -564,7 +564,7 @@ from the top response cluster plus 8 scattered genes):
 
 ```{r anno-heatmap-data}
 ## bundled data: 300 genes x 8 samples, per-gene z-scores in cluster order
-data(airway_heatmap, package = "ggsmartext")
+data(airway_heatmap, package = "ggutils")
 df_gene <- airway_heatmap$df
 mark    <- airway_heatmap$mark
 ```
@@ -790,7 +790,7 @@ labels only the genes it contains, and a crowded run of genes is spread over row
 
 ```{r facet-heatmap, fig.cap = "faceted heatmap: the bundled real data, each panel labels its own genes"}
 ## the real RNA-seq data bundled with the package (GEO GSE52778, 300 genes x 8 samples)
-data(airway_heatmap, package = "ggsmartext")
+data(airway_heatmap, package = "ggutils")
 df_facet_heat <- airway_heatmap$df
 mark_wrap <- airway_heatmap$genes$gene[10:21]   # 12 neighbouring genes of the top cluster
 
@@ -913,7 +913,7 @@ All three helpers `smart_align()`, `box_arrange()` and `smart_stack()` are expor
 - **It can only pick existing ticks, never add new ones.** If a category is not in the scale's breaks, `which` cannot select it — add it first with `scale_x_discrete(breaks = ...)`.
 - **Automatic rows are on demand.** One row whenever it fits (stretched along the axis, closest to the `anno_mark()` look); more rows only when the width overflows or the labels cluster, capped at `max_nrow` tracks. Write `nrow = 1` explicitly for the pure single-row `anno_mark` look.
 - **Fewer labels than requested is possible.** On a narrow panel, or with too few rows, the guide drops labels by priority — it never draws overlapping labels. To show more, add `nrow`, make the figure larger, or reduce `padding`/`gap`.
-- **Automatic thinning when `which = NULL` and `n = NULL`.** When the total width exceeds what `max_nrow` tracks can hold, the guide thins evenly and prints one `cli` message; `options(ggsmartext.quiet = TRUE)` silences it. Always prefer explicit `n =` or `which =`.
+- **Automatic thinning when `which = NULL` and `n = NULL`.** When the total width exceeds what `max_nrow` tracks can hold, the guide thins evenly and prints one `cli` message; `options(ggutils.quiet = TRUE)` silences it. Always prefer explicit `n =` or `which =`.
 - **The automatic number of rows depends on the device.** The same plot may use a different number of rows in the RStudio window and in a 1600x900 PNG. For reproducible output write `nrow` explicitly, or tell the guide the panel width with `panel_width` (in cm).
 - **`angle` is best combined with `nrow = 1`.** Rotated labels need more vertical space (the guide reserves the rotated bounding box), and stacking rotated labels is rarely worth it.
 - **Never blank the labels with `axis.text.*`**: the guide inherits the blank element and draws no text; to hide labels, do not use the guide at all.
@@ -926,6 +926,6 @@ All three helpers `smart_align()`, `box_arrange()` and `smart_stack()` are expor
 
 ```{r session}
 cat("ggplot2:", as.character(packageVersion("ggplot2")), "\n")
-cat("ggsmartext:", as.character(packageVersion("ggsmartext")), "\n")
+cat("ggutils:", as.character(packageVersion("ggutils")), "\n")
 cat("R:", R.version.string, "\n")
 ```

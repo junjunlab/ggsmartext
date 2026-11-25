@@ -1,17 +1,17 @@
-# ggsmartext —— 示例 03：多行错开、行距与引导线样式
+# ggutils —— 示例 03：多行错开、行距与引导线样式
 #
 # nrow 控制 x 轴标签占几行；gap / padding 控制行距和标签盒间距；
 # connection_style 有 "diagonal"（默认，短垂线 + 斜线 + 短垂线，circlize /
 # ComplexHeatmap::anno_mark 的经典几何）、"straight"（一条斜线）和
 # "elbow"（垂直段 + 平行于轴的台阶）三种。
 #
-# 运行方式（需要先安装 ggsmartext）：
+# 运行方式（需要先安装 ggutils）：
 #   Rscript inst/examples/03-multi-row.R
 
 library(ggplot2)
-library(ggsmartext)
+library(ggutils)
 
-out_dir <- Sys.getenv("GGSMARTEXT_FIG_DIR", unset = file.path(tempdir(), "ggsmartext-examples"))
+out_dir <- Sys.getenv("ggutils_FIG_DIR", unset = file.path(tempdir(), "ggutils-examples"))
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 save_png <- function(plot, name, width = 1600, height = 900) {

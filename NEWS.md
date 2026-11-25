@@ -1,4 +1,4 @@
-# ggsmartext 0.0.1
+# ggutils 0.0.1
 
 * 首个版本。
 
@@ -60,7 +60,7 @@
 
   - 每个面板各自建立 guide：`free_x` / `free_y` 时只画该面板内存在的标签，
     `which` 一次写全所有面板的标签即可，不存在的标签静默跳过（不再逐面板
-    警告），详见 `vignettes/ggsmartext.Rmd` 的“与 facet 配合”一节。
+    警告），详见 `vignettes/ggutils.Rmd` 的“与 facet 配合”一节。
   - 面板内拥挤的标签按该面板宽度自动分层，也可用 `nrow` 强制。
   - `facet_grid` 行分面共享 x 轴时 guide 只画一次；列分面共享 y 轴同理。
   - 热图分面时把 guide 挂在 `scale_y_discrete(position = "right", guide = ...)`
@@ -88,8 +88,8 @@
   - `smart_stack()`：多行标签排布引擎（优先级 + 负载均衡分行，行内保序压紧，
     容量不足时丢弃而不是压扁）。
 
-* 文档：中文 vignette（`vignette("ggsmartext")`）、英文 vignette
-  （`vignette("ggsmartext-en")`）、英文 README、22 张示例图
+* 文档：中文 vignette（`vignette("ggutils")`）、英文 vignette
+  （`vignette("ggutils-en")`）、英文 README、22 张示例图
   （`inst/examples/07-gallery.R`）。热图标注示例使用真实 GEO RNA-seq 数据
   （`airway`，GEO GSE52778，见 `inst/examples/09-heatmap-rnaseq.R`）。
 

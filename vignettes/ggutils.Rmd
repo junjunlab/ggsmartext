@@ -1,5 +1,5 @@
 ---
-title: "ggsmartext: Smart Axis Labels for ggplot2"
+title: "ggutils: Smart Axis Labels for ggplot2"
 subtitle: "让拥挤的分类轴标签变清爽"
 output:
   rmarkdown::html_vignette:
@@ -7,12 +7,12 @@ output:
     toc_depth: 3
     number_sections: false
 vignette: >
-  %\VignetteIndexEntry{ggsmartext: Smart Axis Labels for ggplot2}
+  %\VignetteIndexEntry{ggutils: Smart Axis Labels for ggplot2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-> English version: `vignette("ggsmartext-en")`
+> English version: `vignette("ggutils-en")`
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
@@ -26,7 +26,7 @@ knitr::opts_chunk$set(
   fig.align = "center"
 )
 library(ggplot2)
-library(ggsmartext)
+library(ggutils)
 ```
 
 # 动机：分类轴一挤，图就没法看了
@@ -48,7 +48,7 @@ ggplot(df50, aes(x = sample, y = value)) +
   theme_grey(base_size = 12)
 ```
 
-`ggsmartext` 提供 `guide_axis_smart()`：它接管分类轴标签的绘制，做三件事——
+`ggutils` 提供 `guide_axis_smart()`：它接管分类轴标签的绘制，做三件事——
 
 1. **只显示你关心的那部分标签**（`which =` / `n =`），其余的用**引导线（leader line）**连回各自的刻度，位置关系一目了然；
 2. **把标签在轴外侧分成多行（x 轴）或多列（y 轴）错开**，把页面上原本浪费的空白用起来；
@@ -254,7 +254,7 @@ ggplot(df200, aes(x = feature, y = value)) +
   theme_grey(base_size = 12)
 ```
 
-如果不想看到提示（比如在循环里批量出图），设置 `options(ggsmartext.quiet = TRUE)` 即可静音；但**永远建议显式写 `n =` 或 `which =`**，让显示哪些标签由你决定，而不是由屏幕尺寸决定。
+如果不想看到提示（比如在循环里批量出图），设置 `options(ggutils.quiet = TRUE)` 即可静音；但**永远建议显式写 `n =` 或 `which =`**，让显示哪些标签由你决定，而不是由屏幕尺寸决定。
 
 # 多行错开：`nrow`、`gap`、`padding`
 
@@ -380,7 +380,7 @@ ggplot(df40, aes(x = value, y = sample)) +
 # 环形坐标：`coord_radial()`
 
 `coord_radial()` 把位置标度改名为 `theta` 和 `r`，guide 要挂在 `guides(theta = ...)` 上。
-`ggsmartext` 会把标签按 `circlize::circos.labels()` 的方式排布：文字沿半径、朝向圆心，
+`ggutils` 会把标签按 `circlize::circos.labels()` 的方式排布：文字沿半径、朝向圆心，
 左半边自动翻转避免倒置；拥挤时用 `smartAlign` 沿弧向匀开，并用三段引导线
 （径向短线 → 斜线 → 径向短线）连回各自刻度。
 
@@ -549,7 +549,7 @@ ggplot(df60, aes(x = sample, y = value)) +
 
 ```{r anno-heatmap-data}
 ## 内置数据：300 基因 x 8 样本的行 z-score 矩阵（已按层次聚类排序）
-data(airway_heatmap, package = "ggsmartext")
+data(airway_heatmap, package = "ggutils")
 df_gene <- airway_heatmap$df
 mark    <- airway_heatmap$mark
 ```
@@ -770,7 +770,7 @@ ggplot(df_facet_grid, aes(cat, value)) +
 
 ```{r facet-heatmap, fig.cap = "分面热图：用内置真实数据，每个面板独立标注自己的基因"}
 ## 用包内置的真实 RNA-seq 数据（GEO GSE52778，300 基因 x 8 样本）
-data(airway_heatmap, package = "ggsmartext")
+data(airway_heatmap, package = "ggutils")
 df_facet_heat <- airway_heatmap$df
 mark_wrap <- airway_heatmap$genes$gene[10:21]   # 顶部响应簇里连续的 12 个基因
 
@@ -892,7 +892,7 @@ ggplot() +
 - **它只能挑选已有的刻度，不会新增刻度。** 如果某个类别不在 scale 的 breaks 里，`which` 就选不到它——先用 `scale_x_discrete(breaks = ...)` 把它放进去。
 - **自动分行是"按需"的。** 能一行放下就一行（贴轴摊开，最接近 `anno_mark()` 的观感）；总宽超了、或标签集中在一段里才分行，上限 `max_nrow` 条轨道。想要纯单行 anno_mark 风格就显式写 `nrow = 1`。
 - **显示数量可能少于请求数量。** 面板太窄、行数不够时，guide 会按优先级丢弃标签，宁可少画也不画重叠。想多显示就加 `nrow`、放大图形，或调小 `padding`/`gap`。
-- **`which = NULL` 且 `n = NULL` 时会自动抽稀。** 全部标签的总宽度超过 `max_nrow` 条轨道能容纳的范围时，guide 会自动等距抽稀并通过 `cli` 提示一次；`options(ggsmartext.quiet = TRUE)` 可静音。建议始终显式写 `n =` 或 `which =`，让"显示哪些标签"由你决定，而不是由屏幕尺寸决定。
+- **`which = NULL` 且 `n = NULL` 时会自动抽稀。** 全部标签的总宽度超过 `max_nrow` 条轨道能容纳的范围时，guide 会自动等距抽稀并通过 `cli` 提示一次；`options(ggutils.quiet = TRUE)` 可静音。建议始终显式写 `n =` 或 `which =`，让"显示哪些标签"由你决定，而不是由屏幕尺寸决定。
 - **自动行数依赖设备尺寸。** 同一个图在 RStudio 窗口和 1600×900 的 PNG 里可能行数不同。需要结果稳定时，显式写 `nrow`，或用 `panel_width` 告诉 guide 面板大概多宽（单位 cm）。
 - **`angle` 一般配 `nrow = 1`。** 旋转后的标签会占用更多纵向空间（guide 按旋转后的包围盒预留高度），多行再叠加旋转通常不划算。
 - **不要用 `axis.text.*` 把标签设为空白**，guide 会继承成"没有文字"；要隐藏标签请直接不用 guide 或改画别的。
@@ -905,6 +905,6 @@ ggplot() +
 
 ```{r session}
 cat("ggplot2:", as.character(packageVersion("ggplot2")), "\n")
-cat("ggsmartext:", as.character(packageVersion("ggsmartext")), "\n")
+cat("ggutils:", as.character(packageVersion("ggutils")), "\n")
 cat("R:", R.version.string, "\n")
 ```

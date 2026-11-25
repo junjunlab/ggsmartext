@@ -15,11 +15,11 @@ test_that("`which` 为空向量时安全地不显示任何标签", {
 
 test_that("`which` 为空向量时内部选择结果全为 FALSE", {
   pos <- seq(0.1, 0.9, length.out = 4)
-  sel <- ggsmartext:::.ggse_selection(logical(0), letters[1:4], pos)
+  sel <- ggutils:::.ggse_selection(logical(0), letters[1:4], pos)
   expect_identical(sel, rep(FALSE, 4))
-  sel2 <- ggsmartext:::.ggse_selection(integer(0), letters[1:4], pos)
+  sel2 <- ggutils:::.ggse_selection(integer(0), letters[1:4], pos)
   expect_identical(sel2, rep(FALSE, 4))
-  sel3 <- ggsmartext:::.ggse_selection(character(0), letters[1:4], pos)
+  sel3 <- ggutils:::.ggse_selection(character(0), letters[1:4], pos)
   expect_identical(sel3, rep(FALSE, 4))
 })
 

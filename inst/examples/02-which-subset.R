@@ -1,4 +1,4 @@
-# ggsmartext —— 示例 02：用 which 指定要显示哪些标签
+# ggutils —— 示例 02：用 which 指定要显示哪些标签
 #
 # which 支持四种写法：
 #   整数向量 —— 按 breaks 顺序的下标
@@ -6,13 +6,13 @@
 #   逻辑向量 —— 与标签一一对应，TRUE 显示
 #   函数     —— function(labels, positions) 返回逻辑向量，positions 是 0..1 的轴内相对坐标
 #
-# 运行方式（需要先安装 ggsmartext）：
+# 运行方式（需要先安装 ggutils）：
 #   Rscript inst/examples/02-which-subset.R
 
 library(ggplot2)
-library(ggsmartext)
+library(ggutils)
 
-out_dir <- Sys.getenv("GGSMARTEXT_FIG_DIR", unset = file.path(tempdir(), "ggsmartext-examples"))
+out_dir <- Sys.getenv("ggutils_FIG_DIR", unset = file.path(tempdir(), "ggutils-examples"))
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 save_png <- function(plot, name, width = 1600, height = 900) {

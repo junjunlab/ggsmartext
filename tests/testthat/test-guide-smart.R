@@ -751,7 +751,7 @@ test_that("200 个分类时自动抽稀并由 cli 提示一次，可静音", {
   expect_lt(length(lg$labels), 200L)
 
   # 静音选项生效
-  old <- options(ggsmartext.quiet = TRUE)
+  old <- options(ggutils.quiet = TRUE)
   on.exit(options(old), add = TRUE)
   expect_silent(ggplot2::ggplotGrob(p))
 })

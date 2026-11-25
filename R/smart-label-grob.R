@@ -30,7 +30,7 @@
     pad_cm       = prep$pad_cm,
     hjust        = prep$hjust,
     vjust        = prep$vjust,
-    name         = "ggsmartext.labels",
+    name         = "ggutils.labels",
     cl           = "ggse_smart_labels"
   )
   attr(g, "ggse_size_cm") <- prep$total_across_cm
@@ -106,9 +106,9 @@ makeContent.ggse_smart_labels <- function(x) {
     return(grid::setChildren(x, grid::gList()))
   }
 
-  if (isTRUE(getOption("ggsmartext.debug"))) {
+  if (isTRUE(getOption("ggutils.debug"))) {
     message(
-      "ggsmartext makeContent: vertical=", vertical,
+      "ggutils makeContent: vertical=", vertical,
       " along_cm=", .ggse_fmt(along_cm),
       " across_cm=", .ggse_fmt(across_cm),
       " nrow=", nrow,

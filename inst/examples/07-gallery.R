@@ -1,20 +1,20 @@
-# ggsmartext —— 示例 07：图库生成脚本
+# ggutils —— 示例 07：图库生成脚本
 #
 # 一次性生成本包 README / vignette 用到的全套示例 PNG。
 #
-# 运行方式（需要先安装 ggsmartext）：
+# 运行方式（需要先安装 ggutils）：
 #   Rscript inst/examples/07-gallery.R            # 输出到 ./figures/
 #   Rscript inst/examples/07-gallery.R out/pngs   # 输出到指定目录
 #
 # 每张图 1600 x 900 像素（ragg::agg_png(width = 1600, height = 900, res = 150)）。
 
 library(ggplot2)
-library(ggsmartext)
+library(ggutils)
 
 # ---- 输出目录与保存函数 -----------------------------------------------------
 
 args <- commandArgs(trailingOnly = TRUE)
-out_dir <- if (length(args) >= 1L) args[[1L]] else Sys.getenv("GGSMARTEXT_FIG_DIR", unset = "figures")
+out_dir <- if (length(args) >= 1L) args[[1L]] else Sys.getenv("ggutils_FIG_DIR", unset = "figures")
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 save_png <- function(plot, name, width = 1600, height = 900) {

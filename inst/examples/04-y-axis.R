@@ -1,15 +1,15 @@
-# ggsmartext —— 示例 04：y 轴（水平分类轴）用法
+# ggutils —— 示例 04：y 轴（水平分类轴）用法
 #
 # y 轴是竖直方向，所以 nrow 的语义变成"列数"：标签在轴外侧分成 nrow 列错开。
 # 40 个样本的水平条形图，只显示其中 10 个标签，分 2 列。
 #
-# 运行方式（需要先安装 ggsmartext）：
+# 运行方式（需要先安装 ggutils）：
 #   Rscript inst/examples/04-y-axis.R
 
 library(ggplot2)
-library(ggsmartext)
+library(ggutils)
 
-out_dir <- Sys.getenv("GGSMARTEXT_FIG_DIR", unset = file.path(tempdir(), "ggsmartext-examples"))
+out_dir <- Sys.getenv("ggutils_FIG_DIR", unset = file.path(tempdir(), "ggutils-examples"))
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 save_png <- function(plot, name, width = 1600, height = 900) {

@@ -1,7 +1,7 @@
 # ============================================================================
 # 用包内置的真实 GEO RNA-seq 数据演示热图基因标注（ComplexHeatmap anno_mark 风格）
 #
-# 数据：ggsmartext 内置的 `airway_heatmap`（来自 Bioconductor `airway` 包，
+# 数据：ggutils 内置的 `airway_heatmap`（来自 Bioconductor `airway` 包，
 #   GEO GSE52778：人气道平滑肌细胞，4 株细胞系 × 地塞米松处理/对照）。
 #   内容是 300 个高变基因 × 8 样本的行 z-score 矩阵，已按层次聚类排好序，
 #   并附带单图标注用的 20 个基因（mark）与分面用的每组 4 个基因（mark_by_set）。
@@ -17,13 +17,13 @@
 .libPaths(c(".Rlib", .libPaths()))
 suppressPackageStartupMessages({
   library(ggplot2)
-  library(ggsmartext)
+  library(ggutils)
 })
 
 outdir <- if (length(commandArgs(TRUE)) >= 1L) commandArgs(TRUE)[1] else tempdir()
 dir.create(outdir, showWarnings = FALSE, recursive = TRUE)
 
-data(airway_heatmap, package = "ggsmartext")
+data(airway_heatmap, package = "ggutils")
 df_gene <- airway_heatmap$df
 mark <- airway_heatmap$mark
 mark_facet <- unlist(airway_heatmap$mark_by_set, use.names = FALSE)

@@ -826,9 +826,9 @@ GuideAxisSmart <- ggplot2::ggproto(
   }
   nrow_final <- as.integer(max(1L, nrow_final))
 
-  if (isTRUE(getOption("ggsmartext.debug"))) {
+  if (isTRUE(getOption("ggutils.debug"))) {
     message(
-      "ggsmartext: labels=", length(labels), " shown=", sum(shown),
+      "ggutils: labels=", length(labels), " shown=", sum(shown),
       " panel_est=", .ggse_fmt(panel_est), "cm",
       " avail=", .ggse_fmt(avail_cm), "cm",
       " total_width=", .ggse_fmt(sum(box_along[shown] + pad_cm)), "cm",

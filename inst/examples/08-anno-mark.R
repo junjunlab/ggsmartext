@@ -1,15 +1,15 @@
-# ggsmartext —— 示例 08：anno_mark 风格（集中标注 / 热图基因标注）
+# ggutils —— 示例 08：anno_mark 风格（集中标注 / 热图基因标注）
 #
 # 本包的引导线几何来自 circlize 与 ComplexHeatmap::anno_mark()：
 # 短垂线 -> 斜线 -> 短垂线。典型用途是"只标注少数感兴趣的类别"。
 #
-# 运行方式（需要先安装 ggsmartext）：
+# 运行方式（需要先安装 ggutils）：
 #   Rscript inst/examples/08-anno-mark.R
 
 library(ggplot2)
-library(ggsmartext)
+library(ggutils)
 
-out_dir <- Sys.getenv("GGSMARTEXT_FIG_DIR", unset = file.path(tempdir(), "ggsmartext-examples"))
+out_dir <- Sys.getenv("ggutils_FIG_DIR", unset = file.path(tempdir(), "ggutils-examples"))
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 save_png <- function(plot, name, width = 1600, height = 900) {

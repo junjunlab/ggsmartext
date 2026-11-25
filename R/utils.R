@@ -133,11 +133,11 @@
   formatC(x, digits = digits, format = "f")
 }
 
-## cli inform wrapper that can be silenced with options(ggsmartext.quiet = TRUE).
+## cli inform wrapper that can be silenced with options(ggutils.quiet = TRUE).
 ## The glue expressions are evaluated in the caller's environment, so that
 ## messages can refer to local variables.
 .ggse_inform <- function(...) {
-  if (isTRUE(getOption("ggsmartext.quiet", FALSE))) {
+  if (isTRUE(getOption("ggutils.quiet", FALSE))) {
     return(invisible(NULL))
   }
   cli::cli_inform(..., .envir = parent.frame())
