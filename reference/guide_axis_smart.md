@@ -86,7 +86,8 @@ guide_axis_smart(
 - padding:
 
   Minimal gap between two label boxes in a track, as a fraction of the
-  label height. Defaults to `0.25`.
+  label height. Defaults to `0.25`. On a radial (`theta`) axis it is the
+  gap between neighbouring labels measured along the arc.
 
 - gap:
 
