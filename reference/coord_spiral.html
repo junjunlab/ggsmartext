@@ -17,7 +17,7 @@ areas are all supported, and facets get one spiral per panel."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">ggutils</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -62,11 +62,13 @@ areas are all supported, and facets get one spiral per panel.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">coord_spiral</span><span class="op">(</span></span>
 <span>  start <span class="op">=</span> <span class="fl">90</span>,</span>
 <span>  end <span class="op">=</span> <span class="fl">360</span> <span class="op">*</span> <span class="fl">3</span> <span class="op">+</span> <span class="fl">90</span>,</span>
+<span>  turns <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  period <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  clockwise <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  inner <span class="op">=</span> <span class="fl">0.04</span>,</span>
 <span>  outer <span class="op">=</span> <span class="fl">0.46</span>,</span>
-<span>  height <span class="op">=</span> <span class="fl">0.8</span>,</span>
+<span>  height <span class="op">=</span> <span class="fl">0.7</span>,</span>
+<span>  gap <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  scale_by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"angle"</span>, <span class="st">"curve"</span><span class="op">)</span>,</span>
 <span>  reverse <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  flip <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"horizontal"</span>, <span class="st">"vertical"</span>, <span class="st">"both"</span><span class="op">)</span>,</span>
@@ -90,6 +92,12 @@ areas are all supported, and facets get one spiral per panel.</p>
 ask for <code>n</code> turns ending at angle <code>a</code>.</p></dd>
 
 
+<dt id="arg-turns">turns<a class="anchor" aria-label="anchor" href="#arg-turns"></a></dt>
+<dd><p>Number of turns, as a shortcut for <code>end = start + 360 * turns</code>.
+When supplied it wins over <code>end</code>, so <code>coord_spiral(turns = 5)</code> always
+draws five turns whatever the default <code>end</code> is.</p></dd>
+
+
 <dt id="arg-period">period<a class="anchor" aria-label="anchor" href="#arg-period"></a></dt>
 <dd><p>Number of x units per turn. When supplied, <code>end</code> is
 recalculated from the x range and <code>period</code>.</p></dd>
@@ -102,13 +110,21 @@ counter-clockwise, like <code>spiralize()</code>.</p></dd>
 
 <dt id="arg-inner-outer">inner, outer<a class="anchor" aria-label="anchor" href="#arg-inner-outer"></a></dt>
 <dd><p>Inner and outer radius of the whole spiral, in panel npc
-units (0.5 is the panel edge). The distance between two turns is
-<code>(outer - inner) / (end - start) * 360</code>.</p></dd>
+units (0.5 is the panel edge). Together they set how much of the panel the
+spiral covers; the distance between two turns follows from the number of
+turns.</p></dd>
 
 
 <dt id="arg-height">height<a class="anchor" aria-label="anchor" href="#arg-height"></a></dt>
-<dd><p>Height of the data track as a fraction of the distance
-between two neighbouring turns (0 to 1).</p></dd>
+<dd><p>Thickness of the data track, as a fraction of the distance
+between two neighbouring turns (0 to 1): <code>0.7</code> leaves a 30% white gap.
+<code>gap</code> is the same knob the other way round, so pick whichever reads
+better; <code>gap</code> wins when both are given.</p></dd>
+
+
+<dt id="arg-gap">gap<a class="anchor" aria-label="anchor" href="#arg-gap"></a></dt>
+<dd><p>White gap between two neighbouring turns, as a fraction of their
+distance (0 to 1). <code>gap = 0.3</code> is the same as <code>height = 0.7</code>.</p></dd>
 
 
 <dt id="arg-scale-by">scale_by<a class="anchor" aria-label="anchor" href="#arg-scale-by"></a></dt>
@@ -136,7 +152,7 @@ spiral?</p></dd>
 
 <dt id="arg-y-axis-theta">y_axis_theta<a class="anchor" aria-label="anchor" href="#arg-y-axis-theta"></a></dt>
 <dd><p>Angle in degrees at which the radial ruler is placed;
-<code>NULL</code> puts it at the outermost end of the spiral.</p></dd>
+<code>NULL</code> puts it at 0 degrees (east), like the y axis in spiralize.</p></dd>
 
 
 <dt id="arg-y-axis-n">y_axis_n<a class="anchor" aria-label="anchor" href="#arg-y-axis-n"></a></dt>

@@ -13,11 +13,13 @@ bars and areas are all supported, and facets get one spiral per panel.
 coord_spiral(
   start = 90,
   end = 360 * 3 + 90,
+  turns = NULL,
   period = NULL,
   clockwise = FALSE,
   inner = 0.04,
   outer = 0.46,
-  height = 0.8,
+  height = 0.7,
+  gap = NULL,
   scale_by = c("angle", "curve"),
   reverse = FALSE,
   flip = c("none", "horizontal", "vertical", "both"),
@@ -39,6 +41,12 @@ coord_spiral(
   `spiralize::spiral_initialize()`). `360 * n + a` is a convenient way
   to ask for `n` turns ending at angle `a`.
 
+- turns:
+
+  Number of turns, as a shortcut for `end = start + 360 * turns`. When
+  supplied it wins over `end`, so `coord_spiral(turns = 5)` always draws
+  five turns whatever the default `end` is.
+
 - period:
 
   Number of x units per turn. When supplied, `end` is recalculated from
@@ -52,13 +60,21 @@ coord_spiral(
 - inner, outer:
 
   Inner and outer radius of the whole spiral, in panel npc units (0.5 is
-  the panel edge). The distance between two turns is
-  `(outer - inner) / (end - start) * 360`.
+  the panel edge). Together they set how much of the panel the spiral
+  covers; the distance between two turns follows from the number of
+  turns.
 
 - height:
 
-  Height of the data track as a fraction of the distance between two
-  neighbouring turns (0 to 1).
+  Thickness of the data track, as a fraction of the distance between two
+  neighbouring turns (0 to 1): `0.7` leaves a 30% white gap. `gap` is
+  the same knob the other way round, so pick whichever reads better;
+  `gap` wins when both are given.
+
+- gap:
+
+  White gap between two neighbouring turns, as a fraction of their
+  distance (0 to 1). `gap = 0.3` is the same as `height = 0.7`.
 
 - scale_by:
 
@@ -85,7 +101,7 @@ coord_spiral(
 - y_axis_theta:
 
   Angle in degrees at which the radial ruler is placed; `NULL` puts it
-  at the outermost end of the spiral.
+  at 0 degrees (east), like the y axis in spiralize.
 
 - y_axis_n:
 

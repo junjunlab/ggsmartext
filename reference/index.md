@@ -16,6 +16,9 @@
 
 - [`coord_spiral()`](https://junjunlab.github.io/ggutils/reference/coord_spiral.md)
   : Spiral coordinates for ggplot2
+- [`scale_x_spiral_axis()`](https://junjunlab.github.io/ggutils/reference/scale_spiral_axis.md)
+  [`scale_y_spiral_axis()`](https://junjunlab.github.io/ggutils/reference/scale_spiral_axis.md)
+  : Fine-tune the axes drawn along a spiral
 
 ## 排布算法 (Layout algorithms)
 

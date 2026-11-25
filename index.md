@@ -60,7 +60,24 @@ angle and radial axes are drawn automatically, and `facet_wrap()` /
 
 ggplot(d, aes(x, y)) + geom_line() + coord_spiral()
 ggplot(d, aes(x, y)) + geom_line() + facet_wrap(~set) + coord_spiral()
+
+# turns / start angle / track thickness / gap between turns
+coord_spiral(turns = 5, start = 0, height = .7)
+coord_spiral(turns = 3, gap = .3, clockwise = TRUE)
+
+# fine-tune the two axes: breaks, label rotation, tick length, side
+ggplot(d, aes(x, y)) + geom_col() +
+  scale_x_spiral_axis(minor_breaks = seq(0, 1, .1)) +
+  scale_y_spiral_axis(side = "both", label_rot = 90) +
+  coord_spiral(turns = 3)
 ```
+
+Every layer that hands its `x`/`y` to the coordinate transform works
+unchanged - lines, areas, bars, histograms, box plots, violins, tiles,
+text, error bars, segments with arrows. Layers that only carry
+`xend`/`xmin` coordinates (`geom_segment()`, `geom_rect()`) are warped
+too, though the edge between two warped points stays straight.
+`geom_hline()` and friends, which have no end points, are not supported.
 
 More `ggplot2` utilities will be added here over time. The deliberately
 broad name means you can load one package instead of keeping track of
