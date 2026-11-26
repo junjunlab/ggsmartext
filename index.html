@@ -58,46 +58,34 @@
 </h1></div>
 <p><a href="https://github.com/junjunlab/ggutils/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/junjunlab/ggutils/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a> <a href="https://lifecycle.r-lib.org/articles/stages.html#experimental" class="external-link"><img src="https://img.shields.io/badge/lifecycle-experimental-orange.svg" alt="Lifecycle: experimental"></a> <a href="https://opensource.org/licenses/MIT" class="external-link"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="License: MIT"></a> <a href="https://cran.r-project.org/" class="external-link"><img src="https://img.shields.io/badge/R-%3E%3D%204.1-blue.svg" alt="R &gt;= 4.1"></a> <a href="https://ggplot2.tidyverse.org/" class="external-link"><img src="https://img.shields.io/badge/ggplot2-%3E%3D%204.0-blueviolet.svg" alt="ggplot2 &gt;= 4.0"></a> <a href="https://junjunlab.github.io/ggutils/"><img src="https://img.shields.io/badge/docs-pkgdown-2E7D6B.svg" alt="Docs"></a> <a href="https://github.com/junjunlab/ggutils/commits/main" class="external-link"><img src="https://img.shields.io/github/last-commit/junjunlab/ggutils.svg" alt="Last commit"></a></p>
 <blockquote>
-<p>Small, reusable utilities for <code>ggplot2</code>: readable labels on crowded axes, cluster dendrograms on the axes, circular layouts with ring trees, and a spiral coordinate system.</p>
+<p>Small, reusable utilities for <code>ggplot2</code>.</p>
 </blockquote>
-<p><code>ggutils</code> collects small, reusable helpers that smooth over the rough edges of building plots with <code>ggplot2</code>. They plug into the usual grammar — no new geometry, no special data format — and each one solves a concrete problem.</p>
+<p><code>ggutils</code> adds helpers that plug into the usual grammar – no new geometry, no special data format.</p>
 <div class="section level2">
 <h2 id="guide_axis_smart-readable-labels-on-crowded-axes">
 <code>guide_axis_smart()</code>: readable labels on crowded axes<a class="anchor" aria-label="anchor" href="#guide_axis_smart-readable-labels-on-crowded-axes"></a>
 </h2>
-<p>When a discrete axis carries many categories (50 samples, 200 genes, …) the stock <code>ggplot2</code> axis draws every label on a single line. The labels overlap, or you rotate them all by 90°, or you hide them and lose the information. <code><a href="reference/guide_axis_smart.html">guide_axis_smart()</a></code> is a <code>GuideAxis</code> subclass that takes over label drawing:</p>
-<ul>
-<li>
-<strong>Choose the labels</strong>: <code>which =</code> (integer index / label text / logical vector / function) or <code>n =</code> (auto-pick at most <code>n</code> labels, evenly spaced).</li>
-<li>
-<strong>Use the page</strong>: labels are packed without overlap (<code>smartAlign</code>-style one-dimensional compaction) and distributed over <code>nrow</code> rows (x axis) or columns (y axis). Rows are only added when they are needed: labels stretch along the axis when a single row fits, clustered labels are stacked automatically.</li>
-<li>
-<strong>Never overlaps</strong>: if there is no room left, labels are dropped instead of being printed on top of each other.</li>
-<li>
-<strong>Leader lines</strong>: every displayed label is tied back to its tick, by default with the <code>circlize</code> / <code><a href="https://rdrr.io/pkg/ComplexHeatmap/man/anno_mark.html" class="external-link">ComplexHeatmap::anno_mark()</a></code> “diagonal” geometry (short perpendicular stub, diagonal, short stub).</li>
-</ul>
+<p>Picks the labels you want, spreads them over several rows / columns so they never overlap, and draws a leader line from every label back to its tick.</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_col</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu">guides</span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="reference/guide_axis_smart.html">guide_axis_smart</a></span><span class="op">(</span>n <span class="op">=</span> <span class="fl">8</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="guide_axis_cluster-dendrograms-on-the-axes">
 <code>guide_axis_cluster()</code>: dendrograms on the axes<a class="anchor" aria-label="anchor" href="#guide_axis_cluster-dendrograms-on-the-axes"></a>
 </h2>
-<p>Clusters the categories, re-orders the axis into the leaf order and draws the tree next to it (<code><a href="reference/guide_axis_cluster.html">scale_x_cluster()</a></code> / <code><a href="reference/guide_axis_cluster.html">scale_y_cluster()</a></code> do the same from the plot data alone). <code>position</code> moves the tree, not the labels, and with free facets every panel gets its own tree. On <code>coord_radial()</code> the theta tree becomes a ring dendrogram (<code>"bottom"</code> inside the hole, <code>"top"</code> outside the circle) and a partial arc gets an arc-shaped r-axis tree.</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<p>Clusters the categories, orders the axis by the dendrogram and draws the tree next to it. <code>position</code> moves the tree only; free facets get one tree per panel; on <code>coord_radial()</code> it becomes a ring tree.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_tile</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_x_cluster</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"ward.D2"</span><span class="op">)</span> <span class="op">+</span>   <span class="co"># tree above the labels</span></span>
-<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_y_cluster</a></span><span class="op">(</span>position <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span>      <span class="co"># tree at the far left</span></span>
-<span></span>
-<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_tile</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">coord_radial</span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"x"</span>, inner.radius <span class="op">=</span> <span class="fl">0.55</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_x_cluster</a></span><span class="op">(</span><span class="op">)</span>                       <span class="co"># ring tree inside the hole</span></span></code></pre></div>
+<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_x_cluster</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"ward.D2"</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_y_cluster</a></span><span class="op">(</span>position <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="facet_gridn-per-panel-free-scales-for-facet_grid">
 <code>facet_gridn()</code>: per-panel free scales for <code>facet_grid()</code>
 <a class="anchor" aria-label="anchor" href="#facet_gridn-per-panel-free-scales-for-facet_grid"></a>
 </h2>
-<p>Frees a <code>facet_grid()</code> scale per panel instead of per row / column:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_point</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/facet_gridn.html">facet_gridn</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu">vars</span><span class="op">(</span><span class="va">cluster</span><span class="op">)</span>, cols <span class="op">=</span> <span class="fu">vars</span><span class="op">(</span><span class="va">set</span><span class="op">)</span>, scales <span class="op">=</span> <span class="st">"free_x"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -105,58 +93,37 @@
 <h2 id="coord_spiral-cartesian-plots-on-a-spiral">
 <code>coord_spiral()</code>: Cartesian plots on a spiral<a class="anchor" aria-label="anchor" href="#coord_spiral-cartesian-plots-on-a-spiral"></a>
 </h2>
-<p><code><a href="reference/coord_spiral.html">coord_spiral()</a></code> bends an ordinary ggplot into an Archimedean spiral, using the same geometry as <strong>spiralize</strong> (r = b·theta with one turn per radius unit). The x aesthetic runs along the spiral as the angle, y becomes the radius across the track; lines, bars, points and areas all work. The matching angle and radial axes are drawn automatically, and <code>facet_wrap()</code> / <code>facet_grid()</code> get one spiral per panel.</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/coord_spiral.html">coord_spiral</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span><span class="va">set</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/coord_spiral.html">coord_spiral</a></span><span class="op">(</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># turns / start angle / track thickness / gap between turns</span></span>
-<span><span class="fu"><a href="reference/coord_spiral.html">coord_spiral</a></span><span class="op">(</span>turns <span class="op">=</span> <span class="fl">5</span>, start <span class="op">=</span> <span class="fl">0</span>, height <span class="op">=</span> <span class="fl">.7</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/coord_spiral.html">coord_spiral</a></span><span class="op">(</span>turns <span class="op">=</span> <span class="fl">3</span>, gap <span class="op">=</span> <span class="fl">.3</span>, clockwise <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># fine-tune the two axes: breaks, minor ticks, label rotation, tick length, side</span></span>
-<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_col</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="reference/scale_spiral_axis.html">scale_x_spiral_axis</a></span><span class="op">(</span>minor_breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, <span class="fl">.1</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="reference/scale_spiral_axis.html">scale_y_spiral_axis</a></span><span class="op">(</span>side <span class="op">=</span> <span class="st">"both"</span>, label_rot <span class="op">=</span> <span class="fl">90</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="reference/coord_spiral.html">coord_spiral</a></span><span class="op">(</span>turns <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
-<p>Every layer that hands its <code>x</code>/<code>y</code> to the coordinate transform works unchanged - lines, areas, bars, histograms, box plots, violins, tiles, text, error bars, segments with arrows. Layers that only carry <code>xend</code>/<code>xmin</code> coordinates (<code>geom_segment()</code>, <code>geom_rect()</code>) are warped too, though the edge between two warped points stays straight. <code>geom_hline()</code> and friends, which have no end points, are not supported.</p>
-<p>More <code>ggplot2</code> utilities will be added here over time. The deliberately broad name means you can load one package instead of keeping track of several single-function ones.</p>
+<p>Bends a normal ggplot into an Archimedean spiral and draws the angle and radial axes for you.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/coord_spiral.html">coord_spiral</a></span><span class="op">(</span>turns <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
-<p>Requires R &gt;= 4.1 and <strong>ggplot2 &gt;= 4.0.0</strong> (the guide API used here was rewritten in ggplot2 4.0).</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"junjunlab/ggutils"</span><span class="op">)</span></span></code></pre></div>
-<p>Or, from a local clone of the repository:</p>
+<p>Requires R &gt;= 4.1 and <strong>ggplot2 &gt;= 4.0.0</strong>.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
-<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_local.html" class="external-link">install_local</a></span><span class="op">(</span><span class="st">"."</span><span class="op">)</span></span>
-<span><span class="co"># or, from a shell:</span></span>
-<span><span class="co"># R CMD INSTALL .</span></span></code></pre></div>
+<span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"junjunlab/ggutils"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="documentation">Documentation<a class="anchor" aria-label="anchor" href="#documentation"></a>
 </h2>
-<p>The complete reference manual — every function, argument and example — is published on the package documentation site:</p>
 <ul>
 <li>
 <strong>Reference manual</strong>: <a href="https://junjunlab.github.io/ggutils/reference/" class="uri">https://junjunlab.github.io/ggutils/reference/</a>
 </li>
 <li>
-<strong>中文 vignette（入门与全部用法）</strong>: <a href="https://junjunlab.github.io/ggutils/articles/ggutils.html" class="uri">https://junjunlab.github.io/ggutils/articles/ggutils.html</a>
+<strong>中文 vignette</strong>: <a href="https://junjunlab.github.io/ggutils/articles/ggutils.html" class="uri">https://junjunlab.github.io/ggutils/articles/ggutils.html</a>
 </li>
 <li>
 <strong>English vignette</strong>: <a href="https://junjunlab.github.io/ggutils/articles/ggutils-en.html" class="uri">https://junjunlab.github.io/ggutils/articles/ggutils-en.html</a>
 </li>
 </ul>
-<p>The vignettes walk through label selection (<code>which</code>), automatic selection (<code>n</code>), staggered rows (<code>nrow</code>), the three leader-line styles, vertical axes, facets and heatmap annotation; the reference manual documents every argument and default. The layout algorithms <code><a href="reference/smart_align.html">smart_align()</a></code>, <code><a href="reference/box_arrange.html">box_arrange()</a></code> and <code><a href="reference/smart_stack.html">smart_stack()</a></code> are exported and can also be used on their own.</p>
 </div>
 <div class="section level2">
 <h2 id="credits">Credits<a class="anchor" aria-label="anchor" href="#credits"></a>
 </h2>
-<p>The one-dimensional, overlap-free compaction is a port of the <code>smartAlign</code> algorithm from the <strong>circlize</strong> package; the box arrangement is a port of the <strong>ComplexHeatmap</strong> package. <code>ggutils</code> only re-uses the algorithms — the ggplot2 guide integration is new.</p>
+<p>The overlap-free label compaction is a port of <code>smartAlign</code> from <strong>circlize</strong>; the box arrangement is a port from <strong>ComplexHeatmap</strong>. The ggplot2 guide integration is new.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
