@@ -140,36 +140,18 @@ guide_axis_smart() 的核心排布算法，也可以单独使用。"></head><bod
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># 6 个标签均匀分布，分 2 行：交替落入两行，几乎不需要移动</span></span></span>
-<span class="r-in"><span><span class="va">pos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.9</span>, length.out <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu">smart_stack</span><span class="op">(</span><span class="va">pos</span>, widths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.08</span>, <span class="fl">6</span><span class="op">)</span>, n <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   index row start  end center shown</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     1   1  0.06 0.14   0.10  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     2   2  0.22 0.30   0.26  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     3   1  0.38 0.46   0.42  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4     4   2  0.54 0.62   0.58  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5     5   1  0.70 0.78   0.74  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6     6   2  0.86 0.94   0.90  TRUE</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># 3 个标签挤在 0.5 附近，分 3 行也不会重叠</span></span></span>
-<span class="r-in"><span><span class="fu">smart_stack</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.48</span>, <span class="fl">0.5</span>, <span class="fl">0.52</span><span class="op">)</span>, widths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">3</span><span class="op">)</span>, n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   index row start  end center shown</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     1   1  0.38 0.58   0.48  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     2   2  0.40 0.60   0.50  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     3   3  0.42 0.62   0.52  TRUE</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># 容量不足时按 priority 丢弃：高优先级保留</span></span></span>
-<span class="r-in"><span><span class="fu">smart_stack</span><span class="op">(</span></span></span>
-<span class="r-in"><span>  positions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">5</span><span class="op">)</span>, widths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">5</span><span class="op">)</span>, n <span class="op">=</span> <span class="fl">1</span>,</span></span>
-<span class="r-in"><span>  priority <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">5</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">2</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   index row start end center shown</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1     1  NA   0.3 0.7    0.5 FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2     2   1   0.1 0.5    0.3  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3     3  NA   0.3 0.7    0.5 FALSE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4     4   1   0.5 0.9    0.7  TRUE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5     5  NA   0.3 0.7    0.5 FALSE</span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="co"># 6 个标签均匀分布，分 2 行：交替落入两行，几乎不需要移动</span></span>
+<span><span class="va">pos</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0.1</span>, <span class="fl">0.9</span>, length.out <span class="op">=</span> <span class="fl">6</span><span class="op">)</span></span>
+<span><span class="fu">smart_stack</span><span class="op">(</span><span class="va">pos</span>, widths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.08</span>, <span class="fl">6</span><span class="op">)</span>, n <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 3 个标签挤在 0.5 附近，分 3 行也不会重叠</span></span>
+<span><span class="fu">smart_stack</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0.48</span>, <span class="fl">0.5</span>, <span class="fl">0.52</span><span class="op">)</span>, widths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.2</span>, <span class="fl">3</span><span class="op">)</span>, n <span class="op">=</span> <span class="fl">3</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># 容量不足时按 priority 丢弃：高优先级保留</span></span>
+<span><span class="fu">smart_stack</span><span class="op">(</span></span>
+<span>  positions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.5</span>, <span class="fl">5</span><span class="op">)</span>, widths <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0.4</span>, <span class="fl">5</span><span class="op">)</span>, n <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>  priority <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">5</span>, <span class="fl">3</span>, <span class="fl">4</span>, <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>

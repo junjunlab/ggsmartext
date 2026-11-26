@@ -88,30 +88,14 @@ across cell types, i.e. the dot colour in a dot plot.</p></dd>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pbmc3k_dotplot</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 'data.frame':	810 obs. of  6 variables:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ cluster_id    : int  0 0 0 0 0 0 0 0 0 0 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ celltype      : Factor w/ 9 levels "Naive CD4 T",..: 1 1 1 1 1 1 1 1 1 1 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ gene          : chr  "CCR7" "LEF1" "MAL" "PRKCQ-AS1" ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ avg_expression: num  2.98 2.1 1.82 2.1 2.29 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ pct_expressed : num  43.6 33.6 26.3 33.1 38.5 ...</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  $ avg_exp_scaled: num  2.08 2.03 1.84 1.82 1.76 ...</span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc3k_dotplot</span><span class="op">$</span><span class="va">gene</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 90</span>
-<span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="co"># the 3 strongest genes of each cell type, for a compact example</span></span></span>
-<span class="r-in"><span><span class="va">top3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/split.html" class="external-link">split</a></span><span class="op">(</span><span class="va">pbmc3k_dotplot</span>, <span class="va">pbmc3k_dotplot</span><span class="op">$</span><span class="va">celltype</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="op">{</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">d</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="op">-</span><span class="va">d</span><span class="op">$</span><span class="va">avg_exp_scaled</span><span class="op">)</span>, <span class="st">"gene"</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="op">}</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">top3</span>, use.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [1] "CCR7"          "LEF1"          "MAL"           "FOLR3"        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [5] "S100A12"       "CD14"          "CD40LG"        "AQP3"         </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  [9] "TRADD"         "LINC00926"     "VPREB3"        "CD79A"        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [13] "GZMK"          "CD8A"          "KLRG1"         "CKB"          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [17] "CDKN1C"        "MS4A4A"        "AKR1C3"        "SH2D1B"       </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [21] "SPON2"         "SERPINF1"      "FCER1A"        "CLIC2"        </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [25] "LY6G6F"        "RP11-879F14.2" "CLDN5"        </span>
-</code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">pbmc3k_dotplot</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">pbmc3k_dotplot</span><span class="op">$</span><span class="va">gene</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># the 3 strongest genes of each cell type, for a compact example</span></span>
+<span><span class="va">top3</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/split.html" class="external-link">split</a></span><span class="op">(</span><span class="va">pbmc3k_dotplot</span>, <span class="va">pbmc3k_dotplot</span><span class="op">$</span><span class="va">celltype</span><span class="op">)</span>, <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">d</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/order.html" class="external-link">order</a></span><span class="op">(</span><span class="op">-</span><span class="va">d</span><span class="op">$</span><span class="va">avg_exp_scaled</span><span class="op">)</span>, <span class="st">"gene"</span><span class="op">]</span>, <span class="fl">3</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="va">top3</span>, use.names <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
