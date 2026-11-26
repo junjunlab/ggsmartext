@@ -27,6 +27,22 @@ knitr::opts_chunk$set(
 )
 library(ggplot2)
 library(ggutils)
+
+## 之后的热图统一用**按样本的 z-score**：把每个样本在 300 个基因上标准化
+## （`scale()` 默认按列，即按样本），再取回长表。`z_sample` 是这一列的列名。
+data(airway_heatmap, package = "ggutils")
+airway_sample_z <- local({
+  m <- tapply(airway_heatmap$df$z,
+              list(airway_heatmap$df$gene, airway_heatmap$df$sample), mean)
+  m <- scale(m)                                   # column-wise = per sample
+  out <- as.data.frame(as.table(m))
+  names(out) <- c("gene", "sample", "z_sample")
+  out <- merge(out, airway_heatmap$genes[c("gene", "gene_set")], by = "gene")
+  out$gene <- factor(out$gene, levels = rev(airway_heatmap$genes$gene))
+  out$sample <- factor(out$sample, levels = airway_heatmap$samples$sample)
+  out$gene_set <- factor(out$gene_set, levels = levels(airway_heatmap$df$gene_set))
+  out
+})
 ```
 
 ```{css, echo = FALSE}
@@ -46,7 +62,38 @@ pre, pre code, code.sourceCode, .sourceCode pre, .sourceCode code {
 }
 ```
 
-# 动机：分类轴一挤，图就没法看了
+# ggutils 是什么
+
+`ggutils` 是 `ggplot2` 的扩展包，专管**轴旁边那点事**。
+
+`ggplot2` 把面板、刻度、图例都画得很好，但碰到下面这几种情况就得自己写 `theme()`、
+`gtable`，或者干脆放弃：分类轴上有 50 个、200 个水平，标签挤成一团；想在离散轴旁边挂一棵
+聚类树，还得让树的叶子和标签顺序对得上；分面之后希望每个面板按自己的数据范围画刻度。
+
+`ggutils` 把这些收进几个 `guide_*()`、`scale_*()`、`facet_*()` 里，写法仍然是 `ggplot2`
+的写法——图层不动、`theme()` 不动，只在轴和分面这一层加东西。
+
+| 你遇到的事 | 用什么 |
+|---|---|
+| 分类标签挤在一起，只想挑几个显示 | `guide_axis_smart()`，配合 `n =` / `which =` / `nrow =` |
+| 挑出来的标签要连回各自的刻度 | `guide_axis_smart()` 的引导线（`connection_style`） |
+| 离散轴旁边挂聚类树，且树与标签同序 | `guide_axis_cluster()` / `scale_x_cluster()` / `scale_y_cluster()` |
+| 分面后每个面板要自己的刻度、自己的轴、自己的一棵树 | `facet_gridn()` |
+| 几百个标签排不进一条直线 | `coord_spiral()` / `scale_x_spiral_axis()` |
+| 树被分面条带挤掉了 | `strip_cluster()` |
+| 只要排布算法本身，自己拿去画别的 | `box_arrange()` / `smart_align()` / `smart_stack()` |
+
+```{r install, eval = FALSE}
+remotes::install_github("junjunlab/ggutils")
+```
+
+装上之后，在任何一张图上加一行 `guides()` 就能用——效果见下一节的对比。
+
+读这份文档的顺序建议是：先用两节看清「挤」和「不挤」的差别，然后逐节拆
+`guide_axis_smart()` 的参数；`y` 轴、环形坐标、热图标注、长标签各有专节；
+分面与 `facet_gridn()` 一节；最后是聚类树和已知限制。
+
+# 先看问题：标签一挤，图就没法看了
 
 `ggplot2` 默认会把分类轴的**每一个**水平都画上一个刻度和一个标签。类别一多（比如 50 个样本、200 个特征），标签在轴下方挤成一团：轻则互相压住、一个字都读不出来，重则你只能把标签整体删掉，于是图上的信息也没了。旋转 90° 能救一部分，但标签一长、类别一多照样越界。
 
@@ -408,7 +455,7 @@ ggplot(df50, aes(sample, value)) +
   guides(theta = guide_axis_smart(which = seq(1, 50, by = 4)))
 ```
 
-```{r radial-crowded, fig.cap = "拥挤的 12 个标签：沿弧匀开，三段引导线连回刻度"}
+```{r radial-crowded, fig.width = 7.2, fig.height = 5.6, fig.cap = "拥挤的 12 个标签：沿弧匀开，三段引导线连回刻度"}
 ggplot(df50, aes(sample, value)) +
   geom_col() +
   coord_radial(theta = "x") +
@@ -422,7 +469,7 @@ ggplot(df50, aes(value, sample)) +
   guides(theta = guide_axis_smart(n = 10))
 ```
 
-```{r radial-half, fig.cap = "半圆（start/end）：只画一段弧也能正常排布"}
+```{r radial-half, fig.width = 9.6, fig.height = 5.2, fig.cap = "半圆（start/end）：只画一段弧也能正常排布"}
 ggplot(df50, aes(sample, value)) +
   geom_col() +
   coord_radial(theta = "x", start = -0.5 * pi, end = 0.5 * pi) +
@@ -433,27 +480,27 @@ ggplot(df50, aes(sample, value)) +
 
 内置数据（300 基因 × 8 样本）画成环形热图时，`theta` 轴就是基因方向：
 
-```{r radial-heat-outside, fig.width = 7, fig.height = 7, fig.cap = "环形热图，标签在外侧：拥挤的基因簇沿外圈匀开"}
+```{r radial-heat-outside, fig.width = 7.0, fig.height = 5.8, fig.cap = "环形热图，标签在外侧：拥挤的基因簇沿外圈匀开"}
 data(airway_heatmap)
-ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+ggplot(airway_sample_z, aes(gene, sample, fill = z_sample)) +
   geom_tile() +
   coord_radial(theta = "x", inner.radius = 0.2) +
   guides(theta = guide_axis_smart(which = airway_heatmap$mark)) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score")
+                       midpoint = 0, name = "z-score (sample)")
 ```
 
 内圈半径更大时可以把标签放进洞里（`theta_side = "inside"`），标签贴在内圈边界上：
 
-```{r radial-heat-inside, fig.width = 7, fig.height = 7, fig.cap = "环形热图，标签在内侧：theta_side = 'inside'，标签贴内半径"}
-ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+```{r radial-heat-inside, fig.width = 7.0, fig.height = 5.0, fig.cap = "环形热图，标签在内侧：theta_side = 'inside'，标签贴内半径"}
+ggplot(airway_sample_z, aes(gene, sample, fill = z_sample)) +
   geom_tile() +
   coord_radial(theta = "x", inner.radius = 0.62) +
   guides(theta = guide_axis_smart(
     which = airway_heatmap$mark, theta_side = "inside"
   )) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score")
+                       midpoint = 0, name = "z-score (sample)")
 ```
 
 
@@ -502,14 +549,14 @@ ggplot(d_crowd, aes(gene, value)) +
 
 分面环形热图要加 `scales = "free_x"`：每个面板用自己的基因标度，圆环才完整，标签也只落在本面板包含的基因上：
 
-```{r radial-facet-heat, fig.width = 8, fig.height = 7, fig.cap = "分面环形热图 + free_x：每个面板圆环完整，只标自己包含的 4 个基因"}
-ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+```{r radial-facet-heat, fig.width = 8.0, fig.height = 4.4, fig.cap = "分面环形热图 + free_x：每个面板圆环完整，只标自己包含的 4 个基因"}
+ggplot(airway_sample_z, aes(gene, sample, fill = z_sample)) +
   geom_tile() +
   coord_radial(theta = "x", inner.radius = 0.3) +
   guides(theta = guide_axis_smart(which = unlist(airway_heatmap$mark_by_set))) +
   facet_wrap(~gene_set, ncol = 2, scales = "free_x") +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score")
+                       midpoint = 0, name = "z-score (sample)")
 ```
 
 > 提示：不加 `scales = "free_x"` 时各面板共享同一个 `theta` 标度，会留下一半空位，
@@ -565,14 +612,14 @@ ggplot(df60, aes(x = sample, y = value)) +
 并标注 20 个基因（顶部响应簇里连续 12 个 + 散布在中下部的 8 个）：
 
 ```{r anno-heatmap-data}
-## 内置数据：300 基因 x 8 样本的行 z-score 矩阵（已按层次聚类排序）
+## 内置数据：300 基因 x 8 样本（热图统一按样本 z-score）
 data(airway_heatmap, package = "ggutils")
-df_gene <- airway_heatmap$df
+df_gene <- airway_sample_z
 mark    <- airway_heatmap$mark
 ```
 
 ```{r anno-heatmap, fig.width = 6.5, fig.height = 10, fig.cap = "真实数据（GEO GSE52778）300 个基因的竖长热图：只标注 20 个基因，可以看到引导线长度和标签上下间距的自动分配"}
-ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
+ggplot(df_gene, aes(x = sample, y = gene, fill = z_sample)) +
   geom_tile() +
   scale_y_discrete(
     guide = guide_none(),
@@ -581,7 +628,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score") +
+                       midpoint = 0, name = "z-score (sample)") +
   labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778), 300 genes") +
   theme_grey(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -595,7 +642,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
 ## 每个面板（基因集）里响应最强的 4 个基因，数据里已经算好
 mark_facet <- unlist(airway_heatmap$mark_by_set, use.names = FALSE)
 
-ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
+ggplot(df_gene, aes(x = sample, y = gene, fill = z_sample)) +
   geom_tile() +
   facet_grid(gene_set ~ ., scales = "free_y", space = "free_y", switch = "y") +
   scale_y_discrete(
@@ -605,7 +652,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score") +
+                       midpoint = 0, name = "z-score (sample)") +
   labs(x = NULL, y = NULL, title = "facet by gene set, 300 genes") +
   theme_grey(base_size = 9) +
   theme(panel.grid = element_blank(),
@@ -788,10 +835,10 @@ ggplot(df_facet_grid, aes(cat, value)) +
 ```{r facet-heatmap, fig.cap = "分面热图：用内置真实数据，每个面板独立标注自己的基因"}
 ## 用包内置的真实 RNA-seq 数据（GEO GSE52778，300 基因 x 8 样本）
 data(airway_heatmap, package = "ggutils")
-df_facet_heat <- airway_heatmap$df
+df_facet_heat <- airway_sample_z
 mark_wrap <- airway_heatmap$genes$gene[10:21]   # 顶部响应簇里连续的 12 个基因
 
-ggplot(df_facet_heat, aes(sample, gene, fill = z)) +
+ggplot(df_facet_heat, aes(sample, gene, fill = z_sample)) +
   geom_tile() +
   facet_wrap(~ gene_set, nrow = 1, scales = "free_y") +
   scale_y_discrete(
@@ -799,7 +846,7 @@ ggplot(df_facet_heat, aes(sample, gene, fill = z)) +
     guide = guide_axis_smart(which = mark_wrap)
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score") +
+                       midpoint = 0, name = "z-score (sample)") +
   labs(x = NULL, y = NULL,
        title = "分面热图：每个面板只标自己有的基因") +
   theme_grey(base_size = 9) +
@@ -846,63 +893,174 @@ ggplot(df50, aes(x = sample, y = value)) +
 
 **不要**再写 `theme(axis.text.x = element_blank())`——guide 会原样继承这个"空白"元素，标签就全没了。
 
-# 算法原理
+# `facet_gridn()`：逐面板的 `facet_grid`
 
-这一节的图是手工画的示意图，用来解释 guide 内部发生了什么。
+`facet_grid(scales = "free_x")` 的 free 是**按列**的：同一列上下两个面板仍共用一条
+x 轴，因为 layout 把 `SCALE_X` 设成列号。`facet_gridn()` 的版面完全一样（行/列面板、
+行 strip 在右、列 strip 在上），但把 `SCALE_X` / `SCALE_Y` 设成**面板号**，于是每个格子
+各自训练刻度、各自一段范围、各自一条轴。
 
-```{r schematic, fig.cap = "guide_axis_smart() 的一次排布：选出标签 → 同一行内压紧 → 多行错开 → 引导线连回刻度", fig.height = 5.2}
-tick_x <- seq(0.08, 0.92, length.out = 10)
-lab <- data.frame(
-  tick_x = tick_x[c(2, 4, 6, 8, 10)],
-  center = c(0.13, 0.32, 0.50, 0.69, 0.90),
-  row = c(1, 2, 1, 2, 1),
-  text = paste0("样本", c(2, 4, 6, 8, 10))
-)
-lab$y <- ifelse(lab$row == 1, 0.50, 0.26)
-lab$ymin <- lab$y - 0.07
-lab$ymax <- lab$y + 0.07
-lab$xmin <- lab$center - 0.085
-lab$xmax <- lab$center + 0.085
+| `scales` | 自由度 | x 轴 | y 轴 |
+|---|---|---|---|
+| `"fixed"` | 共享（默认） | 全局一条 | 全局一条 |
+| `"free_x"` | **逐面板** | 每面板一条 | 全局一条 |
+| `"free_y"` | **逐面板** | 全局一条 | 每面板一条 |
+| `"free"` | **逐面板** | 每面板一条 | 每面板一条 |
+| `"free_x_bycol"` | 同 `facet_grid()` | 每列一条 | 全局一条 |
+| `"free_y_byrow"` | 同 `facet_grid()` | 全局一条 | 每行一条 |
 
-ggplot() +
-  # 轴线与全部刻度
-  geom_segment(aes(x = 0.04, xend = 0.96, y = 0.88, yend = 0.88),
-               linewidth = 1, colour = "grey25") +
-  geom_segment(data = data.frame(x = tick_x),
-               aes(x = x, xend = x, y = 0.88, yend = 0.84),
-               linewidth = 0.5, colour = "grey25") +
-  # 引导线：短垂线 + 斜线 + 短垂线（anno_mark 几何）
-  geom_segment(data = lab, aes(x = tick_x, xend = tick_x, y = 0.84, yend = 0.80),
-               linewidth = 0.45, colour = "#5B8FF9") +
-  geom_segment(data = lab, aes(x = tick_x, xend = center, y = 0.80, yend = y + 0.10),
-               linewidth = 0.45, colour = "#5B8FF9") +
-  geom_segment(data = lab, aes(x = center, xend = center, y = y + 0.10, yend = y + 0.07),
-               linewidth = 0.45, colour = "#5B8FF9") +
-  # 标签盒
-  geom_rect(data = lab, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-            fill = "#EAF2FF", colour = "#5B8FF9", linewidth = 0.35) +
-  geom_text(data = lab, aes(x = center, y = y, label = text),
-            size = 3.4, colour = "grey15") +
-  # 注释
-  annotate("text", x = 0.5, y = 0.995, vjust = 1, size = 3.5, colour = "grey30",
-           label = "① 刻度全部画出（tick = \"all\"）；只给 which / n 选中的 5 个标签画文字") +
-  annotate("text", x = 0.5, y = 0.945, vjust = 1, size = 3.5, colour = "grey30",
-           label = "② 同一行内用 smartAlign 压紧：顺序不变、互不重叠，并尽量靠近原刻度") +
-  annotate("text", x = 0.5, y = 0.07, vjust = 1, size = 3.5, colour = "grey30",
-           label = "③ 行与行之间按 gap 错开（nrow = 2）　④ 引导线把每个刻度连回标签盒（默认 diagonal：短垂线 + 斜线 + 短垂线）") +
-  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
-  theme_void()
+后两个是兼容档：`free_x_bycol` / `free_y_byrow` 完全等价于 stock 的 `free_x` /
+`free_y`，用在一张图里混搭两种自由度（例如 x 按列共享、y 按面板独立）。
+`scales = "fixed"` 与 `facet_grid()` 逐像素一致，可以随时互换。
+
+下面统一用 `mpg`（`drv` 3 行 × `year` 2 列 = 6 个面板）：
+
+```{r gridn-setup}
+library(patchwork)
+d_cont <- mpg
+d_disc <- mpg
+d_disc$cylgrp <- factor(ifelse(d_disc$cyl == 4, "4 cyl", "6 / 8 cyl"),
+                        levels = c("4 cyl", "6 / 8 cyl"))
+th_n <- theme_bw(base_size = 9) +
+  theme(panel.grid.minor = element_blank(),
+        strip.text = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        plot.title = element_text(size = 9))
+p_cont_n <- function(scales, fn = facet_gridn) {
+  ggplot(d_cont, aes(displ, hwy)) +
+    geom_point(size = 1.2, alpha = 0.8) +
+    fn(vars(drv), vars(year), scales = scales) +
+    labs(title = scales, x = NULL, y = NULL) + th_n
+}
 ```
 
-一次绘制大致经过下面几步：
+## 连续轴：四种模式并排看
 
-1. **量宽度**：对每个要显示的标签，用 `grid` 的文本度量算出标签盒的宽度（含 `padding`），再换算成面板内的相对宽度。
-2. **一维压紧（`smart_align()`）**：同一行里，标签盒按原顺序排列；如果相邻盒子重叠，就把它们向两侧"推"开，直到满足最小间距。算法保证顺序不变、互不重叠，并且推开的距离尽量小。这正是 `circlize::smartAlign` 的一维防重叠算法（本包做了精确移植）。
-3. **轨道分配（`smart_stack()`）**：先决定用几行（y 轴就是几列）——**能一行放下就一行**；总宽超过一行、或标签集中挤在轴的一小段里（按这一簇的跨度估算）时才分成多行，上限 `max_nrow`。然后逐行把标签盒分配进去并做压紧，行间距由 `gap` 控制；更复杂的盒式落位借助 `box_arrange()`（`ComplexHeatmap::BoxArrange` 的移植）。实在放不下时按优先级丢弃标签，**绝不**画出重叠的标签。
-4. **两阶段尺寸**：`ggplot2` 构建 guide 时还拿不到面板的真实宽度，所以先按设备尺寸估计行数并**预留**这么多行的高度；真正绘制时再用面板的真实宽度重算精确布局。这就是为什么行数会随图形尺寸/设备改变，也是 `panel_width` 参数存在的理由。
-5. **画引导线**：默认的 `"diagonal"` 样式是"短垂线 → 斜线 → 短垂线"：从刻度先垂直于轴走一小段（`link_length`），再用斜线跨到标签所在行，最后垂直落到标签盒；旋转或平移的幅度由标签被推开的距离决定。
+```{r gridn-cont, fig.width=9, fig.height=6.2, fig.cap="连续轴四种 scales：fixed 全共享，free_x / free_y 单向逐面板，free 双向逐面板"}
+(p_cont_n("fixed")  | p_cont_n("free_x")) /
+  (p_cont_n("free_y") | p_cont_n("free"))
+```
 
-底层三个函数 `smart_align()`、`box_arrange()`、`smart_stack()` 都是导出函数，可以单独调用（参数见 `?smart_align` 等），guide 只是它们的一层封装。
+`free_x` 每个面板下面都有自己的刻度数字，`free_y` 每格左侧都有自己的刻度，`free`
+两者都有。差别可以量化：同一份数据 stock `facet_grid(scales = "free_x")` 只有
+**2 种** x 范围（每列一种），`facet_gridn()` 有 **6 种**（每面板一种）；
+`free_y` 同理，stock 3 种（每行）、gridn 6 种。
+
+## 分类轴（x）：每个面板只留自己的类别
+
+`mpg` 里 `2seater` 只出现在 `r` 行、`minivan` 只出现在 `f` 行，正好可以看"每面板只留
+自己的类别"：
+
+```{r gridn-catx}
+p_catx_n <- function(fn = facet_gridn) {
+  ggplot(d_cont, aes(class, hwy)) +
+    geom_boxplot(fill = "grey92", linewidth = 0.3, outlier.size = 0.8) +
+    fn(vars(drv), vars(year), scales = "free_x") +
+    th_n + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
+```{r gridn-catx-fig, fig.width=9, fig.height=5, fig.cap="facet_gridn(scales = 'free_x')：每个面板的 x 轴只列自己出现过的类别"}
+p_catx_n()
+```
+
+```{r gridn-catx-stock, fig.width=9, fig.height=5, fig.cap="同样数据换成 facet_grid(scales = 'free_x')：x 轴只在最下面一行，同列共用整列并集"}
+p_catx_n(facet_grid)
+```
+
+对比两张图：gridn 的每个面板 x 轴类别集合 = 该面板实际出现过的类别；stock 是整列并集，
+所以 `f` 列 1999 那块也会被画上 `minivan` 的位置，只是空的。
+
+## 分类轴（y）：同样的规则换个方向
+
+```{r gridn-caty}
+p_caty_n <- function(fn = facet_gridn) {
+  ggplot(d_cont, aes(hwy, class)) +
+    geom_boxplot(fill = "grey92", linewidth = 0.3, outlier.size = 0.8) +
+    fn(vars(year), vars(drv), scales = "free_y") +
+    th_n
+}
+```
+
+```{r gridn-caty-fig, fig.width=9, fig.height=5.4, fig.cap="facet_gridn(scales = 'free_y')：每个面板左侧只列自己的类别，各自一条 y 轴"}
+p_caty_n()
+```
+
+```{r gridn-caty-stock, fig.width=9, fig.height=5.4, fig.cap="facet_grid(scales = 'free_y')：y 轴只在最左一列，同行共用整行并集"}
+p_caty_n(facet_grid)
+```
+
+## 双向离散：两个轴都逐面板
+
+```{r gridn-disc}
+p_disc_n <- function(fn = facet_gridn) {
+  ggplot(d_disc, aes(class, drv)) +
+    geom_count(colour = "grey25", alpha = 0.85) +
+    scale_size_area(max_size = 6) +
+    fn(vars(year), vars(cylgrp), scales = "free") +
+    th_n + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
+```{r gridn-disc-fig, fig.width=9, fig.height=5, fig.cap="facet_gridn(scales = 'free')：四个格子的 x、y 轴都只列自己出现过的类别"}
+p_disc_n()
+```
+
+```{r gridn-disc-stock, fig.width=9, fig.height=5, fig.cap="facet_grid(scales = 'free')：x 按列、y 按行，轴上留着用不到的类别"}
+p_disc_n(facet_grid)
+```
+
+实测每个面板的轴标签个数：gridn 是 x **6 / 7 / 5 / 7**、y **2 / 3 / 2 / 3**，
+stock 恒为 x **6 / 7 / 6 / 7**、y **3 / 3 / 3 / 3**——2008 年那两块已经没有 `minivan`，
+4 缸那两块也没有后驱 `r`，只有 gridn 把它们从轴上摘掉了。
+
+## 竖排面板：`rows = vars(drv)`
+
+把分面变量放到 `rows` 上，版面就变成"三行一列"，`free_y` 的作用也更直观——每行只画
+自己的 y 范围：
+
+```{r gridn-rows, fig.width=6.6, fig.height=6.4, fig.cap="rows = vars(drv)、scales = 'free_y'：每个面板按自己的 y 范围画轴"}
+ggplot(d_cont, aes(displ, hwy)) +
+  geom_point(size = 1.2, alpha = 0.8) +
+  facet_gridn(rows = vars(drv), cols = vars(year), scales = "free_y",
+              space = "free_y") +
+  th_n
+```
+
+`space = "free_y"` 让行高按各自的 y 范围分配；换成 `scales = "fixed"` 就退回共享刻度。
+
+## `space = "free_x"`：面板宽度跟着自己的范围
+
+```{r gridn-space, fig.width=9, fig.height=4.6, fig.cap="space = 'free_x'：x 范围越宽的面板越宽"}
+ggplot(d_cont, aes(displ, hwy)) +
+  geom_point(size = 1.2, alpha = 0.8) +
+  facet_gridn(vars(drv), vars(year), scales = "free_x", space = "free_x") +
+  th_n
+```
+
+`r/2008` 明显比 `f/1999` 宽。**注意**：逐面板轴会让每行的轴标签宽度不同，于是列边界
+会轻微错开；需要严格对齐的表格式版面时，用默认的 `space = "fixed"`。
+
+## 兼容档：`free_x_bycol` / `free_y_byrow`
+
+想保留 stock 的"按列 / 按行"语义（例如 x 按列共享、y 按面板独立），就用这两个取值：
+
+```{r gridn-bycol, fig.width=9, fig.height=4.6, fig.cap="free_x_bycol：x 轴只在最下面一行，同列共用——与 facet_grid(scales = 'free_x') 一致"}
+p_cont_n("free_x_bycol")
+```
+
+`free_y_byrow` 是它的镜像（y 轴只在最左一列，同行共用），与 stock 的 `free_y` 一致。
+
+```{r gridn-byrow, fig.width=9, fig.height=4.6, fig.cap="free_y_byrow：y 轴只在最左一列，同行共用——与 facet_grid(scales = 'free_y') 一致"}
+p_cont_n("free_y_byrow")
+```
+
+
+## 和聚类树一起用
+
+`scale_x_cluster()` / `scale_y_cluster()` 会自动读取 facet 的 `scales`，所以换成
+`facet_gridn()` 之后树也跟着逐面板：每个格子一棵自己的树，不用改任何树相关代码。
+示例见后面「分类轴的聚类树」一节。
 
 # 螺旋坐标：`coord_spiral()`
 
@@ -912,7 +1070,7 @@ ggplot() +
 `geom_area()` 都能用。坐标系会同时画好对应的角度轴和径向刻度轴，`facet_wrap()`
 与 `facet_grid()` 每个面板各自画一条螺线。
 
-```{r spiral-intro, fig.cap = "coord_spiral()：三段螺线上的折线，外圈是角度刻度与径向刻度轴"}
+```{r spiral-intro, fig.width = 5.8, fig.height = 5.6, fig.cap = "coord_spiral()：三段螺线上的折线，外圈是角度刻度与径向刻度轴"}
 set.seed(42)
 d_sp <- data.frame(
   x = seq(0, 1, length.out = 300),
@@ -930,7 +1088,7 @@ ggplot(d_sp, aes(x, y)) +
 螺线弧长；`clockwise`、`reverse`、`flip` 控制方向；`labels = FALSE` 可关掉坐标轴。
 `y_axis_theta` 指定径向刻度轴画在哪个角度（默认螺线最外端）。
 
-```{r spiral-facet, fig.cap = "facet_wrap()：每个面板一条螺线"}
+```{r spiral-facet, fig.width = 10.67, fig.height = 4.1, fig.cap = "facet_wrap()：每个面板一条螺线"}
 d_sp$set <- rep(c("A", "B"), length.out = 300)
 ggplot(d_sp, aes(x, y)) +
   geom_line() +
@@ -944,18 +1102,18 @@ ggplot(d_sp, aes(x, y)) +
 
 热图是螺旋坐标最典型的用法：基因沿螺线排开（x），样本沿半径叠放（y），
 `geom_tile()` 的每个格子都会跟着弯。这里用包里的内置数据，
-和前面「环形热图」用的是同一份（GEO GSE52778，行 z-score）：
+和前面「环形热图」用的是同一份（GEO GSE52778，按样本 z-score）：
 
-```{r spiral-heatmap, fig.cap = "内置数据画成螺旋热图：300 个基因沿四圈螺线铺开，8 个样本是 8 条同心色带", fig.width = 7, fig.height = 7}
+```{r spiral-heatmap, fig.width = 7.0, fig.height = 5.6, fig.cap = "内置数据画成螺旋热图：300 个基因沿四圈螺线铺开，8 个样本是 8 条同心色带"}
 data(airway_heatmap)
-d_hm <- airway_heatmap$df
+d_hm <- airway_sample_z
 d_hm$x <- as.numeric(d_hm$gene)
 d_hm$y <- as.numeric(d_hm$sample)
 
-ggplot(d_hm, aes(x, y, fill = z)) +
+ggplot(d_hm, aes(x, y, fill = z_sample)) +
   geom_tile() +
   scale_fill_gradient2(low = "#2166ac", mid = "#f7f7f7", high = "#b2182b",
-                       limits = c(-2.5, 2.5), oob = scales::squish, name = "z") +
+                       limits = c(-2.5, 2.5), oob = scales::squish, name = "z (sample)") +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   coord_spiral(turns = 4, height = .9, inner = .12, labels = FALSE) +
@@ -972,7 +1130,7 @@ ggplot(d_hm, aes(x, y, fill = z)) +
 想在径向标出样本名，就把圈数减到 2、打开坐标轴，并把 y 的刻度换成样本：
 
 ```r
-ggplot(d_hm, aes(x, y, fill = z)) +
+ggplot(d_hm, aes(x, y, fill = z_sample)) +
   geom_tile() +
   scale_y_continuous(expand = c(0, 0), breaks = 1:8,
                      labels = paste0("S", 1:8)) +
@@ -986,7 +1144,7 @@ ggplot(d_hm, aes(x, y, fill = z)) +
 插值成一条 `geom_path()`**，再加上箭头。关键是必须用 `geom_path()`：它按数据顺序把
 所有插值点连起来，才贴着螺线走；`geom_segment()` 只有两个端点，会变成横穿面板的直线。
 
-```{r spiral-arrow, fig.cap = "沿螺线从 x = 0.2 画到 0.8 的箭头，主刻度间带次刻度", fig.width = 5.6, fig.height = 5.6}
+```{r spiral-arrow, fig.width = 5.2, fig.height = 4.7, fig.cap = "沿螺线从 x = 0.2 画到 0.8 的箭头，主刻度间带次刻度"}
 d_arrow <- data.frame(x = seq(0.2, 0.8, length.out = 900), y = 0.5)
 
 ggplot(d_arrow, aes(x, y)) +
@@ -1064,7 +1222,7 @@ wrap_plots(
 看起来完全贴着轨道。跨度很大时才会明显切掉弧线，那种情况请改用 `geom_path()`
 手工沿弧插值（把每条线段拆成若干中间点、`x` 均匀递增，再用 `group` 区分）。
 
-```{r spiral-segments, fig.cap = "复刻 spiralize 的 Segments 示例：左为彩色线段，右为带箭头的线段", fig.width = 8.4, fig.height = 4.4}
+```{r spiral-segments, fig.width = 8.4, fig.height = 3.5, fig.cap = "复刻 spiralize 的 Segments 示例：左为彩色线段，右为带箭头的线段"}
 set.seed(2)
 n <- 400
 d_seg <- data.frame(
@@ -1094,7 +1252,7 @@ wrap_plots(p_seg, p_arrow, ncol = 2)
 （通常是 0）向外长，`width` 控制它占多少角度。把 `expand` 设成 0 是为了让柱子正好
 填满轨道、第一根和最后一根不留下空隙。
 
-```{r spiral-bars, fig.cap = "左：单列柱状图；右：矩阵三列对应的堆叠柱状图", fig.width = 8.4, fig.height = 4.4}
+```{r spiral-bars, fig.width = 7.4, fig.height = 4.0, fig.cap = "左：单列柱状图；右：矩阵三列对应的堆叠柱状图"}
 set.seed(1)
 
 ## one value per column
@@ -1128,6 +1286,479 @@ wrap_plots(p1, p2, ncol = 2) &
 堆叠之所以成立，是因为 y 在 `coord_spiral()` 里就是轨道内的半径：`position = "stack"`
 把每一段沿着半径方向叠起来，于是矩阵的每一列变成一圈同心的色带。同理，
 `position = "dodge"` 会把并列的柱子沿**角度**方向摊开，`position = "fill"` 则归一化到轨道宽度。
+
+# 分类轴的聚类树：`guide_axis_cluster()`
+
+`guide_axis_cluster()` 给 x 或 y 的分类轴加一棵层次聚类树，配套 `scale_x_cluster()` /
+`scale_y_cluster()` 会把分类顺序按聚类结果重排。关键点是：配套的 scale 用聚类顺序设置
+`limits`，因此**轴标签和图里的数据会一起重排**，树和数据严格对齐，不会出现"标签换了、
+格子没动"的错位。
+
+```{r cluster-tree-setup}
+set.seed(1)
+mat <- matrix(rnorm(12 * 4), nrow = 12,
+              dimnames = list(paste0("g", 1:12), paste0("s", 1:4)))
+long <- as.data.frame(as.table(mat))
+names(long) <- c("gene", "sample", "value")
+```
+
+y 轴聚类树，直角形状（`type = "rectangle"`，默认）；`method` 选聚类方法，`height`
+是树整体高度（厘米），`col` 控制颜色：
+
+```{r cluster-tree-y, fig.width=6, fig.height=7, fig.cap="y 轴直角聚类树，基因按聚类顺序重排"}
+ggplot(long, aes(sample, gene, fill = value)) +
+  geom_tile() +
+  scale_y_cluster(mat, method = "average", height = 1.4, col = "#2c7fb8") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b", midpoint = 0) +
+  theme_minimal(base_size = 11)
+```
+
+三角形树（`type = "triangle"`）每个合并节点汇聚到一个顶点，画法与
+`plot(as.dendrogram(hc), type = "triangle")` 一致：
+
+```{r cluster-tree-triangle, fig.width=7, fig.height=4.5, fig.cap="x 轴三角形聚类树"}
+ggplot(long, aes(gene, sample, fill = value)) +
+  geom_tile() +
+  scale_x_cluster(mat, method = "ward.D2", height = 1.4,
+                  col = "#b2182b", type = "triangle") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b", midpoint = 0) +
+  theme_minimal(base_size = 11)
+```
+
+## `method`：换一种合并规则，换一种树形
+
+`method` 原样交给 `stats::hclust()`。前面两张图用的是 `average` 和 `ward.D2`，
+换成 `"single"`（最近邻链式合并）后树会拉成一条链，叶子顺序也跟着变：
+
+```{r cluster-method-single, fig.width=6.4, fig.height=5.4, fig.cap="method = 'single'：链式合并，树形明显不同于 average / ward.D2"}
+ggplot(long, aes(sample, gene, fill = value)) +
+  geom_tile() +
+  scale_y_cluster(mat, method = "single", height = 1.4, col = "#7b3294") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0) +
+  theme_minimal(base_size = 11)
+```
+
+## x 树和 y 树同时挂
+
+`scale_x_cluster()` 按列聚类、`scale_y_cluster()` 按行聚类，两张树各管一个方向，
+行列同时重排：
+
+```{r cluster-both-axes, fig.width=6.6, fig.height=5.6, fig.cap="x 树在顶部、y 树在左侧，行与列同时按聚类顺序重排"}
+ggplot(long, aes(gene, sample, fill = value)) +
+  geom_tile() +
+  scale_x_cluster(position = "top", height = 1.1) +
+  scale_y_cluster(position = "left", height = 1.1) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0) +
+  theme_minimal(base_size = 11)
+```
+
+只想拿聚类后的顺序、不想用配套的 scale，可以直接调 `cluster_order()`，例如
+`scale_y_discrete(limits = cluster_order(mat))`。
+
+## `position`：只挪树，不挪标签
+
+`position` 决定**树画在哪一侧**，标签永远留在它原来的位置：
+
+| 轴 | `position` | 树的位置 | 标签位置 |
+|---|---|---|---|
+| x | `"bottom"`（默认） | 标签外侧，靠 `gene` 标题 | 仍在底部 |
+| x | `"top"` | 面板上方；分面时插在 **strip 下方** | 仍在底部 |
+| y | `"left"`（默认） | 标签外侧 | 仍在左侧 |
+| y | `"right"` | 一行面板的末尾 | 仍在左侧 |
+
+```{r cluster-pos-helpers}
+tile_x <- function(pos) {
+  ggplot(long, aes(gene, sample, fill = value)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                         midpoint = 0) +
+    scale_x_cluster(position = pos, height = 1) +
+    theme_minimal(base_size = 11)
+}
+tile_y <- function(pos) {
+  ggplot(long, aes(sample, gene, fill = value)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                         midpoint = 0) +
+    scale_y_cluster(position = pos, height = 1) +
+    theme_minimal(base_size = 11)
+}
+```
+
+x 轴树放顶部，标签依旧在底部：
+
+```{r cluster-pos-top, fig.height=3.6, fig.cap="position = 'top'：树在面板上方，x 标签仍在底部"}
+tile_x("top")
+```
+
+y 轴树放左侧，位于标签左边：
+
+```{r cluster-pos-left, fig.height=4.6, fig.cap="position = 'left'：树在 y 标签左侧"}
+tile_y("left")
+```
+
+y 轴树放右侧，贴在面板行的末尾：
+
+```{r cluster-pos-right, fig.height=4.6, fig.cap="position = 'right'：树在面板右侧"}
+tile_y("right")
+```
+
+树之所以能离开标签，是因为它不再走副轴，而是直接画进最终的 gtable——那里才知道每个
+面板的几何位置。这也是 `facet_grid()` 能正常工作的原因：行分面拥有 y 轴、列分面拥有
+x 轴，树各自贴到自己那一格的 strip 上。
+
+## 不用传矩阵
+
+前面几个例子里一个矩阵都没传：`scale_x_cluster()` / `scale_y_cluster()` 会在绘制时
+从图自身的数据推导——焦点轴做行、另一个位置轴做列，取第一个数值美学（`fill`、
+`colour`、`size`…）作为值。要换一列做聚类依据，写 `value =`：
+
+```{r cluster-value, eval=FALSE}
+ggplot(d, aes(gene, sample, fill = zscore, size = pct)) +
+  geom_point() +
+  scale_x_cluster(value = "zscore")   # 不写就用第一个数值美学
+```
+
+换 `value =` 之后树的形状会跟着变。下面这张点图同时有 `fill`（表达量）和 `size`
+（检出比例），用哪一列当聚类依据，结果并不相同：
+
+```{r cluster-value-demo, fig.width=9.4, fig.height=4.4, fig.cap="同一张点图：按 fill 聚类（左）与按 size 聚类（右），树的形状不同"}
+set.seed(7)
+d_val <- expand.grid(gene = paste0("g", 1:12), sample = paste0("s", 1:6))
+d_val$zscore <- stats::rnorm(nrow(d_val))
+d_val$pct <- stats::runif(nrow(d_val), 0, 1)
+p_val <- function(v) {
+  ggplot(d_val, aes(gene, sample, fill = zscore, size = pct)) +
+    geom_point(shape = 21, colour = "grey25") +
+    scale_x_cluster(value = v, height = 1.1) +
+    scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b") +
+    labs(title = paste0("value = \"", v, "\"")) +
+    theme_bw(base_size = 10)
+}
+wrap_plots(p_val("zscore"), p_val("pct"), nrow = 1)
+```
+
+## 分面：每个面板一棵树
+
+单细胞 dot plot 通常按细胞类型分面，每个面板的基因集不同。把 `scales` 交给 facet，
+树会自动逐面板重算，不用写 `free = TRUE`：
+
+```{r cluster-dot-setup}
+data(pbmc3k_dotplot)
+d4 <- droplevels(pbmc3k_dotplot[pbmc3k_dotplot$celltype %in%
+                                  c("Naive CD4 T", "CD14+ Mono", "NK", "B"), ])
+d4$cluster_id <- factor(d4$cluster_id)      # y 轴用 cluster 编号：0 / 1 / 3 / 6
+top_of <- function(x, k) head(x$gene[order(-x$avg_exp_scaled)], k)
+
+dot_layers <- function() {
+  list(
+    geom_point(aes(size = pct_expressed, fill = avg_exp_scaled),
+               shape = 21, colour = "black", stroke = 0.25),
+    scale_fill_gradient2(low = "#2166ac", mid = "#f7f7f7", high = "#b2182b"),
+    theme_bw(base_size = 10),
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          panel.grid.minor = element_blank())
+  )
+}
+
+genes_by_ct <- lapply(split(d4, d4$celltype), top_of, k = 4)
+d_panel <- do.call(rbind, lapply(names(genes_by_ct), function(ct) {
+  x <- d4[d4$gene %in% genes_by_ct[[ct]], ]
+  x$panel <- ct
+  x
+}))
+d_panel$panel <- factor(d_panel$panel, levels = names(genes_by_ct))
+```
+
+```{r cluster-dot-facet, fig.width=9, fig.height=8.4, fig.cap="facet_wrap(scales = 'free_x')：每个面板一棵 x 树，插在自己的 strip 下方"}
+ggplot(d_panel, aes(gene, cluster_id)) + dot_layers() +
+  facet_wrap(~ panel, scales = "free_x") +
+  scale_x_cluster(position = "top", height = 0.9) +
+  theme(aspect.ratio = 1)
+```
+
+## 四种 `scales`：树什么时候逐面板重算
+
+`facet_wrap()` / `facet_grid()` 的 `scales` 会被自动读取，**树是否逐面板重算只取决于
+该轴是否 free**：
+
+| `scales` | x 轴 | y 轴 | x 树 | y 树 |
+|---|---|---|---|---|
+| `"fixed"` | 共享 | 共享 | 所有面板同一棵 | 一条轴一棵 |
+| `"free_x"` | 逐面板 | 共享 | 每个面板列一棵 | 一条轴一棵 |
+| `"free_y"` | 共享 | 逐面板 | 所有面板同一棵 | 每个面板行一棵 |
+| `"free"` | 逐面板 | 逐面板 | 每个面板列一棵 | 每个面板行一棵 |
+
+```{r cluster-dot-xy}
+sets <- list("All four" = c("Naive CD4 T", "CD14+ Mono", "NK", "B"),
+             "T + Mono" = c("Naive CD4 T", "CD14+ Mono"),
+             "NK + B"   = c("NK", "B"))
+d_xy <- do.call(rbind, lapply(names(sets), function(p) {
+  x <- d4[d4$celltype %in% sets[[p]] & d4$gene %in% genes_by_ct[[sets[[p]][1]]], ]
+  x$panel <- p
+  x
+}))
+d_xy$panel <- factor(d_xy$panel, levels = names(sets))
+```
+
+树默认插在 **strip 和面板之间**，和 strip 之间留一点空隙（`options(ggutils.tree_gap = 0.14)`，单位厘米）。
+想把树挪到 strip 外面、放到上方，加一个 `strip_side`：
+
+```{r cluster-strip-side, eval = FALSE}
+scale_x_cluster(position = "top", strip_side = "above")
+```
+
+```{r cluster-strip-above, fig.width=9.2, fig.height=5.2, fig.cap="strip_side = 'above'：树挪到 strip 外面，strip 仍紧贴面板"}
+ggplot(d_xy, aes(gene, cluster_id)) + dot_layers() +
+  facet_wrap(~ panel, nrow = 1, scales = "free_x") +
+  scale_x_cluster(position = "top", height = 0.9, strip_side = "above") +
+  theme(aspect.ratio = 1)
+```
+
+`free_x`：每个面板自己的基因集，x 树各算各的，y 轴仍共享：
+
+```{r cluster-scales-freex, fig.width=9, fig.height=5.6, fig.cap="scales = 'free_x'：逐面板 x 树"}
+ggplot(d_xy, aes(gene, cluster_id)) + dot_layers() +
+  facet_wrap(~ panel, scales = "free_x") +
+  scale_x_cluster(position = "top", height = 0.9)
+```
+
+`free_y`：x 轴共享、y 轴逐面板，此时 y 树也变成一人一棵，紧贴各自的 cluster 标签：
+
+```{r cluster-scales-freey, fig.width=9, fig.height=6, fig.cap="scales = 'free_y'：x 树共享，y 树逐面板"}
+ggplot(d_xy, aes(gene, cluster_id)) + dot_layers() +
+  facet_wrap(~ panel, scales = "free_y") +
+  scale_x_cluster(position = "top", height = 0.9) +
+  scale_y_cluster(position = "left", height = 0.9)
+```
+
+双向 `free` 再加 y 树会把面板挤得很扁，通常只留一个方向；完整对比见包内验收报告。
+
+## 多行分面：每行各管自己的 strip
+
+`nrow = 2` 时，树会按面板行分别插入，第二行的树不会串到第一行：
+
+```{r cluster-nrow2}
+## 四个面板各取两个细胞类型（= 两个 cluster），规模一致，便于看多行布局
+sets2 <- list("T + Mono"  = c("Naive CD4 T", "CD14+ Mono"),
+              "NK + B"    = c("NK", "B"),
+              "Mono + B"  = c("CD14+ Mono", "B"),
+              "T + NK"    = c("Naive CD4 T", "NK"))
+d_grid <- do.call(rbind, lapply(names(sets2), function(p) {
+  x <- d4[d4$celltype %in% sets2[[p]] & d4$gene %in% genes_by_ct[[sets2[[p]][1]]], ]
+  x$panel <- p
+  x
+}))
+d_grid$panel <- factor(d_grid$panel, levels = names(sets2))
+```
+
+```{r cluster-nrow2-fig, fig.width=8.5, fig.height=7, fig.cap="facet_wrap(nrow = 2)：4 棵 x 树各落在所属面板的 strip 下"}
+ggplot(d_grid, aes(gene, cluster_id)) + dot_layers() +
+  facet_wrap(~ panel, scales = "free", nrow = 2) +
+  scale_x_cluster(position = "top", height = 0.8)
+```
+
+## `facet_grid()`：行管 y、列管 x
+
+`facet_grid()` 的行分面决定 y、列分面决定 x，所以 **x 树贴列 strip、y 树贴行左侧**。
+下面给数据加两个分类列，做成 2×2：`grp` 把 cluster 分成两组（行），`prog` 把基因
+分成两套 marker（列）：
+
+```{r cluster-grid-data}
+prog_a <- unique(unlist(lapply(c("Naive CD4 T", "CD14+ Mono"),
+                               function(ct) top_of(d4[d4$celltype == ct, ], 3))))
+prog_b <- unique(unlist(lapply(c("NK", "B"),
+                               function(ct) top_of(d4[d4$celltype == ct, ], 3))))
+d_fg <- d4[d4$gene %in% c(prog_a, prog_b), ]
+d_fg$grp <- factor(ifelse(as.character(d_fg$cluster_id) %in% c("0", "1"),
+                          "c0 / c1", "c3 / c6"), levels = c("c0 / c1", "c3 / c6"))
+d_fg$prog <- factor(ifelse(d_fg$gene %in% prog_a, "T / Mono", "NK / B"),
+                    levels = c("T / Mono", "NK / B"))
+```
+
+```{r cluster-grid-fig, fig.width=8.6, fig.height=7, fig.cap="facet_grid(grp ~ prog)：列 strip 下是 x 树，每行左侧是 y 树"}
+ggplot(d_fg, aes(gene, cluster_id)) + dot_layers() +
+  facet_grid(grp ~ prog, scales = "fixed", drop = FALSE) +
+  scale_x_cluster(position = "top", height = 0.8) +
+  scale_y_cluster(position = "left", height = 0.8)
+```
+
+两点要注意：`drop = FALSE` 是**为了看清 `fixed` 的语义**——离散 y 轴默认会逐面板丢掉
+没有数据的 level，一丢 `fixed` 和 `free_y` 就长得一模一样；不丢时 `fixed` 会把全部
+cluster 铺在每个面板里。另外 **facet_grid 里 y 树棵数不随 free 变**，因为行本身就是 y
+的分面，每行必有一条 y 轴，`fixed` 与 `free_y` 的差别只体现在树有几个叶子。
+
+## RNA-seq 热图：按基因集分面，每个面板一棵 y 树
+
+真实的 RNA-seq 热图通常按基因集（上调 / 下调）分面，每一面里的基因完全不同，正好是
+"逐面板重算"的典型场景。下面用包内置的 `airway_heatmap`（地塞米松处理的人气道平滑肌
+细胞，300 个高变基因 × 8 个样本）。内置矩阵本身是按基因的行 z-score；下面把
+**每个样本在 300 个基因上重新标准化**（`scale()` 按列），得到 `z_sample`，所以
+`fill = z_sample` 配
+`scale_fill_gradient2(midpoint = 0)` 就是标准的红蓝热图。
+
+取两组各自最强的 18 个基因，按 `gene_set` 分面，`scales = "free_y"` 让每个面板只排
+自己的基因，y 树自然一面一棵；样本这一维再聚一棵 x 树，就能看到处理组和对照组各成
+一簇：
+
+```{r cluster-heat-facet-setup}
+data(airway_heatmap, package = "ggutils")
+gs <- airway_heatmap$genes
+top_set <- do.call(rbind, lapply(split(gs, gs$gene_set), function(d) {
+  head(d[order(-abs(d$delta)), ], 18)
+}))
+d_hm <- droplevels(airway_sample_z[airway_sample_z$gene %in% top_set$gene, ])
+```
+
+```{r cluster-heat-facet, fig.width=8.6, fig.height=6.8, fig.cap="airway 热图按基因集分面：每个面板一棵自己的 y 树，上方是一棵样本 x 树"}
+ggplot(d_hm, aes(sample, gene, fill = z_sample)) +
+  geom_tile() +
+  facet_wrap(~ gene_set, scales = "free_y", nrow = 1) +
+  scale_x_cluster(position = "top", height = 0.8, col = "grey25") +
+  scale_y_cluster(position = "left", height = 1.2, col = "grey25") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score (sample)") +
+  theme_bw(base_size = 9) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid = element_blank())
+```
+
+`fixed` 时两个面板共用一套基因轴，会各留一大片空白；`free_y` + 逐面板树才是这种
+"每面基因不同"的数据该有的样子。x 轴在两个面板间共享，所以那棵样本树只有一棵、且
+与每个面板都对齐。
+
+## 环形坐标：theta 轴环树与 r 轴弧树
+
+`coord_radial()` 里分类轴绕着圆走，没有"面板上方一行"可以放树，`scale_x_cluster()`
+因此改画**环形树**：叶子排在一圈上，每次合并是一条更外（或更内）的弧，再用径向短线
+接到子节点；`type = "triangle"` 时改用直线连到合并点。分类标签仍由
+`guide_axis_theta()` 画，样式不变。
+
+`position` 决定环形树画在哪一侧：
+
+| `position` | 树画在 | 说明 |
+| --- | --- | --- |
+| `"bottom"`（默认） | **洞内** | 叶子贴内圆、向圆心合并；需要 `inner.radius > 0`，无洞的饼图会跳过 |
+| `"top"` | **圆外** | 叶子在外圆、向外合并；`ring_gap` 自动按标签宽度取，面板四周自动留白 |
+
+洞内环形树（配一个带内圈的热图）：
+
+```{r cluster-ring-inner, fig.width=8, fig.height=7.4, fig.cap="coord_radial(inner.radius = 0.55) + position = 'bottom'：树画在洞内，叶子贴内圆向圆心合并"}
+data(airway_heatmap, package = "ggutils")
+d_ring <- droplevels(
+  airway_sample_z[airway_sample_z$gene %in% unique(airway_sample_z$gene)[1:30], ]
+)
+ggplot(d_ring, aes(gene, sample, fill = z_sample)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.55) +
+  scale_x_cluster(method = "ward.D2", height = 1.1) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score (sample)") +
+  theme_grey(base_size = 8) +
+  theme(plot.margin = margin(0.6, 0.6, 0.6, 0.6, "cm"),
+        legend.position = "bottom") +
+  labs(x = NULL, y = NULL)
+```
+
+圆外环形树用 `position = "top"`：叶圈自动落在标签之外，面板四周也会自动插入留白。
+
+```{r cluster-ring-outer, fig.width=8, fig.height=7.8, fig.cap="coord_radial() + position = 'top'：树画在圆外，叶子在外圆向外合并"}
+ggplot(d_ring, aes(gene, sample, fill = z_sample)) +
+  geom_tile() +
+  coord_radial(theta = "x") +
+  scale_x_cluster(method = "ward.D2", height = 1, position = "top") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score (sample)") +
+  theme_grey(base_size = 8) +
+  theme(plot.margin = margin(0.8, 0.8, 0.8, 0.8, "cm"),
+        legend.position = "bottom") +
+  labs(x = NULL, y = NULL)
+```
+
+分面时每个面板一棵树，`free_x` 下各面板按自己的基因聚类：
+
+```{r cluster-ring-facet, fig.width=11, fig.height=6.4, fig.cap="facet_wrap(scales = 'free_x') + coord_radial：每个面板一棵自己的洞内环形树"}
+d_ring2 <- droplevels(
+  airway_sample_z[airway_sample_z$gene %in% unique(airway_sample_z$gene)[1:60], ]
+)
+ggplot(d_ring2, aes(gene, sample, fill = z_sample)) +
+  geom_tile() +
+  facet_wrap(~ gene_set, scales = "free_x") +
+  coord_radial(theta = "x", inner.radius = 0.45) +
+  scale_x_cluster(method = "ward.D2", height = 0.8) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score (sample)") +
+  theme_grey(base_size = 7) +
+  theme(plot.margin = margin(0.4, 0.4, 0.4, 0.4, "cm"),
+        legend.position = "bottom") +
+  labs(x = NULL, y = NULL)
+```
+
+### r 轴（y）上的弧形树
+
+整圆下 r 轴只是一列标签，`scale_y_cluster()` **不画树**。把圆改成部分弧
+（`start` / `end`）后，ggplot2 会把样本标签画在一条径向射线上，这时
+`scale_y_cluster()` 会在**弧末端、没有标签的一侧**画一棵**弧形楔状树**：
+
+- 叶位置 → 半径：每个样本对齐它所在的环；
+- 合并高度 → 角度：`height` 控制楔形角宽（`min(pi/3, 0.30 * height)` 弧度）；
+- 等高的枝是同心弧、叶枝贴紧色块向外生长，所以整棵树是"弧线的"。
+
+```{r cluster-ring-y, fig.width=8, fig.height=6.2, fig.cap="180 度弧 + scale_y_cluster()：弧形树挂在弧末端无标签的一侧"}
+d_ring_y <- droplevels(
+  airway_sample_z[airway_sample_z$gene %in% unique(airway_sample_z$gene)[1:16], ]
+)
+ggplot(d_ring_y, aes(gene, sample, fill = z_sample)) +
+  geom_tile() +
+  coord_radial(theta = "x", start = -0.5 * pi, end = 0.5 * pi,
+               inner.radius = 0.55) +
+  scale_y_cluster(method = "ward.D2", height = 1.6) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score (sample)") +
+  theme_grey(base_size = 8) +
+  theme(plot.margin = margin(0.6, 0.6, 0.6, 0.6, "cm"),
+        legend.position = "bottom") +
+  labs(x = NULL, y = NULL)
+```
+
+90°/270° 弧同理，只换 `start` / `end`；`scale_y_cluster()` 也可以和 x 树叠在同一张图上。
+
+## 分面刻度：树跟着 facet 走
+
+前面几节都是 `facet_wrap()`。换成 `facet_grid()` 或 `facet_gridn()` 也不用手写
+`free = TRUE`：`scale_*_cluster()` 直接读 facet 的 `scales`，树是否逐面板只取决于
+该轴是否 free（两种 facet 的六档 `scales` 对照见前面「`facet_gridn()`：逐面板的
+`facet_grid`」一节）。
+
+`facet_gridn(scales = "free_x")` 是逐面板的，所以每个格子一棵自己的 x 树：
+
+```{r cluster-gridn-fig, fig.width=9.2, fig.height=5.0, fig.cap="facet_gridn(scales = 'free_x')：每个面板自己一条 x 轴、一棵 x 树"}
+ggplot(d_xy, aes(gene, cluster_id)) + dot_layers() +
+  facet_gridn(cols = vars(panel), scales = "free_x") +
+  scale_x_cluster(position = "top", height = 0.9) +
+  theme(aspect.ratio = 1)
+```
+
+换成 `scales = "free"` 再加 `scale_y_cluster()`，就是**每格一棵 x 树 + 一棵 y 树**：
+
+```{r cluster-gridn-both, fig.width=9.6, fig.height=6.0, fig.cap="facet_gridn(scales = 'free')：逐面板的 x 树与 y 树"}
+ggplot(d_xy, aes(gene, cluster_id)) + dot_layers() +
+  facet_gridn(cols = vars(panel), scales = "free") +
+  scale_x_cluster(position = "top", height = 0.9) +
+  scale_y_cluster(position = "left", height = 0.9) +
+  theme(aspect.ratio = 1)
+```
+
+## 聚类树的限制
+
+- **`position` 只挪树。** 想让标签跟着换边，用 `scale_x_discrete(position = "top")` 这类常规写法，两者互不影响。
+- **分面里类别一一对应时树画不出来。** 一个面板只剩 1 个类别（例如拿与 cluster 一一对应的 celltype 去分面），没有可聚的东西，树会自动留空。
+- **双向 `free` 加双向树会把面板挤扁**，因为 y 轴每面板各占一列宽度。要同时看 x、y 就先缩小 `height`，或只留一个方向。
+- **显式传矩阵时轴顺序无法逐面板改**，树退回"只合并相邻簇"的保守形状，可能与 `hclust()` 长相不同。
+- **画布太矮时面板会被压成 0 高。** 树占的是固定高度（`height` 厘米），行数多、画布又矮时（例如 2 行面板塞进 4 英寸），固定高度会把 `1null` 的面板行挤没，图上只剩树和轴文字。加大 `fig.height`（每行面板至少留 2–3 厘米）、减少面板行数，或调小 `height`。
+
 
 # 已知限制与调参建议
 

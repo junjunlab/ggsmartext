@@ -169,26 +169,34 @@
 #'   coord_radial(theta = "x", start = -0.5 * pi, end = 0.5 * pi) +
 #'   guides(theta = guide_axis_smart(which = 9:20))
 #'
+#' # heat maps below use per-sample z-scores: each sample standardised across
+#' # the 300 genes of the bundled matrix
+#' z_sample <- as.data.frame(as.table(scale(
+#'   tapply(airway_heatmap$df$z,
+#'          list(airway_heatmap$df$gene, airway_heatmap$df$sample), mean)
+#' )))
+#' names(z_sample) <- c("gene", "sample", "z_sample")
+#'
 #' # a circular heatmap from the bundled RNA-seq data (300 genes x 8 samples):
 #' # the genes run around the circle, labels outside
 #' data(airway_heatmap)
-#' ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+#' ggplot(z_sample, aes(gene, sample, fill = z_sample)) +
 #'   geom_tile() +
 #'   coord_radial(theta = "x", inner.radius = 0.2) +
 #'   guides(theta = guide_axis_smart(which = airway_heatmap$mark)) +
 #'   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-#'                        midpoint = 0, name = "z-score")
+#'                        midpoint = 0, name = "z-score (sample)")
 #'
 #' # the same heatmap with the labels attached to the inner radius (inside the
 #' # hole); a large inner radius leaves room for them
-#' ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+#' ggplot(z_sample, aes(gene, sample, fill = z_sample)) +
 #'   geom_tile() +
 #'   coord_radial(theta = "x", inner.radius = 0.62) +
 #'   guides(theta = guide_axis_smart(
 #'     which = airway_heatmap$mark, theta_side = "inside"
 #'   )) +
 #'   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-#'                        midpoint = 0, name = "z-score")
+#'                        midpoint = 0, name = "z-score (sample)")
 #'
 #' # with facets every panel is a circle of its own
 #' d_facet <- data.frame(
@@ -205,13 +213,13 @@
 #' # a faceted circular heatmap needs scales = "free_x": each panel then has its
 #' # own gene scale, so the ring is complete and only that panel's genes are
 #' # labelled
-#' ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+#' ggplot(z_sample, aes(gene, sample, fill = z_sample)) +
 #'   geom_tile() +
 #'   coord_radial(theta = "x", inner.radius = 0.3) +
 #'   guides(theta = guide_axis_smart(which = unlist(airway_heatmap$mark_by_set))) +
 #'   facet_wrap(~gene_set, ncol = 2, scales = "free_x") +
 #'   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-#'                        midpoint = 0, name = "z-score")
+#'                        midpoint = 0, name = "z-score (sample)")
 #'
 #' @export
 guide_axis_smart <- function(title = ggplot2::waiver(),

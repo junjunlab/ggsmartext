@@ -30,6 +30,22 @@ knitr::opts_chunk$set(
 options(rmarkdown.html_vignette.check_title = FALSE)
 library(ggplot2)
 library(ggutils)
+
+## 之后的热图统一用**按样本的 z-score**：把每个样本在 300 个基因上标准化
+## （`scale()` 默认按列，即按样本），再取回长表。`z_sample` 是这一列的列名。
+data(airway_heatmap, package = "ggutils")
+airway_sample_z <- local({
+  m <- tapply(airway_heatmap$df$z,
+              list(airway_heatmap$df$gene, airway_heatmap$df$sample), mean)
+  m <- scale(m)                                   # column-wise = per sample
+  out <- as.data.frame(as.table(m))
+  names(out) <- c("gene", "sample", "z_sample")
+  out <- merge(out, airway_heatmap$genes[c("gene", "gene_set")], by = "gene")
+  out$gene <- factor(out$gene, levels = rev(airway_heatmap$genes$gene))
+  out$sample <- factor(out$sample, levels = airway_heatmap$samples$sample)
+  out$gene_set <- factor(out$gene_set, levels = levels(airway_heatmap$df$gene_set))
+  out
+})
 ```
 
 ```{css, echo = FALSE}
@@ -49,7 +65,44 @@ pre, pre code, code.sourceCode, .sourceCode pre, .sourceCode code {
 }
 ```
 
-# Motivation: when a discrete axis gets crowded
+# What ggutils is
+
+`ggutils` is a `ggplot2` extension for **everything that sits next to the axis**.
+
+`ggplot2` draws panels, ticks and legends beautifully, but a few everyday situations
+still force you into hand-written `theme()` calls, `gtable` surgery, or simply giving
+up: 50 or 200 levels on a discrete axis piling up into an unreadable block; a cluster
+tree that has to hang beside a discrete axis with its leaves in the same order as the
+labels; facets where every panel should be scaled to its own data.
+
+`ggutils` collects those into a handful of `guide_*()`, `scale_*()` and `facet_*()`
+functions, and it stays inside the `ggplot2` idiom — your layers and `theme()` are
+untouched, only the axis and facet layer gains something.
+
+| What you are facing | What to reach for |
+|---|---|
+| Crowded categorical labels, you only want a few | `guide_axis_smart()` with `n =` / `which =` / `nrow =` |
+| The labels you kept must point back to their ticks | the leader lines of `guide_axis_smart()` (`connection_style`) |
+| A cluster tree beside a discrete axis, leaves in label order | `guide_axis_cluster()` / `scale_x_cluster()` / `scale_y_cluster()` |
+| Per-panel scales, axes and trees after faceting | `facet_gridn()` |
+| Hundreds of labels that will not fit on a line | `coord_spiral()` / `scale_x_spiral_axis()` |
+| The tree gets squeezed out of the facet strip | `strip_cluster()` |
+| You only want the layout algorithms | `box_arrange()` / `smart_align()` / `smart_stack()` |
+
+```{r install, eval = FALSE}
+remotes::install_github("junjunlab/ggutils")
+```
+
+Once installed, one extra `guides()` line on any plot is enough — see the comparison
+in the next section.
+
+A suggested reading order: two short sections to see "crowded" versus "not crowded",
+then a section per argument of `guide_axis_smart()`; the y axis, radial coordinates,
+heatmap annotation and long labels each get their own section; facets and
+`facet_gridn()` come next; cluster trees and the known limitations close the
+document.
+
+# The problem: crowded labels
 
 `ggplot2` draws a tick and a label for **every** level of a discrete axis. With many categories (50 samples, 200 features) the labels pile up under the axis: at best they overlap and become unreadable, at worst you delete them and lose the information. Rotating them by 90 degrees helps a little, but long labels and many categories still run off the panel.
 
@@ -415,7 +468,7 @@ ggplot(df50, aes(sample, value)) +
   guides(theta = guide_axis_smart(which = seq(1, 50, by = 4)))
 ```
 
-```{r radial-crowded, fig.cap = "12 crowded labels: spread along the arc and connected with three-segment leader lines"}
+```{r radial-crowded, fig.width = 7.2, fig.height = 5.6, fig.cap = "12 crowded labels: spread along the arc and connected with three-segment leader lines"}
 ggplot(df50, aes(sample, value)) +
   geom_col() +
   coord_radial(theta = "x") +
@@ -429,7 +482,7 @@ ggplot(df50, aes(value, sample)) +
   guides(theta = guide_axis_smart(n = 10))
 ```
 
-```{r radial-half, fig.cap = "a half circle (start/end) is laid out the same way"}
+```{r radial-half, fig.width = 9.6, fig.height = 5.2, fig.cap = "a half circle (start/end) is laid out the same way"}
 ggplot(df50, aes(sample, value)) +
   geom_col() +
   coord_radial(theta = "x", start = -0.5 * pi, end = 0.5 * pi) +
@@ -440,28 +493,28 @@ ggplot(df50, aes(sample, value)) +
 
 With the bundled data (300 genes x 8 samples) the `theta` axis is the gene axis:
 
-```{r radial-heat-outside, fig.width = 7, fig.height = 7, fig.cap = "circular heatmap with the labels outside: the crowded gene cluster spreads along the outer arc"}
+```{r radial-heat-outside, fig.width = 7.0, fig.height = 5.8, fig.cap = "circular heatmap with the labels outside: the crowded gene cluster spreads along the outer arc"}
 data(airway_heatmap)
-ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+ggplot(airway_sample_z, aes(gene, sample, fill = z_sample)) +
   geom_tile() +
   coord_radial(theta = "x", inner.radius = 0.2) +
   guides(theta = guide_axis_smart(which = airway_heatmap$mark)) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score")
+                       midpoint = 0, name = "z-score (sample)")
 ```
 
 With a large inner radius the labels can go inside the hole
 (`theta_side = "inside"`), attached to the inner radius:
 
-```{r radial-heat-inside, fig.width = 7, fig.height = 7, fig.cap = "circular heatmap with the labels inside: theta_side = 'inside', attached to the inner radius"}
-ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+```{r radial-heat-inside, fig.width = 7.0, fig.height = 5.0, fig.cap = "circular heatmap with the labels inside: theta_side = 'inside', attached to the inner radius"}
+ggplot(airway_sample_z, aes(gene, sample, fill = z_sample)) +
   geom_tile() +
   coord_radial(theta = "x", inner.radius = 0.62) +
   guides(theta = guide_axis_smart(
     which = airway_heatmap$mark, theta_side = "inside"
   )) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score")
+                       midpoint = 0, name = "z-score (sample)")
 ```
 
 
@@ -513,14 +566,14 @@ For a faceted circular heatmap add `scales = "free_x"`: each panel then uses its
 own gene scale, so the ring is complete and the labels only land on the genes
 that panel actually contains:
 
-```{r radial-facet-heat, fig.width = 8, fig.height = 7, fig.cap = "faceted circular heatmap + free_x: complete rings, each panel labels its own 4 genes"}
-ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+```{r radial-facet-heat, fig.width = 8.0, fig.height = 4.4, fig.cap = "faceted circular heatmap + free_x: complete rings, each panel labels its own 4 genes"}
+ggplot(airway_sample_z, aes(gene, sample, fill = z_sample)) +
   geom_tile() +
   coord_radial(theta = "x", inner.radius = 0.3) +
   guides(theta = guide_axis_smart(which = unlist(airway_heatmap$mark_by_set))) +
   facet_wrap(~gene_set, ncol = 2, scales = "free_x") +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score")
+                       midpoint = 0, name = "z-score (sample)")
 ```
 
 > Without `scales = "free_x"` the panels share one `theta` scale: half of each
@@ -571,7 +624,8 @@ real RNA-seq from GEO
 ([GSE52778](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE52778);
 human airway smooth muscle cells, four cell lines with and without
 dexamethasone). The data is already processed — expressed genes only,
-`log2(CPM + 1)`, per-gene z-scores, the 300 most variable genes ordered by
+`log2(CPM + 1)`, the 300 most variable genes; heatmap examples below use
+per-sample z-scores (each sample standardised across the genes), ordered by
 hierarchical clustering (see `?airway_heatmap` for the exact steps) — so the
 chunks below load it and plot immediately.
 
@@ -580,14 +634,14 @@ the heatmap shows **300 genes** and labels 20 of them (12 neighbouring genes
 from the top response cluster plus 8 scattered genes):
 
 ```{r anno-heatmap-data}
-## bundled data: 300 genes x 8 samples, per-gene z-scores in cluster order
+## bundled data: 300 genes x 8 samples, per-sample z-scores for the heat maps
 data(airway_heatmap, package = "ggutils")
-df_gene <- airway_heatmap$df
+df_gene <- airway_sample_z
 mark    <- airway_heatmap$mark
 ```
 
 ```{r anno-heatmap, fig.width = 6.5, fig.height = 10, fig.cap = "real data (GEO GSE52778), a tall 300-gene heatmap: only 20 genes are labelled, showing how the leader lines and the vertical label spacing are allocated"}
-ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
+ggplot(df_gene, aes(x = sample, y = gene, fill = z_sample)) +
   geom_tile() +
   scale_y_discrete(
     guide = guide_none(),
@@ -596,7 +650,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score") +
+                       midpoint = 0, name = "z-score (sample)") +
   labs(x = NULL, y = NULL, title = "airway RNA-seq (GEO GSE52778), 300 genes") +
   theme_grey(base_size = 9) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -611,7 +665,7 @@ of genes):
 ## the four strongest responders of each gene set are precomputed in the data
 mark_facet <- unlist(airway_heatmap$mark_by_set, use.names = FALSE)
 
-ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
+ggplot(df_gene, aes(x = sample, y = gene, fill = z_sample)) +
   geom_tile() +
   facet_grid(gene_set ~ ., scales = "free_y", space = "free_y", switch = "y") +
   scale_y_discrete(
@@ -621,7 +675,7 @@ ggplot(df_gene, aes(x = sample, y = gene, fill = z)) +
     )
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score") +
+                       midpoint = 0, name = "z-score (sample)") +
   labs(x = NULL, y = NULL, title = "facet by gene set, 300 genes") +
   theme_grey(base_size = 9) +
   theme(panel.grid = element_blank(),
@@ -808,10 +862,10 @@ labels only the genes it contains, and a crowded run of genes is spread over row
 ```{r facet-heatmap, fig.cap = "faceted heatmap: the bundled real data, each panel labels its own genes"}
 ## the real RNA-seq data bundled with the package (GEO GSE52778, 300 genes x 8 samples)
 data(airway_heatmap, package = "ggutils")
-df_facet_heat <- airway_heatmap$df
+df_facet_heat <- airway_sample_z
 mark_wrap <- airway_heatmap$genes$gene[10:21]   # 12 neighbouring genes of the top cluster
 
-ggplot(df_facet_heat, aes(sample, gene, fill = z)) +
+ggplot(df_facet_heat, aes(sample, gene, fill = z_sample)) +
   geom_tile() +
   facet_wrap(~ gene_set, nrow = 1, scales = "free_y") +
   scale_y_discrete(
@@ -819,7 +873,7 @@ ggplot(df_facet_heat, aes(sample, gene, fill = z)) +
     guide = guide_axis_smart(which = mark_wrap)
   ) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score") +
+                       midpoint = 0, name = "z-score (sample)") +
   labs(x = NULL, y = NULL,
        title = "faceted heatmap: each panel labels its own genes") +
   theme_grey(base_size = 9) +
@@ -867,63 +921,188 @@ ggplot(df50, aes(x = sample, y = value)) +
 
 Do **not** use `theme(axis.text.x = element_blank())` — the guide inherits that blank element verbatim and all labels disappear.
 
-# How it works
+# `facet_gridn()`: a per-panel `facet_grid`
 
-The figure in this section is hand-drawn; it explains what happens inside the guide.
+`facet_grid(scales = "free_x")` frees x **per column**: panels stacked in the same
+column still share one x axis, because the layout sets `SCALE_X` to the column
+index.  `facet_gridn()` lays the panels out exactly the same way (rows and
+columns, row strips on the right, column strips on top) but sets `SCALE_X` /
+`SCALE_Y` to the **panel** index, so every cell trains its own scale, gets its own
+range and its own axis.
 
-```{r schematic, fig.cap = "one layout pass of guide_axis_smart(): pick labels, pack each track, stagger tracks, leader lines back to the ticks", fig.height = 5.2}
-tick_x <- seq(0.08, 0.92, length.out = 10)
-lab <- data.frame(
-  tick_x = tick_x[c(2, 4, 6, 8, 10)],
-  center = c(0.13, 0.32, 0.50, 0.69, 0.90),
-  row = c(1, 2, 1, 2, 1),
-  text = paste0("Sample", c(2, 4, 6, 8, 10))
-)
-lab$y <- ifelse(lab$row == 1, 0.50, 0.26)
-lab$ymin <- lab$y - 0.07
-lab$ymax <- lab$y + 0.07
-lab$xmin <- lab$center - 0.085
-lab$xmax <- lab$center + 0.085
+| `scales` | freedom | x axis | y axis |
+|---|---|---|---|
+| `"fixed"` | shared (default) | one global axis | one global axis |
+| `"free_x"` | **per panel** | one axis per panel | one global axis |
+| `"free_y"` | **per panel** | one global axis | one axis per panel |
+| `"free"` | **per panel** | one axis per panel | one axis per panel |
+| `"free_x_bycol"` | same as `facet_grid()` | one axis per column | one global axis |
+| `"free_y_byrow"` | same as `facet_grid()` | one global axis | one axis per row |
 
-ggplot() +
-  # axis line and all ticks
-  geom_segment(aes(x = 0.04, xend = 0.96, y = 0.88, yend = 0.88),
-               linewidth = 1, colour = "grey25") +
-  geom_segment(data = data.frame(x = tick_x),
-               aes(x = x, xend = x, y = 0.88, yend = 0.84),
-               linewidth = 0.5, colour = "grey25") +
-  # leader lines: short stub + diagonal + short stub (anno_mark geometry)
-  geom_segment(data = lab, aes(x = tick_x, xend = tick_x, y = 0.84, yend = 0.80),
-               linewidth = 0.45, colour = "#5B8FF9") +
-  geom_segment(data = lab, aes(x = tick_x, xend = center, y = 0.80, yend = y + 0.10),
-               linewidth = 0.45, colour = "#5B8FF9") +
-  geom_segment(data = lab, aes(x = center, xend = center, y = y + 0.10, yend = y + 0.07),
-               linewidth = 0.45, colour = "#5B8FF9") +
-  # label boxes
-  geom_rect(data = lab, aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
-            fill = "#EAF2FF", colour = "#5B8FF9", linewidth = 0.35) +
-  geom_text(data = lab, aes(x = center, y = y, label = text),
-            size = 3.4, colour = "grey15") +
-  # annotations
-  annotate("text", x = 0.5, y = 0.995, vjust = 1, size = 3.5, colour = "grey30",
-           label = "1. Every tick is drawn (tick = \"all\"); text only for the 5 labels picked by which / n") +
-  annotate("text", x = 0.5, y = 0.945, vjust = 1, size = 3.5, colour = "grey30",
-           label = "2. smartAlign packs each track: order preserved, no overlap, close to the ticks") +
-  annotate("text", x = 0.5, y = 0.07, vjust = 1, size = 3.5, colour = "grey30",
-           label = "3. Tracks staggered by gap (nrow = 2)      4. Leader lines: short stub + diagonal + short stub") +
-  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1), expand = FALSE) +
-  theme_void()
+The last two are compatibility values: `free_x_bycol` / `free_y_byrow` are exactly
+the stock `free_x` / `free_y`, which is what you want when one figure has to mix
+both kinds of freedom (x shared per column, y independent per panel).
+`scales = "fixed"` matches `facet_grid()` pixel for pixel and can be swapped in
+at any time.
+
+All examples below use `mpg` (`drv`: 3 rows x `year`: 2 columns = 6 panels):
+
+```{r gridn-setup-en}
+library(patchwork)
+d_cont <- mpg
+d_disc <- mpg
+d_disc$cylgrp <- factor(ifelse(d_disc$cyl == 4, "4 cyl", "6 / 8 cyl"),
+                        levels = c("4 cyl", "6 / 8 cyl"))
+th_n <- theme_bw(base_size = 9) +
+  theme(panel.grid.minor = element_blank(),
+        strip.text = element_text(size = 8),
+        axis.text = element_text(size = 7),
+        plot.title = element_text(size = 9))
+p_cont_n <- function(scales, fn = facet_gridn) {
+  ggplot(d_cont, aes(displ, hwy)) +
+    geom_point(size = 1.2, alpha = 0.8) +
+    fn(vars(drv), vars(year), scales = scales) +
+    labs(title = scales, x = NULL, y = NULL) + th_n
+}
 ```
 
-One draw goes through roughly these steps:
+## Continuous axes: the four modes side by side
 
-1. **Measure**: for every displayed label, `grid` text metrics give the width of the label box (including `padding`), converted to a relative width inside the panel.
-2. **One-dimensional packing (`smart_align()`)**: inside a track the boxes keep their axis order; when neighbours overlap they are pushed apart until the minimum spacing is met. The algorithm preserves the order, guarantees no overlap and minimises the shifts. This is the one-dimensional overlap-free algorithm of `circlize::smartAlign` (ported exactly).
-3. **Track assignment (`smart_stack()`)**: first the number of tracks (rows for an x axis, columns for a y axis) is chosen — **one row when it fits**; another track is added when the total width overflows or when the labels crowd into a small stretch (estimated from the cluster span), capped by `max_nrow`. The boxes are then assigned to tracks and packed, with `gap` between tracks; more involved box placement uses `box_arrange()` (a port of `ComplexHeatmap::BoxArrange`). When there is still no room, low-priority labels are dropped — overlapping labels are **never** drawn.
-4. **Two-phase sizing**: when ggplot2 builds the guide the real panel width is not known yet, so the number of rows is estimated from the device and that much height is **reserved**; at draw time the exact layout is recomputed with the real panel width. That is why the number of rows can depend on the figure size or device, and why the `panel_width` argument exists.
-5. **Draw the leader lines**: the default `"diagonal"` style is short stub, diagonal, short stub: it leaves the tick perpendicular to the axis (for `link_length`), crosses to the label's row with a diagonal, and drops perpendicular onto the label box.
+```{r gridn-cont-en, fig.width=9, fig.height=6.2, fig.cap="continuous axes, four scales: fixed shares everything, free_x / free_y free one direction per panel, free frees both"}
+(p_cont_n("fixed")  | p_cont_n("free_x")) /
+  (p_cont_n("free_y") | p_cont_n("free"))
+```
 
-All three helpers `smart_align()`, `box_arrange()` and `smart_stack()` are exported and can be called directly (see `?smart_align`); the guide is a thin layer on top of them.
+With `free_x` every panel carries its own tick labels underneath, with `free_y`
+every panel has its own ticks on the left, and `free` has both.  The difference is
+measurable: on the same data the stock `facet_grid(scales = "free_x")` produces
+only **2** distinct x ranges (one per column), `facet_gridn()` produces **6**
+(one per panel); `free_y` is the mirror image -- 3 for stock (one per row), 6 for
+`facet_gridn()`.
+
+## Categorical x: every panel keeps only its own categories
+
+In `mpg`, `2seater` only occurs in the `r` row and `minivan` only in the `f` row,
+which makes "each panel keeps only its own categories" easy to see:
+
+```{r gridn-catx-en}
+p_catx_n <- function(fn = facet_gridn) {
+  ggplot(d_cont, aes(class, hwy)) +
+    geom_boxplot(fill = "grey92", linewidth = 0.3, outlier.size = 0.8) +
+    fn(vars(drv), vars(year), scales = "free_x") +
+    th_n + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
+```{r gridn-catx-fig-en, fig.width=9, fig.height=5, fig.cap="facet_gridn(scales = 'free_x'): each panel's x axis lists only the categories it contains"}
+p_catx_n()
+```
+
+```{r gridn-catx-stock-en, fig.width=9, fig.height=5, fig.cap="the same data with facet_grid(scales = 'free_x'): the x axis only sits under the bottom row, and a column shares its union"}
+p_catx_n(facet_grid)
+```
+
+Compare the two: with `facet_gridn()` each panel's x categories are exactly the
+ones that occur in that cell, while stock uses the union of the whole column, so
+the 1999 cell of the `f` column still reserves a slot for `minivan` even though it
+has no data there.
+
+## Categorical y: the same rule, other direction
+
+```{r gridn-caty-en}
+p_caty_n <- function(fn = facet_gridn) {
+  ggplot(d_cont, aes(hwy, class)) +
+    geom_boxplot(fill = "grey92", linewidth = 0.3, outlier.size = 0.8) +
+    fn(vars(year), vars(drv), scales = "free_y") +
+    th_n
+}
+```
+
+```{r gridn-caty-fig-en, fig.width=9, fig.height=5.4, fig.cap="facet_gridn(scales = 'free_y'): each panel lists only its own categories on the left, with its own y axis"}
+p_caty_n()
+```
+
+```{r gridn-caty-stock-en, fig.width=9, fig.height=5.4, fig.cap="facet_grid(scales = 'free_y'): the y axis only sits in the left-most column, and a row shares its union"}
+p_caty_n(facet_grid)
+```
+
+## Discrete on both axes: everything per panel
+
+```{r gridn-disc-en}
+p_disc_n <- function(fn = facet_gridn) {
+  ggplot(d_disc, aes(class, drv)) +
+    geom_count(colour = "grey25", alpha = 0.85) +
+    scale_size_area(max_size = 6) +
+    fn(vars(year), vars(cylgrp), scales = "free") +
+    th_n + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+```
+
+```{r gridn-disc-fig-en, fig.width=9, fig.height=5, fig.cap="facet_gridn(scales = 'free'): both axes of every cell list only the categories it contains"}
+p_disc_n()
+```
+
+```{r gridn-disc-stock-en, fig.width=9, fig.height=5, fig.cap="facet_grid(scales = 'free'): x per column, y per row, leaving unused categories on the axes"}
+p_disc_n(facet_grid)
+```
+
+Counted per panel, the axis labels are x **6 / 7 / 5 / 7** and y **2 / 3 / 2 / 3**
+for `facet_gridn()`, versus x **6 / 7 / 6 / 7** and y **3 / 3 / 3 / 3** for stock:
+the 2008 cells have no `minivan` and the 4-cylinder cells have no rear-wheel drive,
+and only `facet_gridn()` drops them from the axis.
+
+## Panels in rows: `rows = vars(drv)`
+
+Put the facet variable on `rows` and the layout becomes three rows of one column;
+`free_y` gets easier to see, since each row draws only its own y range:
+
+```{r gridn-rows-en, fig.width=6.6, fig.height=6.4, fig.cap="rows = vars(drv), scales = 'free_y': every panel gets its own y axis"}
+ggplot(d_cont, aes(displ, hwy)) +
+  geom_point(size = 1.2, alpha = 0.8) +
+  facet_gridn(rows = vars(drv), cols = vars(year), scales = "free_y",
+              space = "free_y") +
+  th_n
+```
+
+`space = "free_y"` hands each row a height proportional to its y range; switch
+back to `scales = "fixed"` for a shared axis.
+
+## `space = "free_x"`: panel width follows its own range
+
+```{r gridn-space-en, fig.width=9, fig.height=4.6, fig.cap="space = 'free_x': a wider x range gets a wider panel"}
+ggplot(d_cont, aes(displ, hwy)) +
+  geom_point(size = 1.2, alpha = 0.8) +
+  facet_gridn(vars(drv), vars(year), scales = "free_x", space = "free_x") +
+  th_n
+```
+
+`r/2008` is clearly wider than `f/1999`.  **Careful**: per-panel axes make the tick
+labels differ in width from row to row, so column borders can drift slightly out
+of alignment; keep the default `space = "fixed"` for a strictly tabular layout.
+
+## Compatibility values: `free_x_bycol` / `free_y_byrow`
+
+To keep the stock "per column / per row" semantics (say x shared per column but y
+independent per panel), use these two values:
+
+```{r gridn-bycol-en, fig.width=9, fig.height=4.6, fig.cap="free_x_bycol: the x axis only sits under the bottom row and is shared per column -- identical to facet_grid(scales = 'free_x')"}
+p_cont_n("free_x_bycol")
+```
+
+`free_y_byrow` is the mirror image (y only in the left-most column, shared per row)
+and matches the stock `free_y`.
+
+```{r gridn-byrow-en, fig.width=9, fig.height=4.6, fig.cap="free_y_byrow: the y axis only sits on the left-most column and is shared per row -- identical to facet_grid(scales = 'free_y')"}
+p_cont_n("free_y_byrow")
+```
+
+
+## Combining with the cluster tree
+
+`scale_x_cluster()` / `scale_y_cluster()` read the facet's `scales` themselves, so
+switching to `facet_gridn()` makes the trees per panel as well: one tree per cell,
+without touching any tree-related code.  See "Cluster dendrogram on a discrete
+axis" below for the examples.
 
 # Spiral coordinates: `coord_spiral()`
 
@@ -935,7 +1114,7 @@ track. Lines, bars, points and areas are supported, the matching angle and
 radial axes are drawn automatically, and `facet_wrap()` / `facet_grid()` get
 one spiral per panel.
 
-```{r spiral-intro, fig.cap = "coord_spiral(): a line on three turns, with the angle and radial axes"}
+```{r spiral-intro, fig.width = 5.8, fig.height = 5.6, fig.cap = "coord_spiral(): a line on three turns, with the angle and radial axes"}
 set.seed(42)
 d_sp <- data.frame(
   x = seq(0, 1, length.out = 300),
@@ -955,7 +1134,7 @@ equal lengths along the spiral. `clockwise`, `reverse` and `flip` control
 direction, `labels = FALSE` turns the axes off, and `y_axis_theta` chooses
 where the radial ruler is placed (the outer end by default).
 
-```{r spiral-facet, fig.cap = "facet_wrap(): one spiral per panel, each with its own axis"}
+```{r spiral-facet, fig.width = 10.67, fig.height = 4.1, fig.cap = "facet_wrap(): one spiral per panel, each with its own axis"}
 d_sp$set <- rep(c("A", "B"), length.out = 300)
 ggplot(d_sp, aes(x, y)) +
   geom_line() +
@@ -970,18 +1149,18 @@ ggplot(d_sp, aes(x, y)) +
 A heat map is the most typical use of the spiral: genes run along the spiral (x) and
 samples stack along the radius (y), with every `geom_tile()` cell bending with the
 track.  This uses the package's built-in data, the same matrix as the circular heat
-map above (GEO GSE52778, row z-scores):
+map above (GEO GSE52778, per-sample z-scores):
 
-```{r spiral-heatmap, fig.cap = "The built-in data as a spiral heat map: 300 genes over four turns, with the eight samples as concentric bands", fig.width = 7, fig.height = 7}
+```{r spiral-heatmap, fig.width = 7.0, fig.height = 5.6, fig.cap = "The built-in data as a spiral heat map: 300 genes over four turns, with the eight samples as concentric bands"}
 data(airway_heatmap)
-d_hm <- airway_heatmap$df
+d_hm <- airway_sample_z
 d_hm$x <- as.numeric(d_hm$gene)
 d_hm$y <- as.numeric(d_hm$sample)
 
-ggplot(d_hm, aes(x, y, fill = z)) +
+ggplot(d_hm, aes(x, y, fill = z_sample)) +
   geom_tile() +
   scale_fill_gradient2(low = "#2166ac", mid = "#f7f7f7", high = "#b2182b",
-                       limits = c(-2.5, 2.5), oob = scales::squish, name = "z") +
+                       limits = c(-2.5, 2.5), oob = scales::squish, name = "z (sample)") +
   scale_x_continuous(expand = c(0, 0)) +
   scale_y_continuous(expand = c(0, 0)) +
   coord_spiral(turns = 4, height = .9, inner = .12, labels = FALSE) +
@@ -1000,7 +1179,7 @@ To label the samples on the radius instead, use two turns, keep the axis and
 replace the y breaks with the sample names:
 
 ```r
-ggplot(d_hm, aes(x, y, fill = z)) +
+ggplot(d_hm, aes(x, y, fill = z_sample)) +
   geom_tile() +
   scale_y_continuous(expand = c(0, 0), breaks = 1:8,
                      labels = paste0("S", 1:8)) +
@@ -1015,7 +1194,7 @@ ggplot(d_hm, aes(x, y, fill = z)) +
 connects the interpolated points in data order, so the line follows the spiral;
 `geom_segment()` only has two end points and would cut straight across the panel.
 
-```{r spiral-arrow, fig.cap = "An arrow along the spiral from x = 0.2 to 0.8, with minor ticks between the labelled ones", fig.width = 5.6, fig.height = 5.6}
+```{r spiral-arrow, fig.width = 5.2, fig.height = 4.7, fig.cap = "An arrow along the spiral from x = 0.2 to 0.8, with minor ticks between the labelled ones"}
 d_arrow <- data.frame(x = seq(0.2, 0.8, length.out = 900), y = 0.5)
 
 ggplot(d_arrow, aes(x, y)) +
@@ -1098,7 +1277,7 @@ like it lies exactly on the track.  Over a long span the chord becomes visible; 
 that case draw the line with `geom_path()` instead, interpolating intermediate points
 along the arc and separating the pieces with `group`.
 
-```{r spiral-segments, fig.cap = "A copy of spiralize's Segments example: coloured segments on the left, segments with arrow heads on the right", fig.width = 8.4, fig.height = 4.4}
+```{r spiral-segments, fig.width = 8.4, fig.height = 3.5, fig.cap = "A copy of spiralize's Segments example: coloured segments on the left, segments with arrow heads on the right"}
 set.seed(2)
 n <- 400
 d_seg <- data.frame(
@@ -1129,7 +1308,7 @@ from the smallest y (usually 0) towards the outside, and `width` sets how much o
 the angle they take.  Setting `expand` to 0 makes the bars fill the track, with no
 gap before the first one or after the last one.
 
-```{r spiral-bars, fig.cap = "Left: one bar per column. Right: the same data stacked", fig.width = 8.4, fig.height = 4.4}
+```{r spiral-bars, fig.width = 7.4, fig.height = 4.0, fig.cap = "Left: one bar per column. Right: the same data stacked"}
 set.seed(1)
 
 ## one value per column
@@ -1164,6 +1343,522 @@ Stacking works because y *is* the radius inside the track: `position = "stack"`
 stacks the pieces along the radius, so every column of the matrix becomes one
 concentric band.  In the same way `position = "dodge"` spreads the bars along the
 angle, and `position = "fill"` normalises them to the track width.
+
+# Cluster dendrogram on a discrete axis
+
+`guide_axis_cluster()` adds a hierarchical clustering dendrogram to an x or y
+discrete axis; the companion `scale_x_cluster()` / `scale_y_cluster()` reorder the
+categories into dendrogram leaf order. The key point: the companion scale sets
+`limits` to the clustered order, so **both the axis labels and the data in the
+plot are reordered together** and the tree stays aligned with the data -- there
+is no "labels changed but cells stayed put" mismatch.
+
+```{r cluster-tree-setup-en}
+set.seed(1)
+mat <- matrix(rnorm(12 * 4), nrow = 12,
+              dimnames = list(paste0("g", 1:12), paste0("s", 1:4)))
+long <- as.data.frame(as.table(mat))
+names(long) <- c("gene", "sample", "value")
+```
+
+A rectangular dendrogram on the y axis (`type = "rectangle"`, the default);
+`method` selects the clustering method, `height` is the overall tree height in
+centimetres, and `col` sets the line colour:
+
+```{r cluster-tree-y-en, fig.width=6, fig.height=7, fig.cap="Rectangular cluster tree on the y axis; genes are reordered by clustering"}
+ggplot(long, aes(sample, gene, fill = value)) +
+  geom_tile() +
+  scale_y_cluster(mat, method = "average", height = 1.4, col = "#2c7fb8") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b", midpoint = 0) +
+  theme_minimal(base_size = 11)
+```
+
+The triangular tree (`type = "triangle"`) converges to a single vertex at every
+merge, drawn like `plot(as.dendrogram(hc), type = "triangle")`:
+
+```{r cluster-tree-triangle-en, fig.width=7, fig.height=4.5, fig.cap="Triangular cluster tree on the x axis"}
+ggplot(long, aes(gene, sample, fill = value)) +
+  geom_tile() +
+  scale_x_cluster(mat, method = "ward.D2", height = 1.4,
+                  col = "#b2182b", type = "triangle") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b", midpoint = 0) +
+  theme_minimal(base_size = 11)
+```
+
+## `method`: a different linkage, a different tree
+
+`method` goes straight to `stats::hclust()`.  The two figures above use `average`
+and `ward.D2`; switch to `"single"` (nearest-neighbour chaining) and the tree
+collapses into a chain, with the leaves re-ordered as well:
+
+```{r cluster-method-single-en, fig.width=6.4, fig.height=5.4, fig.cap="method = 'single': chaining gives a visibly different tree from average / ward.D2"}
+ggplot(long, aes(sample, gene, fill = value)) +
+  geom_tile() +
+  scale_y_cluster(mat, method = "single", height = 1.4, col = "#7b3294") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0) +
+  theme_minimal(base_size = 11)
+```
+
+## A tree on both axes
+
+`scale_x_cluster()` clusters the columns, `scale_y_cluster()` the rows; the two
+trees stay out of each other's way and both axes are re-ordered:
+
+```{r cluster-both-axes-en, fig.width=6.6, fig.height=5.6, fig.cap="x tree on top, y tree on the left: rows and columns both in cluster order"}
+ggplot(long, aes(gene, sample, fill = value)) +
+  geom_tile() +
+  scale_x_cluster(position = "top", height = 1.1) +
+  scale_y_cluster(position = "left", height = 1.1) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0) +
+  theme_minimal(base_size = 11)
+```
+
+To get just the clustered order without the companion scale, use
+`cluster_order()`, e.g. `scale_y_discrete(limits = cluster_order(mat))`.
+
+## `position`: move the tree, not the labels
+
+`position` decides **which side the tree is drawn on**; the labels never move:
+
+| axis | `position` | tree | labels |
+|---|---|---|---|
+| x | `"bottom"` (default) | outside the labels, by the `gene` title | still at the bottom |
+| x | `"top"` | above the panel; with facets, **under the strip** | still at the bottom |
+| y | `"left"` (default) | left of the labels | still on the left |
+| y | `"right"` | at the end of the panel row | still on the left |
+
+```{r cluster-pos-helpers-en}
+tile_x <- function(pos) {
+  ggplot(long, aes(gene, sample, fill = value)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                         midpoint = 0) +
+    scale_x_cluster(position = pos, height = 1) +
+    theme_minimal(base_size = 11)
+}
+tile_y <- function(pos) {
+  ggplot(long, aes(sample, gene, fill = value)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                         midpoint = 0) +
+    scale_y_cluster(position = pos, height = 1) +
+    theme_minimal(base_size = 11)
+}
+```
+
+x tree on top, labels still at the bottom:
+
+```{r cluster-pos-top-en, fig.height=3.6, fig.cap="position = 'top': tree above the panel, x labels stay at the bottom"}
+tile_x("top")
+```
+
+y tree on the left, left of the labels:
+
+```{r cluster-pos-left-en, fig.height=4.6, fig.cap="position = 'left': tree left of the y labels"}
+tile_y("left")
+```
+
+y tree on the right, at the end of the panel row:
+
+```{r cluster-pos-right-en, fig.height=4.6, fig.cap="position = 'right': tree to the right of the panel"}
+tile_y("right")
+```
+
+The tree can leave the labels because it no longer goes through a secondary
+axis: it is drawn straight into the final gtable, the only place that knows the
+geometry of every panel. That is also why `facet_grid()` works -- row facets own
+the y axis and column facets own the x axis, so each tree lands under its own
+strip.
+
+## No matrix needed
+
+None of the examples above pass a matrix: `scale_x_cluster()` /
+`scale_y_cluster()` derive it at draw time from the plot's own data -- the focal
+axis becomes the rows, the other positional axis the columns, and the first
+numeric aesthetic (`fill`, `colour`, `size`, ...) the value. To cluster on
+another column, say `value =`:
+
+```{r cluster-value-en, eval=FALSE}
+ggplot(d, aes(gene, sample, fill = zscore, size = pct)) +
+  geom_point() +
+  scale_x_cluster(value = "zscore")   # defaults to the first numeric aesthetic
+```
+
+Changing `value =` changes the tree as well.  The dot plot below carries both
+`fill` (expression) and `size` (fraction expressed); clustering on one or the
+other gives different trees:
+
+```{r cluster-value-demo-en, fig.width=9.4, fig.height=4.4, fig.cap="One dot plot, clustered on fill (left) and on size (right): the trees differ"}
+set.seed(7)
+d_val <- expand.grid(gene = paste0("g", 1:12), sample = paste0("s", 1:6))
+d_val$zscore <- stats::rnorm(nrow(d_val))
+d_val$pct <- stats::runif(nrow(d_val), 0, 1)
+p_val <- function(v) {
+  ggplot(d_val, aes(gene, sample, fill = zscore, size = pct)) +
+    geom_point(shape = 21, colour = "grey25") +
+    scale_x_cluster(value = v, height = 1.1) +
+    scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b") +
+    labs(title = paste0("value = \"", v, "\"")) +
+    theme_bw(base_size = 10)
+}
+wrap_plots(p_val("zscore"), p_val("pct"), nrow = 1)
+```
+
+## Facets: one tree per panel
+
+A single-cell dot plot is usually faceted by cell type, and every panel holds a
+different gene set. Hand `scales` to the facet and the tree is recomputed per
+panel automatically -- no `free = TRUE` needed:
+
+```{r cluster-dot-setup-en}
+data(pbmc3k_dotplot)
+d4 <- droplevels(pbmc3k_dotplot[pbmc3k_dotplot$celltype %in%
+                                  c("Naive CD4 T", "CD14+ Mono", "NK", "B"), ])
+d4$cluster_id <- factor(d4$cluster_id)      # cluster id on y: 0 / 1 / 3 / 6
+top_of <- function(x, k) head(x$gene[order(-x$avg_exp_scaled)], k)
+
+dot_layers <- function() {
+  list(
+    geom_point(aes(size = pct_expressed, fill = avg_exp_scaled),
+               shape = 21, colour = "black", stroke = 0.25),
+    scale_fill_gradient2(low = "#2166ac", mid = "#f7f7f7", high = "#b2182b"),
+    theme_bw(base_size = 10),
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          panel.grid.minor = element_blank())
+  )
+}
+
+genes_by_ct <- lapply(split(d4, d4$celltype), top_of, k = 4)
+d_panel <- do.call(rbind, lapply(names(genes_by_ct), function(ct) {
+  x <- d4[d4$gene %in% genes_by_ct[[ct]], ]
+  x$panel <- ct
+  x
+}))
+d_panel$panel <- factor(d_panel$panel, levels = names(genes_by_ct))
+```
+
+```{r cluster-dot-facet-en, fig.width=9, fig.height=8.4, fig.cap="facet_wrap(scales = 'free_x'): one x tree per panel, tucked under its own strip"}
+ggplot(d_panel, aes(gene, cluster_id)) + dot_layers() +
+  facet_wrap(~ panel, scales = "free_x") +
+  scale_x_cluster(position = "top", height = 0.9) +
+  theme(aspect.ratio = 1)
+```
+
+## The four `scales` modes: when the tree is recomputed
+
+`facet_wrap()` / `facet_grid()` `scales` are picked up automatically; whether the
+tree is recomputed per panel depends only on whether that axis is free:
+
+| `scales` | x axis | y axis | x tree | y tree |
+|---|---|---|---|---|
+| `"fixed"` | shared | shared | one tree for all panels | one per axis |
+| `"free_x"` | per panel | shared | one per panel column | one per axis |
+| `"free_y"` | shared | per panel | one tree for all panels | one per panel row |
+| `"free"` | per panel | per panel | one per panel column | one per panel row |
+
+```{r cluster-dot-xy-en}
+sets <- list("All four" = c("Naive CD4 T", "CD14+ Mono", "NK", "B"),
+             "T + Mono" = c("Naive CD4 T", "CD14+ Mono"),
+             "NK + B"   = c("NK", "B"))
+d_xy <- do.call(rbind, lapply(names(sets), function(p) {
+  x <- d4[d4$celltype %in% sets[[p]] & d4$gene %in% genes_by_ct[[sets[[p]][1]]], ]
+  x$panel <- p
+  x
+}))
+d_xy$panel <- factor(d_xy$panel, levels = names(sets))
+```
+
+By default the tree is inserted **between the strip and the panel**, with a
+small gap to the strip (`options(ggutils.tree_gap = 0.14)`, centimetres).  Add
+`strip_side` to move it outside the strip instead:
+
+```{r cluster-strip-side-en, eval = FALSE}
+scale_x_cluster(position = "top", strip_side = "above")
+```
+
+```{r cluster-strip-above-en, fig.width=9.2, fig.height=5.2, fig.cap="strip_side = 'above': the tree moves outside the strip, which stays flush with the panel"}
+ggplot(d_xy, aes(gene, cluster_id)) + dot_layers() +
+  facet_wrap(~ panel, nrow = 1, scales = "free_x") +
+  scale_x_cluster(position = "top", height = 0.9, strip_side = "above") +
+  theme(aspect.ratio = 1)
+```
+
+`free_x`: each panel has its own gene set, so each x tree is computed on its own,
+while the y axis stays shared:
+
+```{r cluster-scales-freex-en, fig.width=9, fig.height=5.6, fig.cap="scales = 'free_x': per-panel x trees"}
+ggplot(d_xy, aes(gene, cluster_id)) + dot_layers() +
+  facet_wrap(~ panel, scales = "free_x") +
+  scale_x_cluster(position = "top", height = 0.9)
+```
+
+`free_y`: x shared, y per panel, and the y tree becomes one per panel as well,
+hugging its own cluster labels:
+
+```{r cluster-scales-freey-en, fig.width=9, fig.height=6, fig.cap="scales = 'free_y': shared x tree, per-panel y trees"}
+ggplot(d_xy, aes(gene, cluster_id)) + dot_layers() +
+  facet_wrap(~ panel, scales = "free_y") +
+  scale_x_cluster(position = "top", height = 0.9) +
+  scale_y_cluster(position = "left", height = 0.9)
+```
+
+Freeing both directions *and* adding a y tree squeezes the panels very thin;
+usually keep one direction. See the acceptance report in the package for the
+full comparison.
+
+## Multi-row facets: each row owns its own strip
+
+With `nrow = 2` the trees are inserted row by row, so the second row's trees never
+bleed into the first:
+
+```{r cluster-nrow2-en}
+## four panels of two cell types each (= two clusters), same size, to show the layout
+sets2 <- list("T + Mono"  = c("Naive CD4 T", "CD14+ Mono"),
+              "NK + B"    = c("NK", "B"),
+              "Mono + B"  = c("CD14+ Mono", "B"),
+              "T + NK"    = c("Naive CD4 T", "NK"))
+d_grid <- do.call(rbind, lapply(names(sets2), function(p) {
+  x <- d4[d4$celltype %in% sets2[[p]] & d4$gene %in% genes_by_ct[[sets2[[p]][1]]], ]
+  x$panel <- p
+  x
+}))
+d_grid$panel <- factor(d_grid$panel, levels = names(sets2))
+```
+
+```{r cluster-nrow2-fig-en, fig.width=8.5, fig.height=7, fig.cap="facet_wrap(nrow = 2): the 4 x trees land under their own panel's strip"}
+ggplot(d_grid, aes(gene, cluster_id)) + dot_layers() +
+  facet_wrap(~ panel, scales = "free", nrow = 2) +
+  scale_x_cluster(position = "top", height = 0.8)
+```
+
+## `facet_grid()`: rows own y, columns own x
+
+In `facet_grid()` the row facet decides y and the column facet decides x, so the
+**x tree sits under the column strip and the y tree on the left of each row**.
+Add two categorical columns and build a 2x2: `grp` splits the clusters in two
+(rows) and `prog` splits the genes into two marker sets (columns):
+
+```{r cluster-grid-data-en}
+prog_a <- unique(unlist(lapply(c("Naive CD4 T", "CD14+ Mono"),
+                               function(ct) top_of(d4[d4$celltype == ct, ], 3))))
+prog_b <- unique(unlist(lapply(c("NK", "B"),
+                               function(ct) top_of(d4[d4$celltype == ct, ], 3))))
+d_fg <- d4[d4$gene %in% c(prog_a, prog_b), ]
+d_fg$grp <- factor(ifelse(as.character(d_fg$cluster_id) %in% c("0", "1"),
+                          "c0 / c1", "c3 / c6"), levels = c("c0 / c1", "c3 / c6"))
+d_fg$prog <- factor(ifelse(d_fg$gene %in% prog_a, "T / Mono", "NK / B"),
+                    levels = c("T / Mono", "NK / B"))
+```
+
+```{r cluster-grid-fig-en, fig.width=8.6, fig.height=7, fig.cap="facet_grid(grp ~ prog): x tree under the column strip, y tree left of each row"}
+ggplot(d_fg, aes(gene, cluster_id)) + dot_layers() +
+  facet_grid(grp ~ prog, scales = "fixed", drop = FALSE) +
+  scale_x_cluster(position = "top", height = 0.8) +
+  scale_y_cluster(position = "left", height = 0.8)
+```
+
+Two things to keep in mind: `drop = FALSE` is there **to make `fixed` visible** --
+a discrete y axis drops empty levels per panel by default, and once it does,
+`fixed` and `free_y` look identical; without dropping, `fixed` tiles all clusters
+into every panel. And **the number of y trees does not change with `free` inside
+`facet_grid()`**, because the row itself is the y facet, so every row always has
+one y axis -- `fixed` vs `free_y` only changes how many leaves a tree has.
+
+## An RNA-seq heatmap: faceted by gene set, one y tree per panel
+
+Real RNA-seq heatmaps are usually split by gene set (up / down), and each facet
+holds entirely different genes -- the textbook case for per-panel trees.  The
+bundled `airway_heatmap` (dexamethasone-treated human airway smooth muscle cells,
+300 variable genes x 8 samples) is used below.  The data already carries a
+The bundled matrix is a per-gene row z-score; below every sample is
+**standardised again across the 300 genes** (`scale()` works column-wise), giving
+`z_sample`, so `fill = z_sample` with `scale_fill_gradient2(midpoint = 0)` draws the
+standard red/blue heatmap.
+
+Below: the 18 strongest genes of each set, faceted by `gene_set` with
+`scales = "free_y"` so every panel lays out only its own genes -- and therefore
+gets its own y tree.  The sample axis gets one x tree, which clusters the
+treatment and control samples into two branches:
+
+```{r cluster-heat-facet-setup-en}
+data(airway_heatmap, package = "ggutils")
+gs <- airway_heatmap$genes
+top_set <- do.call(rbind, lapply(split(gs, gs$gene_set), function(d) {
+  head(d[order(-abs(d$delta)), ], 18)
+}))
+d_hm <- droplevels(airway_sample_z[airway_sample_z$gene %in% top_set$gene, ])
+```
+
+```{r cluster-heat-facet-en, fig.width=8.6, fig.height=6.8, fig.cap="Airway heatmap faceted by gene set: one y tree per panel plus a sample x tree on top"}
+ggplot(d_hm, aes(sample, gene, fill = z_sample)) +
+  geom_tile() +
+  facet_wrap(~ gene_set, scales = "free_y", nrow = 1) +
+  scale_x_cluster(position = "top", height = 0.8, col = "grey25") +
+  scale_y_cluster(position = "left", height = 1.2, col = "grey25") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score (sample)") +
+  theme_bw(base_size = 9) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid = element_blank())
+```
+
+With `fixed` the two panels share one gene axis and each wastes a large empty
+block; `free_y` plus a per-panel tree is what this "different genes per facet"
+data asks for.  The x axis is shared, so the sample tree is drawn once and lines
+up with both panels.
+
+## Radial coordinates: ring trees on the theta axis, arc tree on the r axis
+
+Around a circle there is no "row above the panel" to put a tree in, so on a
+`coord_radial()` theta axis `scale_x_cluster()` draws a **ring dendrogram**:
+leaves sit on a ring, every merge is an arc at another radius joined to its
+children by radial stubs (`type = "triangle"` uses straight chords to the merge
+point instead).  The labels keep their normal `guide_axis_theta()` look.
+
+`position` decides which side the ring tree goes to:
+
+| `position` | tree drawn | notes |
+| --- | --- | --- |
+| `"bottom"` (default) | **inside the hole** | leaves on the inner circle, merges towards the centre; needs `inner.radius > 0`, a pie without a hole is skipped |
+| `"top"` | **outside the circle** | leaves on the outer circle, merges outwards; `ring_gap` is measured from the labels and the panel is padded automatically |
+
+Ring tree inside the hole (a donut heat map):
+
+```{r cluster-ring-inner-en, fig.width=8, fig.height=7.4, fig.cap="coord_radial(inner.radius = 0.55) + position = 'bottom': tree inside the hole, merges towards the centre"}
+data(airway_heatmap, package = "ggutils")
+d_ring <- droplevels(
+  airway_sample_z[airway_sample_z$gene %in% unique(airway_sample_z$gene)[1:30], ]
+)
+ggplot(d_ring, aes(gene, sample, fill = z_sample)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.55) +
+  scale_x_cluster(method = "ward.D2", height = 1.1) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score (sample)") +
+  theme_grey(base_size = 8) +
+  theme(plot.margin = margin(0.6, 0.6, 0.6, 0.6, "cm"),
+        legend.position = "bottom") +
+  labs(x = NULL, y = NULL)
+```
+
+`position = "top"` puts the same tree outside the circle; the leaf ring starts
+after the labels and the panel gets extra room automatically:
+
+```{r cluster-ring-outer-en, fig.width=8, fig.height=7.8, fig.cap="coord_radial() + position = 'top': tree outside the circle, merges outwards"}
+ggplot(d_ring, aes(gene, sample, fill = z_sample)) +
+  geom_tile() +
+  coord_radial(theta = "x") +
+  scale_x_cluster(method = "ward.D2", height = 1, position = "top") +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score (sample)") +
+  theme_grey(base_size = 8) +
+  theme(plot.margin = margin(0.8, 0.8, 0.8, 0.8, "cm"),
+        legend.position = "bottom") +
+  labs(x = NULL, y = NULL)
+```
+
+Facets work like the cartesian ones -- one tree per panel, clustered from that
+panel's own genes when the theta scale is free (`free_x` / `free`):
+
+```{r cluster-ring-facet-en, fig.width=11, fig.height=6.4, fig.cap="facet_wrap(scales = 'free_x') + coord_radial: one inner ring tree per panel"}
+d_ring2 <- droplevels(
+  airway_sample_z[airway_sample_z$gene %in% unique(airway_sample_z$gene)[1:60], ]
+)
+ggplot(d_ring2, aes(gene, sample, fill = z_sample)) +
+  geom_tile() +
+  facet_wrap(~ gene_set, scales = "free_x") +
+  coord_radial(theta = "x", inner.radius = 0.45) +
+  scale_x_cluster(method = "ward.D2", height = 0.8) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score (sample)") +
+  theme_grey(base_size = 7) +
+  theme(plot.margin = margin(0.4, 0.4, 0.4, 0.4, "cm"),
+        legend.position = "bottom") +
+  labs(x = NULL, y = NULL)
+```
+
+### Arc tree on the r (y) axis
+
+On a full circle the r axis is just a column of labels, so `scale_y_cluster()`
+draws **no** tree there.  With a partial arc (`start` / `end`) ggplot2 puts the
+sample labels on a radial ray, and `scale_y_cluster()` then draws an
+**arc-shaped wedge tree** at the other end of the arc -- the side without
+labels:
+
+- leaf position -> radius: every sample lines up with its own ring;
+- merge height -> angle: `height` sets the angular width
+  (`min(pi/3, 0.30 * height)` radians);
+- equal-height branches are concentric arcs and the leaf stubs hug the tiles,
+  so the whole tree is made of arcs.
+
+```{r cluster-ring-y-en, fig.width=8, fig.height=6.2, fig.cap="180 degree arc + scale_y_cluster(): arc tree at the label-free end of the arc"}
+d_ring_y <- droplevels(
+  airway_sample_z[airway_sample_z$gene %in% unique(airway_sample_z$gene)[1:16], ]
+)
+ggplot(d_ring_y, aes(gene, sample, fill = z_sample)) +
+  geom_tile() +
+  coord_radial(theta = "x", start = -0.5 * pi, end = 0.5 * pi,
+               inner.radius = 0.55) +
+  scale_y_cluster(method = "ward.D2", height = 1.6) +
+  scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
+                       midpoint = 0, name = "z-score (sample)") +
+  theme_grey(base_size = 8) +
+  theme(plot.margin = margin(0.6, 0.6, 0.6, 0.6, "cm"),
+        legend.position = "bottom") +
+  labs(x = NULL, y = NULL)
+```
+
+90/270 degree arcs work the same way, only `start` / `end` change, and the
+r-axis tree can be combined with an x tree on the same plot.
+
+## Facet scales: the trees follow the facet
+
+The previous sections all used `facet_wrap()`.  Switching to `facet_grid()` or
+`facet_gridn()` needs no `free = TRUE`: `scale_*_cluster()` reads the facet's
+`scales` directly, and whether the tree is per panel depends only on whether that
+axis is free (the six `scales` values of both facets are tabulated in
+"`facet_gridn()`: a per-panel `facet_grid`" above).
+
+`facet_gridn(scales = "free_x")` is per panel, so every cell gets its own x tree:
+
+```{r cluster-gridn-fig-en, fig.width=9.2, fig.height=5.0, fig.cap="facet_gridn(scales = 'free_x'): every panel gets its own x axis and its own x tree"}
+ggplot(d_xy, aes(gene, cluster_id)) + dot_layers() +
+  facet_gridn(cols = vars(panel), scales = "free_x") +
+  scale_x_cluster(position = "top", height = 0.9) +
+  theme(aspect.ratio = 1)
+```
+
+Switch to `scales = "free"` and add `scale_y_cluster()` to get one x tree and one
+y tree **per cell**:
+
+```{r cluster-gridn-both-en, fig.width=9.6, fig.height=6.0, fig.cap="facet_gridn(scales = 'free'): per-panel x and y trees"}
+ggplot(d_xy, aes(gene, cluster_id)) + dot_layers() +
+  facet_gridn(cols = vars(panel), scales = "free") +
+  scale_x_cluster(position = "top", height = 0.9) +
+  scale_y_cluster(position = "left", height = 0.9) +
+  theme(aspect.ratio = 1)
+```
+
+## Limits of the cluster tree
+
+- **`position` only moves the tree.** To move the labels as well, use the usual
+  `scale_x_discrete(position = "top")`; the two do not affect each other.
+- **No tree when the facets map categories one to one.** A panel left with a
+  single category (e.g. faceting by a cell type that is one-to-one with the
+  cluster) has nothing to cluster and the tree is left blank.
+- **Freeing both directions and drawing both trees flattens the panels**, because
+  every y axis needs a column of its own. To see x and y at once, reduce `height`
+  first, or keep a single direction.
+- **An explicit matrix cannot be reordered per panel**: the tree falls back to a
+  conservative "merge adjacent groups only" shape, which may look different from
+  `hclust()`.
+- **On a short canvas the panels collapse to zero height.** The tree row is a
+  fixed height (`height` in cm), so with several panel rows on a small device
+  (e.g. two rows in 4 inches) the fixed rows eat the `1null` panel rows and only
+  the trees and axis text remain. Increase `fig.height` (leave 2-3 cm per panel
+  row), use fewer panel rows, or lower `height`.
 
 # Known limitations and tuning advice
 

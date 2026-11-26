@@ -131,7 +131,7 @@
 #'
 #' `coord_spiral()` bends a normal Cartesian ggplot into an Archimedean
 #' spiral, following the geometry used by the **spiralize** package: the
-#' base spiral is `r = b * theta` with `b` chosen so that one turn is one
+#' base spiral is \code{r = b * theta} with `b` chosen so that one turn is one
 #' radius unit.  The x aesthetic runs along the spiral (as the angle) and the
 #' y aesthetic runs across the track (as the radius).  Points, lines, bars and
 #' areas are all supported, and facets get one spiral per panel.

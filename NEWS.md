@@ -1,3 +1,85 @@
+# ggutils 0.0.3
+
+* `scale_x_cluster()` / `scale_y_cluster()` 现在支持 `coord_radial()`：
+  * **theta 轴（x）**：分类标签保持 `guide_axis_theta()` 的样式，树画成**环形树**
+    （叶子在一圈上，每次合并是一条弧 + 径向短线；`type = "triangle"` 用直线连到
+    合并点）。`position = "bottom"`（默认）画在**洞内**——叶子贴内圆、向圆心合并，
+    需要 `inner.radius > 0`，无洞的饼图会跳过；`position = "top"` 画在**圆外**——
+    叶子在外圆、向外合并，叶子起点按 `ring_gap` 自动量出 theta 标签宽度，
+    面板四周自动插入留白，分面时既不压 strip 也不串面板。
+  * **r 轴（y）**：整圆下 r 轴只是一列标签，**不画树**；部分弧（`start`/`end`）下
+    ggplot2 把 r 标签放在一条径向射线上，树画在**弧末端、无标签的一侧**，是一棵
+    **弧形楔状树**——叶子位置映射到半径、合并高度映射到角度，等高的枝变成同心弧，
+    叶枝贴紧对应色块向外生长。`height` 控制楔形角宽
+    （`min(pi/3, 0.30 * height)` 弧度）。
+  * **分面**：每个面板一棵树；`facet_wrap(scales = "free_x")` 时按该面板自己的
+    数据重新聚类，所以各面板树形不同。
+  * 帮助文档新增「Radial coordinates」小节与 4 段可直接运行的示例（洞内 x 树、
+    圆外 x 树、部分弧 y 树、分面），示例热图统一按**样本 z-score**。
+
+* 新增 `facet_gridn()`：与 `facet_grid()` 同样按行/列排布面板，但
+  `scales = "free_x"` / `"free_y"` / `"free"` 是**逐面板**自由，而不是
+  `facet_grid()` 的按列 / 按行自由。实现上沿用 ggplot2 4.0 的
+  `SCALE_X` / `SCALE_Y` 布局协议：`compute_layout()` 把这两列从列号/行号改成
+  面板号，  `attach_axes()` 再把自由那一维的坐标轴织进每个面板之间，所以每个格子
+  都有自己的范围和自己的轴。`scales = "fixed"` 与 `facet_grid()` 完全一致。
+  另外保留两个和 stock 对齐的取值：`"free_x_bycol"` / `"free_y_byrow"`（x 按列、
+  y 按行），用于在一张图里混搭两种自由度。
+
+* 聚类树占的是**固定高度**，面板行是 `1null`：画布太矮（多行面板 + 旋转标签、
+  例 2 行面板塞进 4 英寸）时固定高度会把面板挤成 0 高，图上只剩树和轴文字。
+  加大 `fig.height`（每行面板留 2–3 cm）或调小 `height=` 即可；已写进
+  `guide_axis_cluster()` 的帮助与两份 vignette 的限制清单。
+
+* 使用手册新增独立章节「`facet_gridn()`：逐面板的 `facet_grid`」（中英各一份，
+  代码块逐字一致），把验收报告里的示例搬进文档：连续轴四种模式并排、分类轴 x、
+  分类轴 y（各带 `facet_grid()` 对照）、双向离散、`space = "free_x"`、
+  兼容档 `free_x_bycol`，以及"树跟着 facet 走"的接续说明。
+
+* free 分面现在**逐面板重排标签**：每个面板的分类轴顺序改成该面板自己的
+  `hclust()` 叶序，因此树是标准的树形、枝线不会交叉，标签顺序也不再是数据的原始顺序。
+  实现上把焦点列按面板重新编码（`"<面板>__ggcl__<类别>"`）并按叶序设定因子水平，
+  `free_x`/`free_y` 各取子集时顺序自然正确，前缀在渲染前去掉，用户看不到。
+  显式传入矩阵（`data = mat`）时无法重排轴，树退回"只合并相邻簇"的保守形状。
+
+* `free` 不用再手写：`facet_wrap(scales = "free_x")` 已经表达了意图，
+  `scale_*_cluster()` 会自动读取 facet 的 `scales`；写 `free = FALSE` 可覆盖。
+
+* `position = "top"` / `"right"` 改为把树**直接画进 gtable**（strip 下方 / 面板右侧），
+  标签留在原本的底部 / 左侧。此前用次级轴复现标签，而离散次级轴在 free 分面下
+  只能拿到共有类别，会显示成 1/2/3 或整列空白。
+
+* 修复 y 轴树与标签间距过大：`measure_grobs()` 把每个标签 grob 的宽度累加了，
+  9 个类别就多留出约 1.5 cm；现在按最宽的一个计算。另外 free 分面下 y 类别被
+  重新编码成 `"<面板>__ggcl__<类别>"`，普通 guide 会按带前缀的长文本测宽，
+  留下一个前缀宽的空白把注入的 y 树和标签隔开；现在 scale 的 `labels` 直接剥掉
+  前缀再交给 guide 排版，树紧贴标签。
+
+* `facet_grid()` 现在可用：行的 facet 管 y、列的面板管 x，树分别贴在列条带下和
+  行左侧，`scales = "free_x"/"free_y"/"free"` 各只放开对应的那一维。同时修复了
+  grid 下 `free_y`/`free` 的 y 树不画的问题——面板 key 之前按**第一个**分隔符
+  截断，而 `facet_grid` 用同一分隔符拼接两个 facet 变量，截断后 key 少一段、
+  匹配不到该面板自己的 `hclust`，树退化成空 grob；改为只截最后一个分隔符。
+
+* `scale_x_cluster()` / `scale_y_cluster()` 不再需要传入聚类矩阵：不写 `data` 时，
+  会在绘图时**从图自身的数据推导**——焦点轴的行 × 另一轴的列，取映射到
+  `fill`/`colour`/`size` 等的数值列作为值（可用 `value =` 指定列）；
+  没有数值美学时退化为按另一轴汇总（均值/标准差/中位数/样本数）或共现代次。
+  传入矩阵仍然支持，行为不变。
+
+* 新增 `guide_axis_cluster()` 与配套的 `scale_x_cluster()` / `scale_y_cluster()`：
+  对 x 或 y 的分类轴做层次聚类并画聚类树。
+
+  - `method` 选聚类方法（传给 `stats::hclust()`），`height` 控制树的整体高度（厘米），
+    `col` / `lwd` 控制树线颜色与线宽；
+  - `type = "rectangle"`（直角树）或 `"triangle"`（三角形树，每个合并节点汇聚到一个顶点）；
+  - 配套 scale 用聚类叶子顺序设置 `limits`，因此轴标签**和图里的数据会一起重排**，
+    树与数据严格对齐；`cluster_order()` 可单独取出聚类后的顺序；
+  - `position` 只控制**树**画在哪一侧（x 轴 `"bottom"`/`"top"`，y 轴 `"left"`/`"right"`），
+    分类标签始终留在常规位置（x 在底部、y 在左侧）；
+  - 分面时树会自动贴到 strip 内侧（x 树在 strip 下方、y 树在标签外侧），
+    多行分面逐行处理；`free_x` / `free_y` 下每个面板各自聚类并各自重排标签。
+
 # ggutils 0.0.2
 
 * `coord_spiral()` 新增 `turns` 与 `gap`：直接给圈数和圈间白隙，

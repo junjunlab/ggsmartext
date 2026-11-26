@@ -46,3 +46,59 @@
 #' dim(airway_heatmap$z)
 #' head(airway_heatmap$df)
 "airway_heatmap"
+
+#' PBMC3k single-cell marker table
+#'
+#' The marker table from the Seurat PBMC3k tutorial: for each of nine cell
+#' clusters, the top 20 marker genes with their fold change and expression
+#' fractions. Bundled so that clustering examples start from a real single-cell
+#' marker matrix without downloading anything.
+#'
+#' @format A list with two components:
+#' \describe{
+#'   \item{\code{markers}}{data frame (180 rows) with \code{cluster_id}
+#'     (0--8), \code{celltype} (factor, 9 levels), \code{gene},
+#'     \code{avg_log2FC}, \code{pct.1}, \code{pct.2}, \code{p_val} and
+#'     \code{p_val_adj}.}
+#'   \item{\code{mat}}{numeric matrix, 177 genes x 9 cell types of
+#'     \code{avg_log2FC}; genes absent from a cell type are zero. Intended as the
+#'     input to \code{scale_x_cluster()} / \code{scale_y_cluster()}.}
+#' }
+#' @source Seurat PBMC3k tutorial marker table (\code{pbmc3k_markers.csv}).
+#'
+#' @examples
+#' str(pbmc3k_markers, max.level = 1)
+#' dim(pbmc3k_markers$mat)
+"pbmc3k_markers"
+
+#' PBMC3k dot plot data
+#'
+#' A complete gene-by-cluster table from the Seurat PBMC3k tutorial, shaped the
+#' way a dot plot needs it: every one of the 90 genes is measured in every one
+#' of the nine cell types (810 rows, no gaps), so a facetted plot has the same
+#' genes in every panel and a single-panel plot can show the whole matrix.
+#'
+#' @format A data frame with 810 rows and six columns:
+#' \describe{
+#'   \item{\code{cluster_id}}{integer, Seurat cluster 0--8.}
+#'   \item{\code{celltype}}{factor with 9 levels, ordered by \code{cluster_id}.}
+#'   \item{\code{gene}}{character, 90 unique gene symbols.}
+#'   \item{\code{avg_expression}}{numeric, average expression in the cluster
+#'     (log-normalised counts).}
+#'   \item{\code{pct_expressed}}{numeric, percentage of cells in the cluster
+#'     that express the gene (0--100), i.e. the dot size in a dot plot.}
+#'   \item{\code{avg_exp_scaled}}{numeric, z-score of \code{avg_expression}
+#'     across cell types, i.e. the dot colour in a dot plot.}
+#' }
+#' @source Seurat PBMC3k tutorial (\code{pbmc3k_dotplot_data.csv}).
+#'
+#' @examples
+#' str(pbmc3k_dotplot)
+#' length(unique(pbmc3k_dotplot$gene))
+#'
+#' # the 3 strongest genes of each cell type, for a compact example
+#' top3 <- lapply(split(pbmc3k_dotplot, pbmc3k_dotplot$celltype), function(d) {
+#'   head(d[order(-d$avg_exp_scaled), "gene"], 3)
+#' })
+#' unique(unlist(top3, use.names = FALSE))
+"pbmc3k_dotplot"

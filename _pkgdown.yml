@@ -23,6 +23,22 @@ reference:
       - scale_x_spiral_axis
       - scale_y_spiral_axis
 
+  - title: 聚类树 (Cluster trees)
+    desc: >
+      给 x / y 分类轴加一棵层次聚类树：配套 scale 用聚类叶序重排分类顺序，
+      树与数据严格对齐；分面时按面板逐棵重算，树自动贴到 strip 内侧。
+    contents:
+      - guide_axis_cluster
+      - cluster_order
+      - strip_cluster
+
+  - title: 分面 (Facets)
+    desc: >
+      逐面板自由的 facet_grid：scales = "free_x" / "free_y" / "free" 按面板放开，
+      而不是像 facet_grid() 那样按列 / 按行自由。
+    contents:
+      - facet_gridn
+
   - title: 排布算法 (Layout algorithms)
     desc: >
       guide 内部使用的三个底层排布算法：一维防重叠"压紧"
@@ -36,7 +52,10 @@ reference:
 
   - title: 内置数据 (Datasets)
     desc: >
-      示例和 vignette 使用的真实 RNA-seq 热图数据（GEO GSE52778），
-      已预处理成 300 个高变基因 × 8 个样本的行 z-score 矩阵。
+      示例和 vignette 使用的真实数据：GEO GSE52778 的 RNA-seq 热图
+      （300 个高变基因 × 8 个样本的行 z-score 矩阵），以及 Seurat PBMC3k
+      教程的 marker 表与 dot plot 数据。
     contents:
       - airway_heatmap
+      - pbmc3k_markers
+      - pbmc3k_dotplot

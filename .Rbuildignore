@@ -20,3 +20,6 @@
 ^AGENTS\.md$
 ^CLAUDE\.md$
 ^README\\.html$
+^_lib$
+^vignettes/figure$
+^site-cache$

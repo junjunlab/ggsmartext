@@ -87,3 +87,48 @@ test_that("airway_heatmap 的示例标注都指向真实存在的基因", {
     ))
   }
 })
+
+## 内置 PBMC3k marker 数据的结构契约
+
+test_that("pbmc3k_markers 的结构与文档一致", {
+  data(pbmc3k_markers, package = "ggutils")
+
+  expect_type(pbmc3k_markers, "list")
+  expect_named(pbmc3k_markers, c("markers", "mat"))
+
+  m <- pbmc3k_markers$markers
+  expect_true(is.data.frame(m))
+  expect_identical(
+    names(m),
+    c("cluster_id", "celltype", "gene", "avg_log2FC", "pct.1", "pct.2",
+      "p_val", "p_val_adj")
+  )
+  expect_identical(nrow(m), 180L)
+  expect_identical(sort(unique(m$cluster_id)), 0:8)
+  expect_s3_class(m$celltype, "factor")
+  expect_identical(nlevels(m$celltype), 9L)
+  expect_true(all(table(m$celltype) == 20L))
+  expect_false(anyNA(m))
+
+  mat <- pbmc3k_markers$mat
+  expect_true(is.matrix(mat))
+  expect_identical(dim(mat), c(177L, 9L))
+  expect_identical(colnames(mat), levels(m$celltype))
+  expect_true(all(rownames(mat) %in% m$gene))
+})
+
+test_that("pbmc3k_markers$mat 可用于聚类树", {
+  data(pbmc3k_markers, package = "ggutils")
+  ord <- cluster_order(t(pbmc3k_markers$mat), "average")
+  expect_length(ord, 9L)
+  expect_setequal(ord, colnames(pbmc3k_markers$mat))
+
+  long <- as.data.frame(as.table(t(pbmc3k_markers$mat)))
+  names(long) <- c("celltype", "gene", "value")
+  p <- ggplot(long, aes(celltype, gene, fill = value)) +
+    geom_tile() +
+    scale_x_cluster(t(pbmc3k_markers$mat), method = "average",
+                    height = 1, type = "triangle") +
+    theme_minimal()
+  expect_silent(ggplot2::ggplotGrob(p))
+})

@@ -6,6 +6,11 @@
     makeContent.ggse_smart_labels,
     envir = asNamespace("grid")
   )
+  registerS3method(
+    "makeContent", "ggutils_cluster_tree",
+    makeContent.ggutils_cluster_tree,
+    envir = asNamespace("grid")
+  )
 }
 
 .onUnload <- function(libpath) {
