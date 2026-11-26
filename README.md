@@ -47,6 +47,63 @@ over label drawing:
   default with the `circlize` / `ComplexHeatmap::anno_mark()` “diagonal”
   geometry (short perpendicular stub, diagonal, short stub).
 
+## `guide_axis_cluster()`: dendrograms on the axes
+
+`guide_axis_cluster()` clusters the categories, re-orders the axis into
+the dendrogram’s leaf order and draws the tree next to the axis, so the
+tree and the data stay perfectly aligned. `scale_x_cluster()` /
+`scale_y_cluster()` are the drop-in scales: they cluster the plot data
+for you, no matrix required.
+
+`position` moves **the tree only** – the labels stay on their usual side
+– and with `facet_wrap(scales = "free_x")` every panel gets its own
+tree, clustered from that panel’s own data (no `free = TRUE` needed):
+
+``` r
+ggplot(d, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  scale_x_cluster(method = "ward.D2", height = 1) +
+  scale_y_cluster(position = "left", height = 1)
+
+ggplot(d, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  facet_wrap(~ set, scales = "free_x") +
+  scale_x_cluster(position = "top")
+```
+
+On a `coord_radial()` plot the theta tree becomes a **ring dendrogram**:
+`position = "bottom"` draws it inside the hole (leaves on the inner
+circle, merges towards the centre), `position = "top"` draws it outside
+the circle. On a partial arc the r-axis tree becomes an **arc-shaped
+wedge** at the label-free end of the arc; a full circle draws no r tree.
+
+``` r
+# ring tree inside the hole
+ggplot(d, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.55) +
+  scale_x_cluster(method = "ward.D2", height = 1)
+
+# arc tree on the r axis of a 180 degree arc
+ggplot(d, aes(gene, sample, fill = z)) +
+  geom_tile() +
+  coord_radial(theta = "x", start = -pi / 2, end = pi / 2,
+               inner.radius = 0.55) +
+  scale_y_cluster(method = "ward.D2", height = 1.4)
+```
+
+## `facet_gridn()`: per-panel free scales for `facet_grid()`
+
+`facet_grid()` only frees a scale by column (x) or by row (y).
+`facet_gridn()` frees it **per panel**, with the same
+`scales = "free_x"` / `"free_y"` / `"free"` spelling, so every cell gets
+its own range and its own axis:
+
+``` r
+ggplot(d, aes(gene, value)) + geom_point() +
+  facet_gridn(rows = vars(cluster), cols = vars(set), scales = "free_x")
+```
+
 ## `coord_spiral()`: Cartesian plots on a spiral
 
 `coord_spiral()` bends an ordinary ggplot into an Archimedean spiral,
@@ -64,7 +121,7 @@ ggplot(d, aes(x, y)) + geom_line() + facet_wrap(~set) + coord_spiral()
 coord_spiral(turns = 5, start = 0, height = .7)
 coord_spiral(turns = 3, gap = .3, clockwise = TRUE)
 
-# fine-tune the two axes: breaks, label rotation, tick length, side
+# fine-tune the two axes: breaks, minor ticks, label rotation, tick length, side
 ggplot(d, aes(x, y)) + geom_col() +
   scale_x_spiral_axis(minor_breaks = seq(0, 1, .1)) +
   scale_y_spiral_axis(side = "both", label_rot = 90) +
@@ -73,10 +130,10 @@ ggplot(d, aes(x, y)) + geom_col() +
 
 Every layer that hands its `x`/`y` to the coordinate transform works
 unchanged - lines, areas, bars, histograms, box plots, violins, tiles,
-text, error bars, segments with arrows.  Layers that only carry
-`xend`/`xmin` coordinates (`geom_segment()`, `geom_rect()`) are warped too,
-though the edge between two warped points stays straight.  `geom_hline()`
-and friends, which have no end points, are not supported.
+text, error bars, segments with arrows. Layers that only carry
+`xend`/`xmin` coordinates (`geom_segment()`, `geom_rect()`) are warped
+too, though the edge between two warped points stays straight.
+`geom_hline()` and friends, which have no end points, are not supported.
 
 More `ggplot2` utilities will be added here over time. The deliberately
 broad name means you can load one package instead of keeping track of
