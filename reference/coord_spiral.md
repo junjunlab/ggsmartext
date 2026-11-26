@@ -134,18 +134,17 @@ pile of overlapping text.
 Every position aesthetic is warped, not only `x` and `y`: `xend` /
 `yend`, `xmin` / `xmax` and `ymin` / `ymax` are mapped through the same
 formula. So
-[`geom_segment()`](https://ggplot2.tidyverse.org/reference/geom_segment.html)
+[`geom_segment()`](https://rdrr.io/pkg/ggplot2/man/geom_segment.html)
 (arrows included),
-[`geom_rect()`](https://ggplot2.tidyverse.org/reference/geom_tile.html),
-[`geom_ribbon()`](https://ggplot2.tidyverse.org/reference/geom_ribbon.html)
-and
-[`geom_boxplot()`](https://ggplot2.tidyverse.org/reference/geom_boxplot.html)
+[`geom_rect()`](https://rdrr.io/pkg/ggplot2/man/geom_tile.html),
+[`geom_ribbon()`](https://rdrr.io/pkg/ggplot2/man/geom_ribbon.html) and
+[`geom_boxplot()`](https://rdrr.io/pkg/ggplot2/man/geom_boxplot.html)
 land on the track, although the edge between two warped points is still
 a straight line. Layers without end points
-([`geom_hline()`](https://ggplot2.tidyverse.org/reference/geom_abline.html),
-[`geom_vline()`](https://ggplot2.tidyverse.org/reference/geom_abline.html),
-[`geom_abline()`](https://ggplot2.tidyverse.org/reference/geom_abline.html))
-are not supported.
+([`geom_hline()`](https://rdrr.io/pkg/ggplot2/man/geom_abline.html),
+[`geom_vline()`](https://rdrr.io/pkg/ggplot2/man/geom_abline.html),
+[`geom_abline()`](https://rdrr.io/pkg/ggplot2/man/geom_abline.html)) are
+not supported.
 
 Use
 [`scale_x_spiral_axis()`](https://junjunlab.github.io/ggutils/reference/scale_spiral_axis.md)

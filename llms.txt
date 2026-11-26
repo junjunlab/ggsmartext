@@ -154,6 +154,31 @@ re-uses the algorithms — the ggplot2 guide integration is new.
   [`scale_y_spiral_axis()`](https://junjunlab.github.io/ggutils/reference/scale_spiral_axis.md)
   : Fine-tune the axes drawn along a spiral
 
+## 聚类树 (Cluster trees)
+
+给 x / y 分类轴加一棵层次聚类树：配套 scale 用聚类叶序重排分类顺序，
+树与数据严格对齐；分面时按面板逐棵重算，树自动贴到 strip 内侧。
+
+- [`guide_axis_cluster()`](https://junjunlab.github.io/ggutils/reference/guide_axis_cluster.md)
+  [`scale_x_cluster()`](https://junjunlab.github.io/ggutils/reference/guide_axis_cluster.md)
+  [`scale_y_cluster()`](https://junjunlab.github.io/ggutils/reference/guide_axis_cluster.md)
+  : Cluster axis guide for ggplot2
+- [`cluster_order()`](https://junjunlab.github.io/ggutils/reference/cluster_order.md)
+  : Retrieve the dendrogram leaf order
+- [`strip_cluster()`](https://junjunlab.github.io/ggutils/reference/strip_cluster.md)
+  : Keep cluster trees inside the facet strip
+
+## 分面 (Facets)
+
+逐面板自由的 facet_grid：scales = “free_x” / “free_y” / “free”
+按面板放开， 而不是像 facet_grid() 那样按列 / 按行自由。
+
+- [`facet_gridn()`](https://junjunlab.github.io/ggutils/reference/facet_gridn.md)
+  [`FacetGridN`](https://junjunlab.github.io/ggutils/reference/facet_gridn.md)
+  :
+
+  A `facet_grid()` that can free scales panel by panel
+
 ## 排布算法 (Layout algorithms)
 
 guide 内部使用的三个底层排布算法：一维防重叠”压紧”
@@ -169,9 +194,14 @@ guide 内部使用的三个底层排布算法：一维防重叠”压紧”
 
 ## 内置数据 (Datasets)
 
-示例和 vignette 使用的真实 RNA-seq 热图数据（GEO GSE52778）， 已预处理成
-300 个高变基因 × 8 个样本的行 z-score 矩阵。
+示例和 vignette 使用的真实数据：GEO GSE52778 的 RNA-seq 热图 （300
+个高变基因 × 8 个样本的行 z-score 矩阵），以及 Seurat PBMC3k 教程的
+marker 表与 dot plot 数据。
 
 - [`airway_heatmap`](https://junjunlab.github.io/ggutils/reference/airway_heatmap.md)
   : Processed RNA-seq expression matrix (GEO GSE52778)
+- [`pbmc3k_markers`](https://junjunlab.github.io/ggutils/reference/pbmc3k_markers.md)
+  : PBMC3k single-cell marker table
+- [`pbmc3k_dotplot`](https://junjunlab.github.io/ggutils/reference/pbmc3k_dotplot.md)
+  : PBMC3k dot plot data
 

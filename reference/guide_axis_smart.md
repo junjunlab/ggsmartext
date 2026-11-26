@@ -1,7 +1,7 @@
 # Smart axis labels for ggplot2
 
 `guide_axis_smart()` is a drop-in replacement for
-[`ggplot2::guide_axis()`](https://ggplot2.tidyverse.org/reference/guide_axis.html).
+[`ggplot2::guide_axis()`](https://rdrr.io/pkg/ggplot2/man/guide_axis.html).
 It is meant for discrete axes that carry more category labels than the
 panel can display at once. Instead of letting the labels overlap, it
 
@@ -42,8 +42,8 @@ guide_axis_smart(
 - title:
 
   A character string or
-  [`waiver()`](https://ggplot2.tidyverse.org/reference/waiver.html) for
-  the axis title.
+  [`waiver()`](https://rdrr.io/pkg/ggplot2/man/waiver.html) for the axis
+  title.
 
 - which:
 
@@ -162,18 +162,18 @@ guide_axis_smart(
 - minor.ticks:
 
   **\[experimental\]** Draw minor ticks, passed on to
-  [`ggplot2::guide_axis()`](https://ggplot2.tidyverse.org/reference/guide_axis.html).
+  [`ggplot2::guide_axis()`](https://rdrr.io/pkg/ggplot2/man/guide_axis.html).
 
 - cap, order, position, theme:
 
   Passed on to
-  [`ggplot2::guide_axis()`](https://ggplot2.tidyverse.org/reference/guide_axis.html).
+  [`ggplot2::guide_axis()`](https://rdrr.io/pkg/ggplot2/man/guide_axis.html).
 
 ## Value
 
 A `guide` object that can be used in
-[`guides()`](https://ggplot2.tidyverse.org/reference/guides.html) or in
-the `guide` argument of a scale.
+[`guides()`](https://rdrr.io/pkg/ggplot2/man/guides.html) or in the
+`guide` argument of a scale.
 
 ## Details
 
@@ -192,7 +192,7 @@ The one-dimensional arrangement of the labels inside each track is a
 port of the `smartAlign` algorithm from the
 [circlize](https://github.com/jokergoo/circlize) package.
 
-[`coord_radial()`](https://ggplot2.tidyverse.org/reference/coord_radial.html)
+[`coord_radial()`](https://rdrr.io/pkg/ggplot2/man/coord_radial.html)
 renames the position scales to `theta` and `r`, and only accepts guides
 that know about the `theta` aesthetic; `guide_axis_smart()` is one of
 them. On a radial axis the labels are laid out the way
@@ -224,8 +224,8 @@ override the theme only when they are supplied.
 
 [`smart_align()`](https://junjunlab.github.io/ggutils/reference/smart_align.md),
 [`smart_stack()`](https://junjunlab.github.io/ggutils/reference/smart_stack.md),
-[`ggplot2::guide_axis()`](https://ggplot2.tidyverse.org/reference/guide_axis.html),
-[`ggplot2::guide_axis_theta()`](https://ggplot2.tidyverse.org/reference/guide_axis_theta.html)
+[`ggplot2::guide_axis()`](https://rdrr.io/pkg/ggplot2/man/guide_axis.html),
+[`ggplot2::guide_axis_theta()`](https://rdrr.io/pkg/ggplot2/man/guide_axis_theta.html)
 
 ## Examples
 
@@ -289,27 +289,35 @@ ggplot(d, aes(sample, value)) +
   guides(theta = guide_axis_smart(which = 9:20))
 
 
+# heat maps below use per-sample z-scores: each sample standardised across
+# the 300 genes of the bundled matrix
+z_sample <- as.data.frame(as.table(scale(
+  tapply(airway_heatmap$df$z,
+         list(airway_heatmap$df$gene, airway_heatmap$df$sample), mean)
+)))
+names(z_sample) <- c("gene", "sample", "z_sample")
+
 # a circular heatmap from the bundled RNA-seq data (300 genes x 8 samples):
 # the genes run around the circle, labels outside
 data(airway_heatmap)
-ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+ggplot(z_sample, aes(gene, sample, fill = z_sample)) +
   geom_tile() +
   coord_radial(theta = "x", inner.radius = 0.2) +
   guides(theta = guide_axis_smart(which = airway_heatmap$mark)) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score")
+                       midpoint = 0, name = "z-score (sample)")
 
 
 # the same heatmap with the labels attached to the inner radius (inside the
 # hole); a large inner radius leaves room for them
-ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+ggplot(z_sample, aes(gene, sample, fill = z_sample)) +
   geom_tile() +
   coord_radial(theta = "x", inner.radius = 0.62) +
   guides(theta = guide_axis_smart(
     which = airway_heatmap$mark, theta_side = "inside"
   )) +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score")
+                       midpoint = 0, name = "z-score (sample)")
 
 
 # with facets every panel is a circle of its own
@@ -328,12 +336,14 @@ ggplot(d_facet, aes(cat, value)) +
 # a faceted circular heatmap needs scales = "free_x": each panel then has its
 # own gene scale, so the ring is complete and only that panel's genes are
 # labelled
-ggplot(airway_heatmap$df, aes(gene, sample, fill = z)) +
+ggplot(z_sample, aes(gene, sample, fill = z_sample)) +
   geom_tile() +
   coord_radial(theta = "x", inner.radius = 0.3) +
   guides(theta = guide_axis_smart(which = unlist(airway_heatmap$mark_by_set))) +
   facet_wrap(~gene_set, ncol = 2, scales = "free_x") +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
-                       midpoint = 0, name = "z-score")
-
+                       midpoint = 0, name = "z-score (sample)")
+#> Error in combine_vars(data, params$plot_env, vars, drop = params$drop): At least one layer must contain all faceting variables: `gene_set`
+#> ✖ Plot is missing `gene_set`
+#> ✖ Layer 1 is missing `gene_set`
 ```

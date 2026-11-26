@@ -36,11 +36,11 @@ scale_y_spiral_axis(
 - ...:
 
   Passed on to
-  [`ggplot2::scale_x_continuous()`](https://ggplot2.tidyverse.org/reference/scale_continuous.html)
+  [`ggplot2::scale_x_continuous()`](https://rdrr.io/pkg/ggplot2/man/scale_continuous.html)
   /
-  [`ggplot2::scale_x_discrete()`](https://ggplot2.tidyverse.org/reference/scale_discrete.html)
+  [`ggplot2::scale_x_discrete()`](https://rdrr.io/pkg/ggplot2/man/scale_discrete.html)
   or
-  [`ggplot2::scale_y_continuous()`](https://ggplot2.tidyverse.org/reference/scale_continuous.html),
+  [`ggplot2::scale_y_continuous()`](https://rdrr.io/pkg/ggplot2/man/scale_continuous.html),
   for example `breaks`, `minor_breaks`, `labels`, `limits` or `trans`.
   `minor_breaks` draws the short unlabelled ticks between two breaks;
   the coord paints them at 55% of `tick_length`, and
@@ -109,9 +109,9 @@ A ggplot2 scale that also carries the spiral axis settings.
 ## Details
 
 Use them exactly like
-[`ggplot2::scale_x_continuous()`](https://ggplot2.tidyverse.org/reference/scale_continuous.html)
+[`ggplot2::scale_x_continuous()`](https://rdrr.io/pkg/ggplot2/man/scale_continuous.html)
 /
-[`ggplot2::scale_y_continuous()`](https://ggplot2.tidyverse.org/reference/scale_continuous.html);
+[`ggplot2::scale_y_continuous()`](https://rdrr.io/pkg/ggplot2/man/scale_continuous.html);
 `breaks`, `minor_breaks`, `labels`, `limits`, `trans`, ... keep their
 usual meaning, so the ticks shown on the spiral are the breaks of the
 scale.
@@ -134,5 +134,5 @@ ggplot(d, aes(x, y)) +
   scale_x_spiral_axis(breaks = seq(0, 1, by = .1), label_size = 6) +
   scale_y_spiral_axis(breaks = c(.3, .5, .7), axis_at = 0, label_rot = 90) +
   coord_spiral()
-#> Error in scale_x_spiral_axis(breaks = seq(0, 1, by = 0.1), label_size = 6): could not find function "scale_x_spiral_axis"
+
 ```

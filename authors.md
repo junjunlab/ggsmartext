@@ -10,12 +10,12 @@ Source:
 [`DESCRIPTION`](https://github.com/junjunlab/ggutils/blob/HEAD/DESCRIPTION)
 
 Zhang Jun (2026). *ggutils: Utilities for 'ggplot2'*. R package version
-0.0.2, <https://github.com/junjunlab/ggutils>.
+0.0.3, <https://github.com/junjunlab/ggutils>.
 
     @Manual{,
       title = {ggutils: Utilities for 'ggplot2'},
       author = {{Zhang Jun}},
       year = {2026},
-      note = {R package version 0.0.2},
+      note = {R package version 0.0.3},
       url = {https://github.com/junjunlab/ggutils},
     }

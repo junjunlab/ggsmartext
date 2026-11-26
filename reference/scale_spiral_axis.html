@@ -13,7 +13,7 @@ ticks are and how its labels are turned."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">ggutils</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.0.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -80,8 +80,8 @@ ticks are and how its labels are turned.</p>
 
 
 <dl><dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Passed on to <code><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">ggplot2::scale_x_continuous()</a></code> /
-<code><a href="https://ggplot2.tidyverse.org/reference/scale_discrete.html" class="external-link">ggplot2::scale_x_discrete()</a></code> or <code><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">ggplot2::scale_y_continuous()</a></code>, for
+<dd><p>Passed on to <code><a href="https://rdrr.io/pkg/ggplot2/man/scale_continuous.html" class="external-link">ggplot2::scale_x_continuous()</a></code> /
+<code><a href="https://rdrr.io/pkg/ggplot2/man/scale_discrete.html" class="external-link">ggplot2::scale_x_discrete()</a></code> or <code><a href="https://rdrr.io/pkg/ggplot2/man/scale_continuous.html" class="external-link">ggplot2::scale_y_continuous()</a></code>, for
 example <code>breaks</code>, <code>minor_breaks</code>, <code>labels</code>, <code>limits</code> or <code>trans</code>.
 <code>minor_breaks</code> draws the short unlabelled ticks between two breaks; the
 coord paints them at 55% of <code>tick_length</code>, and <code>minor_breaks = NULL</code>
@@ -146,8 +146,8 @@ thin for all the breaks.  <code>NULL</code> keeps every break.  Only used by
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>Use them exactly like <code><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">ggplot2::scale_x_continuous()</a></code> /
-<code><a href="https://ggplot2.tidyverse.org/reference/scale_continuous.html" class="external-link">ggplot2::scale_y_continuous()</a></code>; <code>breaks</code>, <code>minor_breaks</code>, <code>labels</code>,
+    <p>Use them exactly like <code><a href="https://rdrr.io/pkg/ggplot2/man/scale_continuous.html" class="external-link">ggplot2::scale_x_continuous()</a></code> /
+<code><a href="https://rdrr.io/pkg/ggplot2/man/scale_continuous.html" class="external-link">ggplot2::scale_y_continuous()</a></code>; <code>breaks</code>, <code>minor_breaks</code>, <code>labels</code>,
 <code>limits</code>, <code>trans</code>, ... keep their usual meaning, so the ticks shown on the
 spiral are the breaks of the scale.</p>
 <p>Both axes size themselves against the white gap between two turns: the ticks
@@ -163,12 +163,12 @@ overridden through the arguments below.</p>
 <span class="r-in"><span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="fl">200</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>                y <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Trig.html" class="external-link">sin</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, length.out <span class="op">=</span> <span class="fl">200</span><span class="op">)</span> <span class="op">*</span> <span class="fl">6</span> <span class="op">*</span> <span class="va">pi</span><span class="op">)</span> <span class="op">*</span> <span class="fl">.35</span> <span class="op">+</span> <span class="fl">.5</span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">d</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
-<span class="r-in"><span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/ggplot.html" class="external-link">ggplot</a></span><span class="op">(</span><span class="va">d</span>, <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/aes.html" class="external-link">aes</a></span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/pkg/ggplot2/man/geom_path.html" class="external-link">geom_line</a></span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu">scale_x_spiral_axis</span><span class="op">(</span>breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">1</span>, by <span class="op">=</span> <span class="fl">.1</span><span class="op">)</span>, label_size <span class="op">=</span> <span class="fl">6</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu">scale_y_spiral_axis</span><span class="op">(</span>breaks <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">.3</span>, <span class="fl">.5</span>, <span class="fl">.7</span><span class="op">)</span>, axis_at <span class="op">=</span> <span class="fl">0</span>, label_rot <span class="op">=</span> <span class="fl">90</span><span class="op">)</span> <span class="op">+</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="coord_spiral.html">coord_spiral</a></span><span class="op">(</span><span class="op">)</span></span></span>
-<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in scale_x_spiral_axis(breaks = seq(0, 1, by = 0.1), label_size = 6):</span> could not find function "scale_x_spiral_axis"</span>
+<span class="r-plt img"><img src="scale_spiral_axis-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>
     </div>
