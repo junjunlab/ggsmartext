@@ -121,6 +121,18 @@ cluster scales.}
 leaves when the displayed labels differ from the axis values (free facets
 re-key them per panel).}
 
+\item{cluster_position}{Where the tree sits when the guide is attached
+directly with \code{guides()}; defaults to the axis side (\code{"bottom"} for an x
+axis, \code{"left"} for a y axis).}
+
+\item{show_labels}{When \code{FALSE} the labels keep their layout but are drawn
+invisibly, so only the tree shows -- used when a secondary axis carries the
+tree while the main axis prints the category names.}
+
+\item{draw_tree}{Internal switch used by \code{\link[=scale_x_cluster]{scale_x_cluster()}}: \code{FALSE} draws
+only the labels, and the tree is injected into the finished gtable instead
+(that is what \code{position = "top"} needs).}
+
 \item{title}{Axis title, passed on to \code{\link[ggplot2:guide_axis]{ggplot2::guide_axis()}}.}
 
 \item{position}{Where the dendrogram is drawn: \code{"bottom"}/\code{"top"} for an x

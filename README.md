@@ -19,46 +19,28 @@ commit](https://img.shields.io/github/last-commit/junjunlab/ggutils.svg)](https:
 > Small, reusable utilities for `ggplot2`.
 
 `ggutils` adds helpers that plug into the usual grammar – no new
-geometry, no special data format.
+geometry, no special data format – so a plot keeps being a plot. Each
+one solves a concrete problem and is documented with runnable examples.
 
-## `guide_axis_smart()`: readable labels on crowded axes
+What is inside:
 
-Picks the labels you want, spreads them over several rows / columns so
-they never overlap, and draws a leader line from every label back to its
-tick.
-
-``` r
-ggplot(d, aes(gene, value)) + geom_col() +
-  guides(x = guide_axis_smart(n = 8))
-```
-
-## `guide_axis_cluster()`: dendrograms on the axes
-
-Clusters the categories, orders the axis by the dendrogram and draws the
-tree next to it. `position` moves the tree only; free facets get one
-tree per panel; on `coord_radial()` it becomes a ring tree.
-
-``` r
-ggplot(d, aes(gene, sample, fill = z)) + geom_tile() +
-  scale_x_cluster(method = "ward.D2") +
-  scale_y_cluster(position = "left")
-```
-
-## `facet_gridn()`: per-panel free scales for `facet_grid()`
-
-``` r
-ggplot(d, aes(gene, value)) + geom_point() +
-  facet_gridn(rows = vars(cluster), cols = vars(set), scales = "free_x")
-```
-
-## `coord_spiral()`: Cartesian plots on a spiral
-
-Bends a normal ggplot into an Archimedean spiral and draws the angle and
-radial axes for you.
-
-``` r
-ggplot(d, aes(x, y)) + geom_line() + coord_spiral(turns = 3)
-```
+- **`guide_axis_smart()`** – readable labels on crowded axes: pick the
+  labels (`which`, `n`), spread them over several rows / columns without
+  overlap, and tie every label back to its tick with a leader line.
+- **`guide_axis_cluster()` / `scale_x_cluster()` / `scale_y_cluster()`**
+  – hierarchical clustering on the axes: the axis is ordered by the
+  dendrogram and the tree is drawn next to it, one tree per panel with
+  free facets. On a `coord_radial()` plot the theta tree becomes a ring
+  dendrogram (inside the hole or outside the circle) and a partial arc
+  gets an arc-shaped r-axis tree.
+- **`facet_gridn()`** – `facet_grid()` with scales that are free per
+  panel instead of per row / column.
+- **`coord_spiral()`** – an Archimedean spiral coordinate with matching
+  angle and radial axes, for long sequences that would otherwise need
+  many rows.
+- **Data and layout helpers** – the bundled `airway_heatmap`,
+  `pbmc3k_markers` and `pbmc3k_dotplot` data, plus the exported layout
+  algorithms `smart_align()`, `box_arrange()` and `smart_stack()`.
 
 ## Installation
 

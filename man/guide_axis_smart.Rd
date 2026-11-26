@@ -231,6 +231,8 @@ z_sample <- as.data.frame(as.table(scale(
          list(airway_heatmap$df$gene, airway_heatmap$df$sample), mean)
 )))
 names(z_sample) <- c("gene", "sample", "z_sample")
+z_sample <- merge(z_sample, airway_heatmap$genes[c("gene", "gene_set")],
+                  by = "gene")
 
 # a circular heatmap from the bundled RNA-seq data (300 genes x 8 samples):
 # the genes run around the circle, labels outside

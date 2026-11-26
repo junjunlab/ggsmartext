@@ -62,6 +62,15 @@
 #'   `"top"` **outside the circle**; the r-axis tree always sits at the
 #'   label-free end of the arc, so `position` does not move it (see
 #'   "Radial coordinates" below).
+#' @param cluster_position Where the tree sits when the guide is attached
+#'   directly with `guides()`; defaults to the axis side (`"bottom"` for an x
+#'   axis, `"left"` for a y axis).
+#' @param show_labels When `FALSE` the labels keep their layout but are drawn
+#'   invisibly, so only the tree shows -- used when a secondary axis carries the
+#'   tree while the main axis prints the category names.
+#' @param draw_tree Internal switch used by [scale_x_cluster()]: `FALSE` draws
+#'   only the labels, and the tree is injected into the finished gtable instead
+#'   (that is what `position = "top"` needs).
 #' @param tree_position Optional alias for `position`, kept for scripts written
 #'   before `position` was redefined to move only the tree.
 #' @param strip_side Where the tree sits relative to the facet strip when the
