@@ -61,53 +61,26 @@ you rotate them all by 90°, or you hide them and lose the information.
 
 ## `guide_axis_cluster()`: dendrograms on the axes
 
-`guide_axis_cluster()` clusters the categories, re-orders the axis into the
-dendrogram's leaf order and draws the tree next to the axis, so the tree and the
-data stay perfectly aligned. `scale_x_cluster()` / `scale_y_cluster()` are the
-drop-in scales: they cluster the plot data for you, no matrix required.
-
-`position` moves **the tree only** -- the labels stay on their usual side -- and
-with `facet_wrap(scales = "free_x")` every panel gets its own tree, clustered
-from that panel's own data (no `free = TRUE` needed):
+Clusters the categories, re-orders the axis into the leaf order and draws the
+tree next to it (`scale_x_cluster()` / `scale_y_cluster()` do the same from the
+plot data alone). `position` moves the tree, not the labels, and with free
+facets every panel gets its own tree. On `coord_radial()` the theta tree becomes
+a ring dendrogram (`"bottom"` inside the hole, `"top"` outside the circle) and a
+partial arc gets an arc-shaped r-axis tree.
 
 ```r
-ggplot(d, aes(gene, sample, fill = z)) +
-  geom_tile() +
-  scale_x_cluster(method = "ward.D2", height = 1) +
-  scale_y_cluster(position = "left", height = 1)
+ggplot(d, aes(gene, sample, fill = z)) + geom_tile() +
+  scale_x_cluster(method = "ward.D2") +   # tree above the labels
+  scale_y_cluster(position = "left")      # tree at the far left
 
-ggplot(d, aes(gene, sample, fill = z)) +
-  geom_tile() +
-  facet_wrap(~ set, scales = "free_x") +
-  scale_x_cluster(position = "top")
-```
-
-On a `coord_radial()` plot the theta tree becomes a **ring dendrogram**:
-`position = "bottom"` draws it inside the hole (leaves on the inner circle,
-merges towards the centre), `position = "top"` draws it outside the circle. On a
-partial arc the r-axis tree becomes an **arc-shaped wedge** at the label-free end
-of the arc; a full circle draws no r tree.
-
-```r
-# ring tree inside the hole
-ggplot(d, aes(gene, sample, fill = z)) +
-  geom_tile() +
+ggplot(d, aes(gene, sample, fill = z)) + geom_tile() +
   coord_radial(theta = "x", inner.radius = 0.55) +
-  scale_x_cluster(method = "ward.D2", height = 1)
-
-# arc tree on the r axis of a 180 degree arc
-ggplot(d, aes(gene, sample, fill = z)) +
-  geom_tile() +
-  coord_radial(theta = "x", start = -pi / 2, end = pi / 2,
-               inner.radius = 0.55) +
-  scale_y_cluster(method = "ward.D2", height = 1.4)
+  scale_x_cluster()                       # ring tree inside the hole
 ```
 
 ## `facet_gridn()`: per-panel free scales for `facet_grid()`
 
-`facet_grid()` only frees a scale by column (x) or by row (y). `facet_gridn()`
-frees it **per panel**, with the same `scales = "free_x"` / `"free_y"` /
-`"free"` spelling, so every cell gets its own range and its own axis:
+Frees a `facet_grid()` scale per panel instead of per row / column:
 
 ```r
 ggplot(d, aes(gene, value)) + geom_point() +

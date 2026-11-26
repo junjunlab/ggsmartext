@@ -1,13 +1,13 @@
 ---
-title: "ggutils: Smart Axis Labels for ggplot2"
-subtitle: "Clean labels for crowded discrete axes"
+title: "ggutils: a toolbox for ggplot2"
+subtitle: "smart axis labels, cluster trees, circular layouts and spirals"
 output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 3
     number_sections: false
 vignette: >
-  %\VignetteIndexEntry{ggutils (English): Smart Axis Labels for ggplot2}
+  %\VignetteIndexEntry{ggutils (English): a toolbox for ggplot2}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---

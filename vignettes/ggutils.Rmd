@@ -1,13 +1,13 @@
 ---
-title: "ggutils: Smart Axis Labels for ggplot2"
-subtitle: "让拥挤的分类轴标签变清爽"
+title: "ggutils: 更好用的 ggplot2 工具箱"
+subtitle: "智能轴标签、聚类树、环形布局与螺旋坐标"
 output:
   rmarkdown::html_vignette:
     toc: true
     toc_depth: 3
     number_sections: false
 vignette: >
-  %\VignetteIndexEntry{ggutils: Smart Axis Labels for ggplot2}
+  %\VignetteIndexEntry{ggutils: 更好用的 ggplot2 工具箱}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
