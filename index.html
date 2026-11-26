@@ -36,7 +36,7 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><a class="dropdown-item" href="articles/ggutils-en.html">ggutils: Smart Axis Labels for ggplot2</a></li>
+<li><a class="dropdown-item" href="articles/ggutils-en.html">ggutils: a toolbox for ggplot2</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -81,40 +81,23 @@
 <h2 id="guide_axis_cluster-dendrograms-on-the-axes">
 <code>guide_axis_cluster()</code>: dendrograms on the axes<a class="anchor" aria-label="anchor" href="#guide_axis_cluster-dendrograms-on-the-axes"></a>
 </h2>
-<p><code><a href="reference/guide_axis_cluster.html">guide_axis_cluster()</a></code> clusters the categories, re-orders the axis into the dendrogram’s leaf order and draws the tree next to the axis, so the tree and the data stay perfectly aligned. <code><a href="reference/guide_axis_cluster.html">scale_x_cluster()</a></code> / <code><a href="reference/guide_axis_cluster.html">scale_y_cluster()</a></code> are the drop-in scales: they cluster the plot data for you, no matrix required.</p>
-<p><code>position</code> moves <strong>the tree only</strong> – the labels stay on their usual side – and with <code>facet_wrap(scales = "free_x")</code> every panel gets its own tree, clustered from that panel’s own data (no <code>free = TRUE</code> needed):</p>
+<p>Clusters the categories, re-orders the axis into the leaf order and draws the tree next to it (<code><a href="reference/guide_axis_cluster.html">scale_x_cluster()</a></code> / <code><a href="reference/guide_axis_cluster.html">scale_y_cluster()</a></code> do the same from the plot data alone). <code>position</code> moves the tree, not the labels, and with free facets every panel gets its own tree. On <code>coord_radial()</code> the theta tree becomes a ring dendrogram (<code>"bottom"</code> inside the hole, <code>"top"</code> outside the circle) and a partial arc gets an arc-shaped r-axis tree.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_tile</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_x_cluster</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"ward.D2"</span>, height <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_y_cluster</a></span><span class="op">(</span>position <span class="op">=</span> <span class="st">"left"</span>, height <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_tile</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_x_cluster</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"ward.D2"</span><span class="op">)</span> <span class="op">+</span>   <span class="co"># tree above the labels</span></span>
+<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_y_cluster</a></span><span class="op">(</span>position <span class="op">=</span> <span class="st">"left"</span><span class="op">)</span>      <span class="co"># tree at the far left</span></span>
 <span></span>
-<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_tile</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span> <span class="va">set</span>, scales <span class="op">=</span> <span class="st">"free_x"</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_x_cluster</a></span><span class="op">(</span>position <span class="op">=</span> <span class="st">"top"</span><span class="op">)</span></span></code></pre></div>
-<p>On a <code>coord_radial()</code> plot the theta tree becomes a <strong>ring dendrogram</strong>: <code>position = "bottom"</code> draws it inside the hole (leaves on the inner circle, merges towards the centre), <code>position = "top"</code> draws it outside the circle. On a partial arc the r-axis tree becomes an <strong>arc-shaped wedge</strong> at the label-free end of the arc; a full circle draws no r tree.</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># ring tree inside the hole</span></span>
-<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_tile</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
+<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_tile</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu">coord_radial</span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"x"</span>, inner.radius <span class="op">=</span> <span class="fl">0.55</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_x_cluster</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"ward.D2"</span>, height <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># arc tree on the r axis of a 180 degree arc</span></span>
-<span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">sample</span>, fill <span class="op">=</span> <span class="va">z</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">geom_tile</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu">coord_radial</span><span class="op">(</span>theta <span class="op">=</span> <span class="st">"x"</span>, start <span class="op">=</span> <span class="op">-</span><span class="va">pi</span> <span class="op">/</span> <span class="fl">2</span>, end <span class="op">=</span> <span class="va">pi</span> <span class="op">/</span> <span class="fl">2</span>,</span>
-<span>               inner.radius <span class="op">=</span> <span class="fl">0.55</span><span class="op">)</span> <span class="op">+</span></span>
-<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_y_cluster</a></span><span class="op">(</span>method <span class="op">=</span> <span class="st">"ward.D2"</span>, height <span class="op">=</span> <span class="fl">1.4</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="fu"><a href="reference/guide_axis_cluster.html">scale_x_cluster</a></span><span class="op">(</span><span class="op">)</span>                       <span class="co"># ring tree inside the hole</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="facet_gridn-per-panel-free-scales-for-facet_grid">
 <code>facet_gridn()</code>: per-panel free scales for <code>facet_grid()</code>
 <a class="anchor" aria-label="anchor" href="#facet_gridn-per-panel-free-scales-for-facet_grid"></a>
 </h2>
-<p><code>facet_grid()</code> only frees a scale by column (x) or by row (y). <code><a href="reference/facet_gridn.html">facet_gridn()</a></code> frees it <strong>per panel</strong>, with the same <code>scales = "free_x"</code> / <code>"free_y"</code> / <code>"free"</code> spelling, so every cell gets its own range and its own axis:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<p>Frees a <code>facet_grid()</code> scale per panel instead of per row / column:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">gene</span>, <span class="va">value</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_point</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="reference/facet_gridn.html">facet_gridn</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu">vars</span><span class="op">(</span><span class="va">cluster</span><span class="op">)</span>, cols <span class="op">=</span> <span class="fu">vars</span><span class="op">(</span><span class="va">set</span><span class="op">)</span>, scales <span class="op">=</span> <span class="st">"free_x"</span><span class="op">)</span></span></code></pre></div>
 </div>
@@ -123,7 +106,7 @@
 <code>coord_spiral()</code>: Cartesian plots on a spiral<a class="anchor" aria-label="anchor" href="#coord_spiral-cartesian-plots-on-a-spiral"></a>
 </h2>
 <p><code><a href="reference/coord_spiral.html">coord_spiral()</a></code> bends an ordinary ggplot into an Archimedean spiral, using the same geometry as <strong>spiralize</strong> (r = b·theta with one turn per radius unit). The x aesthetic runs along the spiral as the angle, y becomes the radius across the track; lines, bars, points and areas all work. The matching angle and radial axes are drawn automatically, and <code>facet_wrap()</code> / <code>facet_grid()</code> get one spiral per panel.</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/coord_spiral.html">coord_spiral</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu">ggplot</span><span class="op">(</span><span class="va">d</span>, <span class="fu">aes</span><span class="op">(</span><span class="va">x</span>, <span class="va">y</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span> <span class="fu">geom_line</span><span class="op">(</span><span class="op">)</span> <span class="op">+</span> <span class="fu">facet_wrap</span><span class="op">(</span><span class="op">~</span><span class="va">set</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="reference/coord_spiral.html">coord_spiral</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
@@ -143,11 +126,11 @@
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <p>Requires R &gt;= 4.1 and <strong>ggplot2 &gt;= 4.0.0</strong> (the guide API used here was rewritten in ggplot2 4.0).</p>
-<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"junjunlab/ggutils"</span><span class="op">)</span></span></code></pre></div>
 <p>Or, from a local clone of the repository:</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># install.packages("remotes")</span></span>
 <span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/remotes/man/install_local.html" class="external-link">install_local</a></span><span class="op">(</span><span class="st">"."</span><span class="op">)</span></span>
 <span><span class="co"># or, from a shell:</span></span>

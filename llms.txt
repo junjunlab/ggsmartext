@@ -46,6 +46,40 @@ is a `GuideAxis` subclass that takes over label drawing:
   [`ComplexHeatmap::anno_mark()`](https://rdrr.io/pkg/ComplexHeatmap/man/anno_mark.html)
   “diagonal” geometry (short perpendicular stub, diagonal, short stub).
 
+## `guide_axis_cluster()`: dendrograms on the axes
+
+Clusters the categories, re-orders the axis into the leaf order and
+draws the tree next to it
+([`scale_x_cluster()`](https://junjunlab.github.io/ggutils/reference/guide_axis_cluster.md)
+/
+[`scale_y_cluster()`](https://junjunlab.github.io/ggutils/reference/guide_axis_cluster.md)
+do the same from the plot data alone). `position` moves the tree, not
+the labels, and with free facets every panel gets its own tree. On
+`coord_radial()` the theta tree becomes a ring dendrogram (`"bottom"`
+inside the hole, `"top"` outside the circle) and a partial arc gets an
+arc-shaped r-axis tree.
+
+``` r
+
+ggplot(d, aes(gene, sample, fill = z)) + geom_tile() +
+  scale_x_cluster(method = "ward.D2") +   # tree above the labels
+  scale_y_cluster(position = "left")      # tree at the far left
+
+ggplot(d, aes(gene, sample, fill = z)) + geom_tile() +
+  coord_radial(theta = "x", inner.radius = 0.55) +
+  scale_x_cluster()                       # ring tree inside the hole
+```
+
+## `facet_gridn()`: per-panel free scales for `facet_grid()`
+
+Frees a `facet_grid()` scale per panel instead of per row / column:
+
+``` r
+
+ggplot(d, aes(gene, value)) + geom_point() +
+  facet_gridn(rows = vars(cluster), cols = vars(set), scales = "free_x")
+```
+
 ## `coord_spiral()`: Cartesian plots on a spiral
 
 [`coord_spiral()`](https://junjunlab.github.io/ggutils/reference/coord_spiral.md)
@@ -65,7 +99,7 @@ ggplot(d, aes(x, y)) + geom_line() + facet_wrap(~set) + coord_spiral()
 coord_spiral(turns = 5, start = 0, height = .7)
 coord_spiral(turns = 3, gap = .3, clockwise = TRUE)
 
-# fine-tune the two axes: breaks, label rotation, tick length, side
+# fine-tune the two axes: breaks, minor ticks, label rotation, tick length, side
 ggplot(d, aes(x, y)) + geom_col() +
   scale_x_spiral_axis(minor_breaks = seq(0, 1, .1)) +
   scale_y_spiral_axis(side = "both", label_rot = 90) +
