@@ -16,9 +16,9 @@ MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.or
 [![Last
 commit](https://img.shields.io/github/last-commit/junjunlab/ggutils.svg)](https://github.com/junjunlab/ggutils/commits/main)
 
-> Utility functions for `ggplot2`. The package starts with a smart axis
-> label guide and is meant to grow: new helpers belong here rather than
-> in a collection of single-purpose packages.
+> Small, reusable utilities for `ggplot2`: readable labels on crowded
+> axes, cluster dendrograms on the axes, circular layouts with ring
+> trees, and a spiral coordinate system.
 
 `ggutils` collects small, reusable helpers that smooth over the rough
 edges of building plots with `ggplot2`. They plug into the usual grammar
