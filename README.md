@@ -15,8 +15,6 @@ MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.or
 [![ggplot2 \>=
 4.0](https://img.shields.io/badge/ggplot2-%3E%3D%204.0-blueviolet.svg)](https://ggplot2.tidyverse.org/)
 [![Docs](https://img.shields.io/badge/docs-pkgdown-2E7D6B.svg)](https://junjunlab.github.io/ggutils/)
-[![Last
-commit](https://img.shields.io/github/last-commit/junjunlab/ggutils.svg)](https://github.com/junjunlab/ggutils/commits/main)
 
 > Small, reusable utilities for `ggplot2`.
 
