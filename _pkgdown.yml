@@ -3,6 +3,8 @@ url: https://junjunlab.github.io/ggutils/
 template:
   bootstrap: 5
 
+logo: man/figures/logo.png
+
 reference:
   - title: 智能轴标签 (Smart axis guides)
     desc: >
