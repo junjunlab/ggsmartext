@@ -3,7 +3,7 @@
 
 # ggutils
 
-<img src="man/figures/logo.png" align="right" height="230" alt="ggutils logo" />
+<img src="man/figures/logo.png" align="right" height="160" alt="ggutils logo" />
 
 [![R-CMD-check](https://github.com/junjunlab/ggutils/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/junjunlab/ggutils/actions/workflows/R-CMD-check.yaml)
 [![Lifecycle:
@@ -56,8 +56,6 @@ remotes::install_github("junjunlab/ggutils")
 ## Documentation
 
 - **Reference manual**: <https://junjunlab.github.io/ggutils/reference/>
-- **中文 vignette**:
-  <https://junjunlab.github.io/ggutils/articles/ggutils.html>
 - **English vignette**:
   <https://junjunlab.github.io/ggutils/articles/ggutils-en.html>
 
