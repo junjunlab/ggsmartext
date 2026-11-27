@@ -38,9 +38,9 @@
     </div>
 
     <div class="section level2">
-      <h2 id="-smart-axis-guides-">智能轴标签 (Smart axis guides)<a class="anchor" aria-label="anchor" href="#-smart-axis-guides-"></a></h2>
+      <h2 id="smart-axis-guides">Smart axis guides<a class="anchor" aria-label="anchor" href="#smart-axis-guides"></a></h2>
 
-      <div class="section-desc"><p>分类轴上的标签过多时，只显示用户指定的那一部分标签， 用引导线把每个标签连回它对应的刻度，并把标签在轴外侧 分行（x 轴）或分列（y 轴）错开排布。</p></div>
+      <div class="section-desc"><p>When a discrete axis carries too many labels, keep only the ones you ask for, draw a leader line back to each tick, and spread the labels over several rows (x axis) or columns (y axis) outside the panel.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -54,9 +54,9 @@
         </dt>
         <dd>Smart axis labels for ggplot2</dd>
       </dl></div><div class="section level2">
-      <h2 id="-coordinates-">坐标系统 (Coordinates)<a class="anchor" aria-label="anchor" href="#-coordinates-"></a></h2>
+      <h2 id="coordinates">Coordinates<a class="anchor" aria-label="anchor" href="#coordinates"></a></h2>
 
-      <div class="section-desc"><p>把普通 ggplot 弯成阿基米德螺线：x 沿螺线作为角度、y 作为轨道内的半径， 自带角度轴和径向刻度轴，支持 facet_wrap() / facet_grid()。</p></div>
+      <div class="section-desc"><p>Bend an ordinary ggplot into an Archimedean spiral: x runs along the spiral as the angle, y as the radius of the lane, with an angular axis and a radial tick axis, and full facet_wrap() / facet_grid() support.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -77,9 +77,9 @@
         </dt>
         <dd>Fine-tune the axes drawn along a spiral</dd>
       </dl></div><div class="section level2">
-      <h2 id="-cluster-trees-">聚类树 (Cluster trees)<a class="anchor" aria-label="anchor" href="#-cluster-trees-"></a></h2>
+      <h2 id="cluster-trees">Cluster trees<a class="anchor" aria-label="anchor" href="#cluster-trees"></a></h2>
 
-      <div class="section-desc"><p>给 x / y 分类轴加一棵层次聚类树：配套 scale 用聚类叶序重排分类顺序， 树与数据严格对齐；分面时按面板逐棵重算，树自动贴到 strip 内侧。</p></div>
+      <div class="section-desc"><p>Add a hierarchical cluster tree to a discrete x / y axis: the matching scales reorder the categories by dendrogram leaf order so tree and data stay aligned, and faceted plots get one tree per panel attached inside the strip.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -107,9 +107,9 @@
         </dt>
         <dd>Keep cluster trees inside the facet strip</dd>
       </dl></div><div class="section level2">
-      <h2 id="-facets-">分面 (Facets)<a class="anchor" aria-label="anchor" href="#-facets-"></a></h2>
+      <h2 id="facets">Facets<a class="anchor" aria-label="anchor" href="#facets"></a></h2>
 
-      <div class="section-desc"><p>逐面板自由的 facet_grid：scales = “free_x” / “free_y” / “free” 按面板放开， 而不是像 facet_grid() 那样按列 / 按行自由。</p></div>
+      <div class="section-desc"><p>A facet_grid that frees each panel: scales = “free_x” / “free_y” / “free” are released per panel instead of per column or per row as in facet_grid().</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -123,9 +123,9 @@
         </dt>
         <dd>A <code>facet_grid()</code> that can free scales panel by panel</dd>
       </dl></div><div class="section level2">
-      <h2 id="-layout-algorithms-">排布算法 (Layout algorithms)<a class="anchor" aria-label="anchor" href="#-layout-algorithms-"></a></h2>
+      <h2 id="layout-algorithms">Layout algorithms<a class="anchor" aria-label="anchor" href="#layout-algorithms"></a></h2>
 
-      <div class="section-desc"><p>guide 内部使用的三个底层排布算法：一维防重叠”压紧” （circlize::smartAlign 的移植）、盒式排布 （ComplexHeatmap::BoxArrange 的移植）以及把它们串起来的 多行堆叠。它们也可以在包外单独调用。</p></div>
+      <div class="section-desc"><p>The three low level placement algorithms used inside the guides: one dimensional anti overlap packing (a port of circlize::smartAlign), box arrangement (a port of ComplexHeatmap::BoxArrange) and multi row stacking on top of them. They can also be called on their own.</p></div>
 
       <dl></dl></div><div class="section level2">
 
@@ -153,9 +153,9 @@
         </dt>
         <dd>多行标签排布引擎</dd>
       </dl></div><div class="section level2">
-      <h2 id="-datasets-">内置数据 (Datasets)<a class="anchor" aria-label="anchor" href="#-datasets-"></a></h2>
+      <h2 id="datasets">Datasets<a class="anchor" aria-label="anchor" href="#datasets"></a></h2>
 
-      <div class="section-desc"><p>示例和 vignette 使用的真实数据：GEO GSE52778 的 RNA-seq 热图 （300 个高变基因 × 8 个样本的行 z-score 矩阵），以及 Seurat PBMC3k 教程的 marker 表与 dot plot 数据。</p></div>
+      <div class="section-desc"><p>Real data used by the examples and the vignette: an RNA seq heat map from GEO GSE52778 (a 300 highly variable genes x 8 samples matrix of row z scores) and the marker table and dot plot data from the Seurat PBMC3k tutorial.</p></div>
 
       <dl></dl></div><div class="section level2">
 
