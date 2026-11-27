@@ -67,11 +67,11 @@ navbar:
     articles:
       text: Articles
       menu:
-        - text: 智能轴标签
+        - text: Smart axis guides
           href: articles/ggutils-en.html#quick-start
-        - text: 坐标系统
+        - text: Coordinates
           href: articles/ggutils-en.html#radial-coordinates-coord_radial
-        - text: 聚类树
+        - text: Cluster trees
           href: articles/ggutils-en.html#cluster-dendrogram-on-a-discrete-axis
-        - text: 分面（facet_gridn）
+        - text: Facets (facet_gridn)
           href: articles/ggutils-en.html#facet_gridn-a-per-panel-facet_grid
