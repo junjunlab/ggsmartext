@@ -12,8 +12,6 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-> 中文版 (Chinese version): `vignette("ggutils")`
-
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
@@ -31,8 +29,9 @@ options(rmarkdown.html_vignette.check_title = FALSE)
 library(ggplot2)
 library(ggutils)
 
-## 之后的热图统一用**按样本的 z-score**：把每个样本在 300 个基因上标准化
-## （`scale()` 默认按列，即按样本），再取回长表。`z_sample` 是这一列的列名。
+## The heat maps below all use a **per-sample z-score**: standardise each
+## sample across the 300 genes (`scale()` works column-wise, i.e. per sample)
+## and put it back into a long table; `z_sample` is that column's name.
 data(airway_heatmap, package = "ggutils")
 airway_sample_z <- local({
   m <- tapply(airway_heatmap$df$z,
