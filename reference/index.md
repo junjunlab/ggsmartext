@@ -57,11 +57,17 @@ arrangement (a port of ComplexHeatmap::BoxArrange) and multi row
 stacking on top of them. They can also be called on their own.
 
 - [`smart_align()`](https://junjunlab.github.io/ggutils/reference/smart_align.md)
-  : 一维标签盒防重叠压紧算法（smartAlign 移植）
+  :
+
+  One-dimensional label-box de-overlap packing (a `smartAlign()` port)
+
 - [`box_arrange()`](https://junjunlab.github.io/ggutils/reference/box_arrange.md)
-  : 一维标签盒聚类排布算法（BoxArrange 移植）
+  :
+
+  One-dimensional label-box clustering and packing (a `BoxArrange` port)
+
 - [`smart_stack()`](https://junjunlab.github.io/ggutils/reference/smart_stack.md)
-  : 多行标签排布引擎
+  : Multi-row label placement engine
 
 ## Datasets
 

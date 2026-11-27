@@ -117,13 +117,13 @@ cell of the grid is independent:
 
 |  |  |  |  |
 |----|----|----|----|
-| `scales` | `facet_gridn()` | x 刻度 | y 刻度 |
-| `"fixed"` | 共享（默认） | 全局一条 | 全局一条 |
-| `"free_x"` | **逐面板** | 每个面板一条 | 全局一条 |
-| `"free_y"` | **逐面板** | 全局一条 | 每个面板一条 |
-| `"free"` | **逐面板** | 每个面板一条 | 每个面板一条 |
-| `"free_x_bycol"` | 同 [`facet_grid()`](https://rdrr.io/pkg/ggplot2/man/facet_grid.html) | 每列一条 | 全局一条 |
-| `"free_y_byrow"` | 同 [`facet_grid()`](https://rdrr.io/pkg/ggplot2/man/facet_grid.html) | 全局一条 | 每行一条 |
+| `scales` | `facet_gridn()` | x scale | y scale |
+| `"fixed"` | shared (default) | one global | one global |
+| `"free_x"` | **per panel** | one per panel | one global |
+| `"free_y"` | **per panel** | one global | one per panel |
+| `"free"` | **per panel** | one per panel | one per panel |
+| `"free_x_bycol"` | same as [`facet_grid()`](https://rdrr.io/pkg/ggplot2/man/facet_grid.html) | one per column | one global |
+| `"free_y_byrow"` | same as [`facet_grid()`](https://rdrr.io/pkg/ggplot2/man/facet_grid.html) | one global | one per row |
 
 Because a panel's range is its own, panels are no longer comparable
 through a shared axis: read each panel's own axis labels. `"fixed"` is
