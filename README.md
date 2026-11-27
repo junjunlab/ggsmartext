@@ -3,7 +3,7 @@
 
 # ggutils
 
-<img src="man/figures/logo.png" align="right" height="160" alt="ggutils logo" />
+<img src="man/figures/logo.png" align="right" height="230" alt="ggutils logo" />
 
 [![R-CMD-check](https://github.com/junjunlab/ggutils/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/junjunlab/ggutils/actions/workflows/R-CMD-check.yaml)
 [![Lifecycle:
