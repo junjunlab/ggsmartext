@@ -3,7 +3,7 @@ Title: Utilities for 'ggplot2'
 Version: 0.0.3
 Authors@R:
     person("Zhang Jun", role = c("aut", "cre"),
-           email = "junjun@users.noreply.github.com")
+           email = "junjunlab@users.noreply.github.com")
 Description: A collection of utility functions for 'ggplot2'. It currently
     provides 'guide_axis_smart()', a smart axis guide for discrete axes with
     many categories: it selects which labels to show, arranges them
