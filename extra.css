@@ -1,0 +1,9 @@
+/* make the package logo in the navbar a bit larger */
+.navbar-brand img,
+.navbar .navbar-brand img {
+  height: 42px;
+  width: auto;
+  max-height: none;
+  margin-top: -6px;
+  margin-bottom: -6px;
+}
