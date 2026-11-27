@@ -148,6 +148,24 @@ scale_y_cluster(
   the displayed labels differ from the axis values (free facets re-key
   them per panel).
 
+- cluster_position:
+
+  Where the tree sits when the guide is attached directly with
+  [`guides()`](https://rdrr.io/pkg/ggplot2/man/guides.html); defaults to
+  the axis side (`"bottom"` for an x axis, `"left"` for a y axis).
+
+- show_labels:
+
+  When `FALSE` the labels keep their layout but are drawn invisibly, so
+  only the tree shows – used when a secondary axis carries the tree
+  while the main axis prints the category names.
+
+- draw_tree:
+
+  Internal switch used by `scale_x_cluster()`: `FALSE` draws only the
+  labels, and the tree is injected into the finished gtable instead
+  (that is what `position = "top"` needs).
+
 - title:
 
   Axis title, passed on to

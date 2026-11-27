@@ -1,5 +1,7 @@
 # ggutils
 
+![ggutils logo](reference/figures/logo.png)
+
 [![R-CMD-check](https://github.com/junjunlab/ggutils/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/junjunlab/ggutils/actions/workflows/R-CMD-check.yaml)
 [![Lifecycle:
 experimental](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
@@ -13,114 +15,45 @@ MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.or
 [![Last
 commit](https://img.shields.io/github/last-commit/junjunlab/ggutils.svg)](https://github.com/junjunlab/ggutils/commits/main)
 
-> Utility functions for `ggplot2`. The package starts with a smart axis
-> label guide and is meant to grow: new helpers belong here rather than
-> in a collection of single-purpose packages.
+> Small, reusable utilities for `ggplot2`.
 
-`ggutils` collects small, reusable helpers that smooth over the rough
-edges of building plots with `ggplot2`. They plug into the usual grammar
-— no new geometry, no special data format — and each one solves a
-concrete problem.
+`ggutils` adds helpers that plug into the usual grammar – no new
+geometry, no special data format – so a plot keeps being a plot. Each
+one solves a concrete problem and is documented with runnable examples.
 
-## `guide_axis_smart()`: readable labels on crowded axes
+What is inside:
 
-When a discrete axis carries many categories (50 samples, 200 genes, …)
-the stock `ggplot2` axis draws every label on a single line. The labels
-overlap, or you rotate them all by 90°, or you hide them and lose the
-information.
-[`guide_axis_smart()`](https://junjunlab.github.io/ggutils/reference/guide_axis_smart.md)
-is a `GuideAxis` subclass that takes over label drawing:
-
-- **Choose the labels**: `which =` (integer index / label text / logical
-  vector / function) or `n =` (auto-pick at most `n` labels, evenly
-  spaced).
-- **Use the page**: labels are packed without overlap
-  (`smartAlign`-style one-dimensional compaction) and distributed over
-  `nrow` rows (x axis) or columns (y axis). Rows are only added when
-  they are needed: labels stretch along the axis when a single row fits,
-  clustered labels are stacked automatically.
-- **Never overlaps**: if there is no room left, labels are dropped
-  instead of being printed on top of each other.
-- **Leader lines**: every displayed label is tied back to its tick, by
-  default with the `circlize` /
-  [`ComplexHeatmap::anno_mark()`](https://rdrr.io/pkg/ComplexHeatmap/man/anno_mark.html)
-  “diagonal” geometry (short perpendicular stub, diagonal, short stub).
-
-## `guide_axis_cluster()`: dendrograms on the axes
-
-Clusters the categories, re-orders the axis into the leaf order and
-draws the tree next to it
-([`scale_x_cluster()`](https://junjunlab.github.io/ggutils/reference/guide_axis_cluster.md)
-/
-[`scale_y_cluster()`](https://junjunlab.github.io/ggutils/reference/guide_axis_cluster.md)
-do the same from the plot data alone). `position` moves the tree, not
-the labels, and with free facets every panel gets its own tree. On
-`coord_radial()` the theta tree becomes a ring dendrogram (`"bottom"`
-inside the hole, `"top"` outside the circle) and a partial arc gets an
-arc-shaped r-axis tree.
-
-``` r
-
-ggplot(d, aes(gene, sample, fill = z)) + geom_tile() +
-  scale_x_cluster(method = "ward.D2") +   # tree above the labels
-  scale_y_cluster(position = "left")      # tree at the far left
-
-ggplot(d, aes(gene, sample, fill = z)) + geom_tile() +
-  coord_radial(theta = "x", inner.radius = 0.55) +
-  scale_x_cluster()                       # ring tree inside the hole
-```
-
-## `facet_gridn()`: per-panel free scales for `facet_grid()`
-
-Frees a `facet_grid()` scale per panel instead of per row / column:
-
-``` r
-
-ggplot(d, aes(gene, value)) + geom_point() +
-  facet_gridn(rows = vars(cluster), cols = vars(set), scales = "free_x")
-```
-
-## `coord_spiral()`: Cartesian plots on a spiral
-
-[`coord_spiral()`](https://junjunlab.github.io/ggutils/reference/coord_spiral.md)
-bends an ordinary ggplot into an Archimedean spiral, using the same
-geometry as **spiralize** (r = b·theta with one turn per radius unit).
-The x aesthetic runs along the spiral as the angle, y becomes the radius
-across the track; lines, bars, points and areas all work. The matching
-angle and radial axes are drawn automatically, and `facet_wrap()` /
-`facet_grid()` get one spiral per panel.
-
-``` r
-
-ggplot(d, aes(x, y)) + geom_line() + coord_spiral()
-ggplot(d, aes(x, y)) + geom_line() + facet_wrap(~set) + coord_spiral()
-
-# turns / start angle / track thickness / gap between turns
-coord_spiral(turns = 5, start = 0, height = .7)
-coord_spiral(turns = 3, gap = .3, clockwise = TRUE)
-
-# fine-tune the two axes: breaks, minor ticks, label rotation, tick length, side
-ggplot(d, aes(x, y)) + geom_col() +
-  scale_x_spiral_axis(minor_breaks = seq(0, 1, .1)) +
-  scale_y_spiral_axis(side = "both", label_rot = 90) +
-  coord_spiral(turns = 3)
-```
-
-Every layer that hands its `x`/`y` to the coordinate transform works
-unchanged - lines, areas, bars, histograms, box plots, violins, tiles,
-text, error bars, segments with arrows. Layers that only carry
-`xend`/`xmin` coordinates (`geom_segment()`, `geom_rect()`) are warped
-too, though the edge between two warped points stays straight.
-`geom_hline()` and friends, which have no end points, are not supported.
-
-More `ggplot2` utilities will be added here over time. The deliberately
-broad name means you can load one package instead of keeping track of
-several single-function ones.
+- **[`guide_axis_smart()`](https://junjunlab.github.io/ggutils/reference/guide_axis_smart.md)**
+  – readable labels on crowded axes: pick the labels (`which`, `n`),
+  spread them over several rows / columns without overlap, and tie every
+  label back to its tick with a leader line.
+- **[`guide_axis_cluster()`](https://junjunlab.github.io/ggutils/reference/guide_axis_cluster.md)
+  /
+  [`scale_x_cluster()`](https://junjunlab.github.io/ggutils/reference/guide_axis_cluster.md)
+  /
+  [`scale_y_cluster()`](https://junjunlab.github.io/ggutils/reference/guide_axis_cluster.md)**
+  – hierarchical clustering on the axes: the axis is ordered by the
+  dendrogram and the tree is drawn next to it, one tree per panel with
+  free facets. On a `coord_radial()` plot the theta tree becomes a ring
+  dendrogram (inside the hole or outside the circle) and a partial arc
+  gets an arc-shaped r-axis tree.
+- **[`facet_gridn()`](https://junjunlab.github.io/ggutils/reference/facet_gridn.md)**
+  – `facet_grid()` with scales that are free per panel instead of per
+  row / column.
+- **[`coord_spiral()`](https://junjunlab.github.io/ggutils/reference/coord_spiral.md)**
+  – an Archimedean spiral coordinate with matching angle and radial
+  axes, for long sequences that would otherwise need many rows.
+- **Data and layout helpers** – the bundled `airway_heatmap`,
+  `pbmc3k_markers` and `pbmc3k_dotplot` data, plus the exported layout
+  algorithms
+  [`smart_align()`](https://junjunlab.github.io/ggutils/reference/smart_align.md),
+  [`box_arrange()`](https://junjunlab.github.io/ggutils/reference/box_arrange.md)
+  and
+  [`smart_stack()`](https://junjunlab.github.io/ggutils/reference/smart_stack.md).
 
 ## Installation
 
-Requires R \>= 4.1 and **ggplot2 \>= 4.0.0** (the guide API used here
-was rewritten in ggplot2 4.0).
+Requires R \>= 4.1 and **ggplot2 \>= 4.0.0**.
 
 ``` r
 
@@ -128,43 +61,19 @@ was rewritten in ggplot2 4.0).
 remotes::install_github("junjunlab/ggutils")
 ```
 
-Or, from a local clone of the repository:
-
-``` r
-
-# install.packages("remotes")
-remotes::install_local(".")
-# or, from a shell:
-# R CMD INSTALL .
-```
-
 ## Documentation
 
-The complete reference manual — every function, argument and example —
-is published on the package documentation site:
-
 - **Reference manual**: <https://junjunlab.github.io/ggutils/reference/>
-- **中文 vignette（入门与全部用法）**:
+- **中文 vignette**:
   <https://junjunlab.github.io/ggutils/articles/ggutils.html>
 - **English vignette**:
   <https://junjunlab.github.io/ggutils/articles/ggutils-en.html>
 
-The vignettes walk through label selection (`which`), automatic
-selection (`n`), staggered rows (`nrow`), the three leader-line styles,
-vertical axes, facets and heatmap annotation; the reference manual
-documents every argument and default. The layout algorithms
-[`smart_align()`](https://junjunlab.github.io/ggutils/reference/smart_align.md),
-[`box_arrange()`](https://junjunlab.github.io/ggutils/reference/box_arrange.md)
-and
-[`smart_stack()`](https://junjunlab.github.io/ggutils/reference/smart_stack.md)
-are exported and can also be used on their own.
-
 ## Credits
 
-The one-dimensional, overlap-free compaction is a port of the
-`smartAlign` algorithm from the **circlize** package; the box
-arrangement is a port of the **ComplexHeatmap** package. `ggutils` only
-re-uses the algorithms — the ggplot2 guide integration is new.
+The overlap-free label compaction is a port of `smartAlign` from
+**circlize**; the box arrangement is a port from **ComplexHeatmap**. The
+ggplot2 guide integration is new.
 
 # Package index
 

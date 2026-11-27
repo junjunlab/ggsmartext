@@ -296,6 +296,8 @@ z_sample <- as.data.frame(as.table(scale(
          list(airway_heatmap$df$gene, airway_heatmap$df$sample), mean)
 )))
 names(z_sample) <- c("gene", "sample", "z_sample")
+z_sample <- merge(z_sample, airway_heatmap$genes[c("gene", "gene_set")],
+                  by = "gene")
 
 # a circular heatmap from the bundled RNA-seq data (300 genes x 8 samples):
 # the genes run around the circle, labels outside
@@ -343,7 +345,5 @@ ggplot(z_sample, aes(gene, sample, fill = z_sample)) +
   facet_wrap(~gene_set, ncol = 2, scales = "free_x") +
   scale_fill_gradient2(low = "#2166ac", mid = "white", high = "#b2182b",
                        midpoint = 0, name = "z-score (sample)")
-#> Error in combine_vars(data, params$plot_env, vars, drop = params$drop): At least one layer must contain all faceting variables: `gene_set`
-#> ✖ Plot is missing `gene_set`
-#> ✖ Layer 1 is missing `gene_set`
+
 ```
