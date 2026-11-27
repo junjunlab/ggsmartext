@@ -39,7 +39,7 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Zhang Jun \email{junjun@users.noreply.github.com}
+\strong{Maintainer}: Zhang Jun \email{1138976957@qq.com}
 
 }
 \keyword{internal}

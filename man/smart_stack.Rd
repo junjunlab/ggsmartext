@@ -2,7 +2,7 @@
 % Please edit documentation in R/smart-stack.R
 \name{smart_stack}
 \alias{smart_stack}
-\title{多行标签排布引擎}
+\title{Multi-row label placement engine}
 \usage{
 smart_stack(
   positions,
@@ -15,78 +15,94 @@ smart_stack(
 )
 }
 \arguments{
-\item{positions}{数值向量，每个标签盒在轴上的中心位置（npc，0..1）。
-不要求有序。}
+\item{positions}{Numeric vector of axis positions (npc, 0..1) of the label
+boxes. Does not need to be sorted.}
 
-\item{widths}{数值向量，每个标签盒的宽度（npc），与 \code{positions} 等长。}
+\item{widths}{Numeric vector of box widths (npc), the same length as
+\code{positions}.}
 
-\item{n}{正整数，行数（x 轴为行、y 轴为列）。也决定"总容量"上限。}
+\item{n}{Positive integer, the number of rows (columns for a y axis). It
+also sets the total capacity.}
 
-\item{range}{长度为 2 的数值向量，轴的可绘制范围，默认 \code{c(0, 1)}。}
+\item{range}{Numeric vector of length 2, the drawable range of the axis,
+default \code{c(0, 1)}.}
 
-\item{extend}{非负标量：允许标签超出 \code{range} 的比例（\code{0.02} 表示两侧各
-放宽轴跨度的 0.02 倍），与 \code{guide_axis_smart()} 的同名参数一致。}
+\item{extend}{Non-negative scalar, how far labels may stick out of \code{range}
+(\code{0.02} widens the axis span by 0.02 on each side); same meaning as the
+argument of the same name in \code{guide_axis_smart()}.}
 
-\item{padding}{非负标量：同一行内相邻标签盒之间要求的最小间隙，
-单位与 \code{positions} 相同（npc）。}
+\item{padding}{Non-negative scalar, the minimum gap required between
+neighbouring boxes in the same row, in the same unit as \code{positions} (npc).}
 
-\item{priority}{\code{NULL}（默认，所有标签同等重要）或与 \code{positions} 等长
-的数值向量。\strong{数值越大越优先保留}；放不下时优先丢弃低优先级标签。}
+\item{priority}{\code{NULL} (default, all labels equally important) or a numeric
+vector the same length as \code{positions}. \strong{Larger values are kept first};
+when space runs out the low-priority labels are dropped.}
 }
 \value{
-一个 data.frame，行数与输入等长、顺序与输入一致，列为：
+A data.frame with one row per input box, in input order, with
+columns:
 \itemize{
-\item \code{index}：输入下标（\verb{1..length(positions)}）；
-\item \code{row}：分配到的行号（\verb{1..n}）；被丢弃的标签为 \code{NA}；
-\item \code{start}, \code{end}：排布后标签盒的左右端点（npc）；
-\item \code{center}：排布后标签盒中心（npc）；
-\item \code{shown}：逻辑值，该标签是否应当绘制。
+\item \code{index}: the input index (\verb{1..length(positions)});
+\item \code{row}: the assigned row (\verb{1..n}); \code{NA} for dropped labels;
+\item \code{start}, \code{end}: the left and right end of the placed box (npc);
+\item \code{center}: the centre of the placed box (npc);
+\item \code{shown}: logical, whether the label should be drawn.
 }
 }
 \description{
-\code{smart_stack()} 把一系列标签盒（每个盒子有轴线上的中心位置 \code{positions}
-与宽度 \code{widths}，单位均为 npc）分配到 \code{n} 行（y 轴时为 \code{n} 列）中的某
-一行，使每个标签都能画出来、行内不重叠、并且尽量贴近原始位置。它是
-\code{guide_axis_smart()} 的核心排布算法，也可以单独使用。
+\code{smart_stack()} assigns a set of label boxes (each with an axis position
+\code{positions} and a width \code{widths}, both in npc) to one of \code{n} rows (\code{n}
+columns for a y axis) so that every label can be drawn, labels within a row
+do not overlap, and each label stays as close as possible to its original
+position. It is the placement engine behind \code{guide_axis_smart()} and can also
+be used on its own.
 }
 \details{
-算法分三步：
+The algorithm has three steps:
 \enumerate{
-\item \strong{可用范围}：可用范围 \code{range} 按 \code{extend} 向两侧各扩展
-\code{extend * diff(range)}，得到 \code{lim}；宽度大于 \code{diff(lim)} 的标签盒
-无论如何放不下，直接丢弃。
-\item \strong{分配行}：按优先级从高到低（\code{priority} 越大越优先；平局按位置、
-再按下标）逐个分配。对每个标签盒，在所有"还有容量"的行里选择当前
-占用最少的一行（占用 = 行内宽度之和 + 必要的 \code{padding} 间隙），因此
-当所有标签优先级相同时，结果会沿轴交替落入各行（水填式均衡）。
-所有行都放不下的标签被丢弃（\code{shown = FALSE}）。
-\item \strong{行内压紧}：每行内按标签盒中心位置保持轴序，把盒子左右各按
-\code{padding / 2} 膨胀后交给压紧算法消除重叠，再收缩回来，于是同一行内
-相邻标签之间恰好留出 \code{padding} 的间隙。膨胀前会用保序投影把中心夹进
-可用范围，因此结果绝不会越出 \code{lim}。
+\item \strong{Usable range}: \code{range} is widened on both sides by \code{extend * diff(range)} to give \code{lim}; boxes wider than \code{diff(lim)} can never fit
+and are dropped.
+\item \strong{Row assignment}: boxes are processed from the highest to the lowest
+priority (larger \code{priority} first; ties by position, then by index). Each
+box goes to the row that currently carries the least load among the rows
+that still have capacity (load = sum of widths in the row plus the
+\code{padding} gaps it needs), so with equal priorities the labels alternate
+between rows along the axis (water-filling balance). Labels that fit in no
+row are dropped (\code{shown = FALSE}).
+\item \strong{Packing inside a row}: within a row the boxes keep their axis order by
+centre position; each box is inflated by \code{padding / 2} on both sides, the
+packing algorithm removes the overlaps, and the boxes are shrunk back, so
+neighbouring labels in a row end up exactly \code{padding} apart. An
+order-preserving projection clamps the centres into the usable range
+before inflation, so the result never leaves \code{lim}.
 }
 \itemize{
-\item 所有 \code{shown = TRUE} 的盒子都满足：\verb{lim[1] <= start < end <= lim[2]}；
-同一行内按 \code{start} 排序后满足 \code{start[i+1] >= end[i] + padding}（在没有
-触发贴边剪裁时取等号）。
-\item 行内顺序按标签盒\strong{中心位置}保持轴序，与输入位置顺序一致。
-\item 行的分配由优先级 + 负载均衡决定，是\strong{确定性}的；同一输入必然得到
-同一输出，不消耗随机数。
-\item 函数保证"能画就不重叠"，但不会为了塞下更多标签而把标签压得比
-\code{widths} 更窄——放不下就丢弃（\code{shown = FALSE}）。
-\item 当标签很多、\code{n} 行总容量不足时，被丢弃的是优先级最低（\code{priority}
-最小）的那些；优先级相同时，先处理靠轴左侧的标签。
+\item Every box with \code{shown = TRUE} satisfies
+\verb{lim[1] <= start < end <= lim[2]}; within a row, after sorting by \code{start},
+\code{start[i+1] >= end[i] + padding} (equality holds when no edge clamping
+kicks in).
+\item The order inside a row follows the box \strong{centres}, i.e. the axis order.
+\item Row assignment depends on priority and load balancing only and is
+\strong{deterministic}: the same input always gives the same output, with no
+random numbers involved.
+\item The function guarantees "drawn means not overlapping", but it never
+squeezes a label below its \code{widths}; labels that do not fit are dropped
+(\code{shown = FALSE}).
+\item When there are many labels and the \code{n} rows do not provide enough
+capacity, the lowest-priority labels are dropped first; among equal
+priorities the labels nearest the left end of the axis are processed
+first.
 }
 }
 \examples{
-# 6 个标签均匀分布，分 2 行：交替落入两行，几乎不需要移动
+# six labels spread along the axis in 2 rows: alternate, barely moved
 pos <- seq(0.1, 0.9, length.out = 6)
 smart_stack(pos, widths = rep(0.08, 6), n = 2)
 
-# 3 个标签挤在 0.5 附近，分 3 行也不会重叠
+# three labels crowded around 0.5 still do not overlap in 3 rows
 smart_stack(c(0.48, 0.5, 0.52), widths = rep(0.2, 3), n = 3)
 
-# 容量不足时按 priority 丢弃：高优先级保留
+# when space runs out, priority decides what is dropped
 smart_stack(
   positions = rep(0.5, 5), widths = rep(0.4, 5), n = 1,
   priority = c(1, 5, 3, 4, 2)

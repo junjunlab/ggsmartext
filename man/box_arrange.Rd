@@ -2,63 +2,73 @@
 % Please edit documentation in R/box-arrange.R
 \name{box_arrange}
 \alias{box_arrange}
-\title{一维标签盒聚类排布算法（BoxArrange 移植）}
+\title{One-dimensional label-box clustering and packing (a \code{BoxArrange} port)}
 \usage{
 box_arrange(start, end, range = range(c(start, end)))
 }
 \arguments{
-\item{start, end}{数值向量，标签盒的左右端点，长度必须相同；
-不要求按 \code{start} 排序。}
+\item{start, end}{Numeric vectors giving the left and right end of each label
+box; they must have the same length. \code{start} need not be sorted.}
 
-\item{range}{长度为 2 的数值向量，允许排布的范围（如 \code{c(0, 1)}）。
-默认 \code{range(c(start, end))}。}
+\item{range}{Numeric vector of length 2, the range the boxes may occupy
+(e.g. \code{c(0, 1)}). Defaults to \code{range(c(start, end))}.}
 }
 \value{
-一个 data.frame，含 \code{start}、\code{end} 两列，\strong{行顺序与输入完全
-一致}（第 i 行是输入第 i 个盒子的新位置）。
+A data.frame with columns \code{start} and \code{end}, in the \strong{same row order
+as the input} (row i is the new position of the i-th input box).
 }
 \description{
-\code{box_arrange()} 把 \pkg{ComplexHeatmap} 内部 R5 引用类 \code{BoxArrange}
-（以及 \code{Box} / \code{BoxCluster} 两个辅助类）\strong{纯函数化}重写：
+\code{box_arrange()} re-implements as pure functions the R5 reference class
+\code{BoxArrange} (plus its helpers \code{Box} and \code{BoxCluster}) from
+\pkg{ComplexHeatmap}:
 }
 \details{
 \enumerate{
-\item 按每个盒子的\strong{中点}排序（不要求输入有序）；
-\item 依中点次序把相互重叠（含首尾相接）的盒子并成 cluster；
-\item 每个 cluster 先用 \code{sum(width)} 作为总长，在 \code{range} 内首尾相接摊开
-（\code{flatten}），再迭代合并因贴边平移而新产生的重叠（\code{merge}）；
-\item 把越界的 cluster 整体平移回 \code{range}（\code{adjust_to_range}），再合并一次；
-\item 按原始输入顺序还原每个盒子的位置。
+\item sort the boxes by \strong{midpoint} (the input need not be sorted);
+\item merge overlapping boxes (touching ends count) into clusters, in midpoint
+order;
+\item for each cluster use \code{sum(width)} as its span, lay the boxes end to end
+inside \code{range} (\code{flatten}), then iteratively merge the overlaps created by
+the edge shifts (\code{merge});
+\item shift clusters that fall outside back into \code{range} (\code{adjust_to_range})
+and merge once more;
+\item restore the original input order.
 }
 
-若所有盒子宽度之和大于 \code{diff(range)}（根本放不下），则退回
-\code{ComplexHeatmap:::smartAlign2()} 的\strong{等比摊开}公式：保持首尾盒贴住
-两端、按宽度比例拉开，结果允许重叠但全部落在 \code{range} 内。
+When the total width exceeds \code{diff(range)} (the boxes simply do not fit) it
+falls back to the \strong{proportional spread} of
+\code{ComplexHeatmap:::smartAlign2()}: the first and last box stay glued to the
+ends and the rest are spread proportionally, so overlaps remain but every
+box stays inside \code{range}.
 
-与参考实现（\code{ComplexHeatmap:::smartAlign2()}，即 \code{BoxArrange} 的包装）
-在可行输入上逐元素一致（容差 1e-10）。差异均为健壮性/可重复性改进：
+On feasible input the result matches the reference implementation
+(\code{ComplexHeatmap:::smartAlign2()}, the wrapper around \code{BoxArrange}) element
+by element within 1e-10. The differences are robustness and reproducibility
+improvements:
 \itemize{
-\item 空输入返回 0 行 data.frame；参考实现报 \verb{subscript out of bounds}；
-\item 中点完全相同的盒子用\strong{确定性}次序打破平局（参考实现用
-\code{rank(ties.method = "random")}，会消耗随机数、结果不可重复）；
-只有在存在精确平局时结果才可能与参考实现不同；
-\item 单个盒子且宽度大于 \code{range} 时，居中放置；参考实现返回 \code{-Inf}。
+\item an empty input returns a zero-row data.frame; the reference throws
+\verb{subscript out of bounds};
+\item boxes with identical midpoints are ordered \strong{deterministically} (the
+reference uses \code{rank(ties.method = "random")}, which consumes random
+numbers and is not reproducible); results can only differ from the
+reference when exact ties occur;
+\item a single box wider than \code{range} is centred; the reference returns \code{-Inf}.
 }
 
-参考实现的可行分支返回矩阵、不可行分支返回 data.frame，本函数统一
-返回 data.frame。
+The reference returns a matrix on the feasible branch and a data.frame on
+the infeasible one; this function always returns a data.frame.
 }
 \examples{
-# 两个轻微重叠的盒子被压成首尾相接
+# two slightly overlapping boxes are packed end to end
 box_arrange(c(0.10, 0.12), c(0.14, 0.16), c(0, 1))
 
-# 允许乱序输入：按中点排序后处理，结果仍按输入顺序返回
+# unsorted input is fine: sorted by midpoint, returned in input order
 box_arrange(c(0.60, 0.10, 0.30), c(0.64, 0.14, 0.34), c(0, 1))
 
-# 宽度之和超过 range 时退回等比摊开（首尾贴边）
+# when the widths exceed the range it falls back to a proportional spread
 box_arrange(c(0.1, 0.2, 0.3), c(0.6, 0.7, 0.8), c(0, 1))
 }
 \seealso{
-\code{\link[=smart_align]{smart_align()}}：circlize 的压紧算法（要求输入有序）；
-\code{\link[=smart_stack]{smart_stack()}}：多行标签排布引擎。
+\code{\link[=smart_align]{smart_align()}} for the circlize packing algorithm (which requires
+sorted input); \code{\link[=smart_stack]{smart_stack()}} for the multi-row label engine.
 }

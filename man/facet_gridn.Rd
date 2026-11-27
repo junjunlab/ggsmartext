@@ -83,13 +83,13 @@ freedom.
 same column still share one x scale, because the layout assigns
 \code{SCALE_X = COL}.  \code{facet_gridn()} assigns \code{SCALE_X = PANEL}, so every cell of
 the grid is independent:\tabular{llll}{
-   \code{scales} \tab \code{facet_gridn()} \tab x 刻度 \tab y 刻度 \cr
-   \code{"fixed"} \tab 共享（默认） \tab 全局一条 \tab 全局一条 \cr
-   \code{"free_x"} \tab \strong{逐面板} \tab 每个面板一条 \tab 全局一条 \cr
-   \code{"free_y"} \tab \strong{逐面板} \tab 全局一条 \tab 每个面板一条 \cr
-   \code{"free"} \tab \strong{逐面板} \tab 每个面板一条 \tab 每个面板一条 \cr
-   \code{"free_x_bycol"} \tab 同 \code{facet_grid()} \tab 每列一条 \tab 全局一条 \cr
-   \code{"free_y_byrow"} \tab 同 \code{facet_grid()} \tab 全局一条 \tab 每行一条 \cr
+   \code{scales} \tab \code{facet_gridn()} \tab x scale \tab y scale \cr
+   \code{"fixed"} \tab shared (default) \tab one global \tab one global \cr
+   \code{"free_x"} \tab \strong{per panel} \tab one per panel \tab one global \cr
+   \code{"free_y"} \tab \strong{per panel} \tab one global \tab one per panel \cr
+   \code{"free"} \tab \strong{per panel} \tab one per panel \tab one per panel \cr
+   \code{"free_x_bycol"} \tab same as \code{facet_grid()} \tab one per column \tab one global \cr
+   \code{"free_y_byrow"} \tab same as \code{facet_grid()} \tab one global \tab one per row \cr
 }
 
 
