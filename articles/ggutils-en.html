@@ -489,9 +489,6 @@ tuning advice</a></li>
 </ul>
 </div>
 
-<blockquote>
-<p>中文版 (Chinese version): <code>vignette(&quot;ggutils&quot;)</code></p>
-</blockquote>
 <style type="text/css">
 
 pre, pre code, code.sourceCode, .sourceCode pre, .sourceCode code {
@@ -1947,21 +1944,22 @@ for pixel and can be swapped in at any time.</p>
 <p>All examples below use <code>mpg</code> (<code>drv</code>: 3 rows x
 <code>year</code>: 2 columns = 6 panels):</p>
 <div class="sourceCode" id="cb51"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
-<span id="cb51-2"><a href="#cb51-2" tabindex="-1"></a>d_cont <span class="ot">&lt;-</span> mpg</span>
-<span id="cb51-3"><a href="#cb51-3" tabindex="-1"></a>d_disc <span class="ot">&lt;-</span> mpg</span>
-<span id="cb51-4"><a href="#cb51-4" tabindex="-1"></a>d_disc<span class="sc">$</span>cylgrp <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">ifelse</span>(d_disc<span class="sc">$</span>cyl <span class="sc">==</span> <span class="dv">4</span>, <span class="st">&quot;4 cyl&quot;</span>, <span class="st">&quot;6 / 8 cyl&quot;</span>),</span>
-<span id="cb51-5"><a href="#cb51-5" tabindex="-1"></a>                        <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;4 cyl&quot;</span>, <span class="st">&quot;6 / 8 cyl&quot;</span>))</span>
-<span id="cb51-6"><a href="#cb51-6" tabindex="-1"></a>th_n <span class="ot">&lt;-</span> <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">9</span>) <span class="sc">+</span></span>
-<span id="cb51-7"><a href="#cb51-7" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
-<span id="cb51-8"><a href="#cb51-8" tabindex="-1"></a>        <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">8</span>),</span>
-<span id="cb51-9"><a href="#cb51-9" tabindex="-1"></a>        <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>),</span>
-<span id="cb51-10"><a href="#cb51-10" tabindex="-1"></a>        <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">9</span>))</span>
-<span id="cb51-11"><a href="#cb51-11" tabindex="-1"></a>p_cont_n <span class="ot">&lt;-</span> <span class="cf">function</span>(scales, <span class="at">fn =</span> facet_gridn) {</span>
-<span id="cb51-12"><a href="#cb51-12" tabindex="-1"></a>  <span class="fu">ggplot</span>(d_cont, <span class="fu">aes</span>(displ, hwy)) <span class="sc">+</span></span>
-<span id="cb51-13"><a href="#cb51-13" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.2</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
-<span id="cb51-14"><a href="#cb51-14" tabindex="-1"></a>    <span class="fu">fn</span>(<span class="fu">vars</span>(drv), <span class="fu">vars</span>(year), <span class="at">scales =</span> scales) <span class="sc">+</span></span>
-<span id="cb51-15"><a href="#cb51-15" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">title =</span> scales, <span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>) <span class="sc">+</span> th_n</span>
-<span id="cb51-16"><a href="#cb51-16" tabindex="-1"></a>}</span></code></pre></div>
+<span id="cb51-2"><a href="#cb51-2" tabindex="-1"></a><span class="co">#&gt; Warning: package &#39;patchwork&#39; was built under R version 4.5.3</span></span>
+<span id="cb51-3"><a href="#cb51-3" tabindex="-1"></a>d_cont <span class="ot">&lt;-</span> mpg</span>
+<span id="cb51-4"><a href="#cb51-4" tabindex="-1"></a>d_disc <span class="ot">&lt;-</span> mpg</span>
+<span id="cb51-5"><a href="#cb51-5" tabindex="-1"></a>d_disc<span class="sc">$</span>cylgrp <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">ifelse</span>(d_disc<span class="sc">$</span>cyl <span class="sc">==</span> <span class="dv">4</span>, <span class="st">&quot;4 cyl&quot;</span>, <span class="st">&quot;6 / 8 cyl&quot;</span>),</span>
+<span id="cb51-6"><a href="#cb51-6" tabindex="-1"></a>                        <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">&quot;4 cyl&quot;</span>, <span class="st">&quot;6 / 8 cyl&quot;</span>))</span>
+<span id="cb51-7"><a href="#cb51-7" tabindex="-1"></a>th_n <span class="ot">&lt;-</span> <span class="fu">theme_bw</span>(<span class="at">base_size =</span> <span class="dv">9</span>) <span class="sc">+</span></span>
+<span id="cb51-8"><a href="#cb51-8" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>(),</span>
+<span id="cb51-9"><a href="#cb51-9" tabindex="-1"></a>        <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">8</span>),</span>
+<span id="cb51-10"><a href="#cb51-10" tabindex="-1"></a>        <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">7</span>),</span>
+<span id="cb51-11"><a href="#cb51-11" tabindex="-1"></a>        <span class="at">plot.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">9</span>))</span>
+<span id="cb51-12"><a href="#cb51-12" tabindex="-1"></a>p_cont_n <span class="ot">&lt;-</span> <span class="cf">function</span>(scales, <span class="at">fn =</span> facet_gridn) {</span>
+<span id="cb51-13"><a href="#cb51-13" tabindex="-1"></a>  <span class="fu">ggplot</span>(d_cont, <span class="fu">aes</span>(displ, hwy)) <span class="sc">+</span></span>
+<span id="cb51-14"><a href="#cb51-14" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="fl">1.2</span>, <span class="at">alpha =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb51-15"><a href="#cb51-15" tabindex="-1"></a>    <span class="fu">fn</span>(<span class="fu">vars</span>(drv), <span class="fu">vars</span>(year), <span class="at">scales =</span> scales) <span class="sc">+</span></span>
+<span id="cb51-16"><a href="#cb51-16" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">title =</span> scales, <span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>) <span class="sc">+</span> th_n</span>
+<span id="cb51-17"><a href="#cb51-17" tabindex="-1"></a>}</span></code></pre></div>
 <div id="continuous-axes-the-four-modes-side-by-side" class="section level2">
 <h2>Continuous axes: the four modes side by side</h2>
 <div class="sourceCode" id="cb52"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a>(<span class="fu">p_cont_n</span>(<span class="st">&quot;fixed&quot;</span>)  <span class="sc">|</span> <span class="fu">p_cont_n</span>(<span class="st">&quot;free_x&quot;</span>)) <span class="sc">/</span></span>
