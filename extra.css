@@ -7,3 +7,9 @@
   margin-top: -6px;
   margin-bottom: -6px;
 }
+
+/* the package logo already sits in the navbar: hide the large copy that the
+   README carries for GitHub */
+.template-home #main img[alt="ggutils logo"] {
+  display: none;
+}

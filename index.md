@@ -64,8 +64,6 @@ remotes::install_github("junjunlab/ggutils")
 ## Documentation
 
 - **Reference manual**: <https://junjunlab.github.io/ggutils/reference/>
-- **中文 vignette**:
-  <https://junjunlab.github.io/ggutils/articles/ggutils.html>
 - **English vignette**:
   <https://junjunlab.github.io/ggutils/articles/ggutils-en.html>
 
